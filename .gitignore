@@ -1,0 +1,13 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+__data
+*~
+venv
+.cache
+*.cache.*
+.vscode
+.idea
+setup_roche.sh
+*.egg-info
