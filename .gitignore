@@ -3,6 +3,7 @@
 .RData
 .Ruserdata
 __data
+*.pyc
 *~
 venv
 .cache
