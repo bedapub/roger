@@ -40,7 +40,7 @@ def decorate_app(roger_app):
             raise ROGERUsageError("Invalid file name in `%s`: %s" % (form_field, file.filename))
 
         filename = secure_filename(file.filename)
-        file.save(os.path.join(roger_app.config['DATA_FOLDER'], filename))
+        file.save(os.path.join(roger_app.config['ROGER_DATA_FOLDER'], filename))
         return file
 
     @roger_app.route('/submitFull', methods=['POST'])

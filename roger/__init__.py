@@ -10,6 +10,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 from sqlite3 import Connection as SQLite3Connection
+import tempfile
 import getpass
 
 import roger.rest
@@ -17,6 +18,7 @@ import roger.backend.geneanno
 import roger.backend.gse
 import roger.backend.dge
 from roger.backend.schema import Model
+
 
 # TODO move this to a appropriate location
 @event.listens_for(Engine, "connect")
@@ -28,8 +30,6 @@ def _set_sqlite_pragma(dbapi_connection, connection_record):
         cursor.close()
 
 
-# TODO Move that property to config.cfg file
-DATA_FOLDER = './uploaded_data'
 db = SQLAlchemy(model_class=Model)
 
 
@@ -37,10 +37,8 @@ db = SQLAlchemy(model_class=Model)
 def create_app(script_info):
     del script_info
     app = Flask('roger')
-    # TODO Move that property to config.cfg file
-    app.config['DATA_FOLDER'] = DATA_FOLDER
+    app.config['ROGER_DATA_FOLDER'] = tempfile.mkdtemp()
     app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024 * 1024  # 2 GB
-    app.config.from_pyfile('application.cfg', silent=True)
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     if 'ROGER_CONFIG' in os.environ:
         app.config.from_pyfile(os.environ['ROGER_CONFIG'], silent=True)
