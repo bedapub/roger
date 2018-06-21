@@ -7,6 +7,9 @@ import click
 from flask import Flask
 from flask.cli import FlaskGroup
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
+from sqlite3 import Connection as SQLite3Connection
 import getpass
 
 import roger.rest
@@ -14,6 +17,16 @@ import roger.backend.geneanno
 import roger.backend.gse
 import roger.backend.dge
 from roger.backend.schema import Model
+
+# TODO move this to a appropriate location
+@event.listens_for(Engine, "connect")
+def _set_sqlite_pragma(dbapi_connection, connection_record):
+    del connection_record
+    if isinstance(dbapi_connection, SQLite3Connection):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON;")
+        cursor.close()
+
 
 # TODO Move that property to config.cfg file
 DATA_FOLDER = './uploaded_data'
@@ -125,12 +138,12 @@ def delete_gse_method(name):
     print("Deleted GSE method: %s" % name)
 
 
-@cli.command(name="list-gmt", short_help='Lists all gene set categories and their number of gene sets')
+@cli.command(name="list-small", short_help='Lists all gene set categories and their number of gene sets')
 def list_gmt():
     print(roger.backend.gse.list_gmt(db.session()))
 
 
-@cli.command(name="add-gmt", short_help='Adds a GMT file into the ROGER instance')
+@cli.command(name="add-small", short_help='Adds a GMT file into the ROGER instance')
 @click.argument('category_name', metavar='<category_name>')
 @click.argument('gmt_file', metavar='<gmt_file>')
 @click.argument('tax_id', metavar='<tax_id>')
@@ -141,7 +154,7 @@ def add_gmt(category_name, gmt_file, tax_id):
     print("Done")
 
 
-@cli.command(name="remove-gmt", short_help='Removes all gene sets associated with the given gene sete category')
+@cli.command(name="remove-small", short_help='Removes all gene sets associated with the given gene sete category')
 @click.argument('category_name', metavar='<category_name>')
 def delete_gse_method(category_name):
     roger.backend.gse.delete_gmt(db.session(), category_name)

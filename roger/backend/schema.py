@@ -1,9 +1,11 @@
-from sqlalchemy import Column, Integer, String, Boolean, REAL, DateTime, BLOB
-from sqlalchemy import ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, LargeBinary
+from sqlalchemy import ForeignKey, UniqueConstraint, ForeignKeyConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 
 Model = declarative_base()
+
+DEFAULT_STR_SIZE = 64
 
 
 class GeneAnnotation(Model):
@@ -13,15 +15,17 @@ class GeneAnnotation(Model):
     # TODO: Version flushing not easy, need to make
     # Option 1) Make an entire Version Mapping
     # Option 2) Make an incremental invalidation of changed / removed genes
-    Version = Column(String, nullable=False)
+    Version = Column(String(DEFAULT_STR_SIZE), nullable=False)
     TaxID = Column(Integer, nullable=False)
     # ALWAYS means stable Ensembl gene ID without version (.x)
-    EnsemblGeneID = Column(String)
+    EnsemblGeneID = Column(String(DEFAULT_STR_SIZE))
     # NCBI Gene ID
     EntrezGeneID = Column(Integer)
-    GeneType = Column(String)
-    GeneSymbol = Column(String, index=True)
+    GeneType = Column(String(DEFAULT_STR_SIZE))
+    GeneSymbol = Column(String(DEFAULT_STR_SIZE), index=True)
     IsObsolete = Column(Boolean, nullable=False)
+
+    __table_args__ = {'mysql_engine': 'InnoDB'}
 
     def __repr__(self):
         return "<GeneAnnotation(RogerGeneIndex='%s', Version='%s', TaxID='%s', EnsemblGeneID='%s', EntrezGeneID='%s'," \
@@ -34,10 +38,12 @@ class GeneAnnotation(Model):
 class Ortholog(Model):
     __tablename__ = 'Ortholog'
 
-    RogerGeneIndex = Column(Integer, ForeignKey(GeneAnnotation.RogerGeneIndex), primary_key=True)
+    RogerGeneIndex = Column(Integer, ForeignKey(GeneAnnotation.RogerGeneIndex, ondelete="CASCADE"), primary_key=True)
     HumanRogerGeneIndex = Column(Integer, ForeignKey(GeneAnnotation.RogerGeneIndex), primary_key=True)
 
     Gene = relationship("GeneAnnotation", foreign_keys="[Ortholog.HumanRogerGeneIndex]")
+
+    __table_args__ = {'mysql_engine': 'InnoDB'}
 
     def __repr__(self):
         return "<Ortholog(RogerGeneIndex='%s', HumanRogerGeneIndex='%s')>" \
@@ -48,9 +54,11 @@ class GeneSetCategory(Model):
     __tablename__ = 'GeneSetCategory'
 
     ID = Column(Integer, primary_key=True)
-    Name = Column(String, unique=True, nullable=False)
+    Name = Column(String(DEFAULT_STR_SIZE), unique=True, nullable=False)
 
-    GeneSets = relationship("GeneSet", cascade="all, delete-orphan", back_populates="Category")
+    GeneSets = relationship("GeneSet", back_populates="Category")
+
+    __table_args__ = {'mysql_engine': 'InnoDB'}
 
     def __repr__(self):
         return "<GeneSetCategory(ID='%s', Name='%s')>" \
@@ -61,22 +69,23 @@ class GeneSet(Model):
     __tablename__ = 'GeneSet'
 
     ID = Column(Integer, primary_key=True)
-    CategoryID = Column(String, ForeignKey(GeneSetCategory.ID), nullable=False)
-    Name = Column(String, nullable=False)
+    CategoryID = Column(Integer, ForeignKey(GeneSetCategory.ID, ondelete="CASCADE"), nullable=False)
+    Name = Column(String(DEFAULT_STR_SIZE), nullable=False)
     # Behaviour: If TaxID == HumanTaxID then use RogerGeneIndex from this GeneSet. Else convert to human GeneSets first
     TaxID = Column(Integer, nullable=False)
-    Description = Column(String)
+    Description = Column(String(DEFAULT_STR_SIZE))
     GeneCount = Column(Integer, nullable=False)
     # True if geneset is supposed to be internal
     IsPrivate = Column(Boolean, nullable=False)
     # Can point to reference geneset Information (e.g. in MongoDB)
-    URL = Column(String)
+    URL = Column(String(DEFAULT_STR_SIZE))
 
     Category = relationship("GeneSetCategory", back_populates="GeneSets")
-    Genes = relationship("GeneSetGene", cascade="all, delete-orphan", back_populates="GeneSet")
+    Genes = relationship("GeneSetGene", back_populates="GeneSet")
 
     __table_args__ = (
         UniqueConstraint(CategoryID, Name, name='GeneSetName'),
+        {'mysql_engine': 'InnoDB'}
     )
 
     def __repr__(self):
@@ -90,13 +99,15 @@ class GeneSet(Model):
 class GeneSetGene(Model):
     __tablename__ = 'GeneSetGene'
 
-    GeneSetID = Column(Integer, ForeignKey(GeneSet.ID), primary_key=True)
-    RogerGeneIndex = Column(String, ForeignKey(GeneAnnotation.RogerGeneIndex), primary_key=True)
+    GeneSetID = Column(Integer, ForeignKey(GeneSet.ID, ondelete="CASCADE"), primary_key=True)
+    RogerGeneIndex = Column(Integer, ForeignKey(GeneAnnotation.RogerGeneIndex), primary_key=True)
     # TODO: Can be computed on the fly by the same mechanism as in Genesets.TaxID, but requires one less JOIN
-    # HumanRogerGeneIndex = Column(String, ForeignKey(GeneAnnotation.RogerGeneIndex), primary_key=True)
+    # HumanRogerGeneIndex = Column(Integer, ForeignKey(GeneAnnotation.RogerGeneIndex), primary_key=True)
 
     GeneSet = relationship("GeneSet", back_populates="Genes")
     Gene = relationship("GeneAnnotation", foreign_keys=[RogerGeneIndex])
+
+    __table_args__ = {'mysql_engine': 'InnoDB'}
 
     def __repr__(self):
         return "<GeneSetGene(GeneSetID='%s', RogerGeneIndex='%s')>" \
@@ -107,35 +118,39 @@ class DataSet(Model):
     __tablename__ = 'DataSet'
 
     ID = Column(Integer, primary_key=True)
-    Name = Column(String, unique=True, nullable=False)
+    Name = Column(String(DEFAULT_STR_SIZE), unique=True, nullable=False)
     # To ensure that analysis is reproducible when loading new gene annotations into database
-    GeneAnnotationVersion = Column(String, nullable=False)
-    Description = Column(String)
+    GeneAnnotationVersion = Column(String(DEFAULT_STR_SIZE), nullable=False)
+    Description = Column(String(DEFAULT_STR_SIZE))
     FeatureCount = Column(Integer, nullable=False)
     SampleCount = Column(Integer, nullable=False)
     # Path to working copy of GCT file
-    ExprsWC = Column(String)
+    ExprsWC = Column(String(DEFAULT_STR_SIZE))
     # Path to external / save copy of GCT file
-    ExprsSrc = Column(String, nullable=False)
+    ExprsSrc = Column(String(DEFAULT_STR_SIZE), nullable=False)
+    # TODO Add Normalization Unit / Method(e.g.RPKM, TPM, MAS5, RMA)
+    # TODO Add Scale linear, log2, log10, ln
     # Path to working copy of R Matrix from GCT file
-    NormalizedExprsWC = Column(String)
+    NormalizedExprsWC = Column(String(DEFAULT_STR_SIZE))
     # Path to external / save copy of R Matrix from GCT file
-    NormalizedExprsSrc = Column(String, nullable=False)
-    ExprsType = Column(String, nullable=False)
+    NormalizedExprsSrc = Column(String(DEFAULT_STR_SIZE), nullable=False)
+    ExprsType = Column(String(DEFAULT_STR_SIZE), nullable=False)
     # Path to working copy of TDF file
-    PhenoWC = Column(String)
+    PhenoWC = Column(String(DEFAULT_STR_SIZE))
     # Path to external / save copy of TDF file
     # TODO: TEXT or BLOB - BLOB makes levels-handling easier / Alternative: Develop own format:
     #      #1 Header + 2 extra lines about #2 type and #3 levels
     # TODO: Check if JSON is a better format
-    PhenoSrc = Column(String, nullable=False)
-    FeatureType = Column(String, nullable=False)
+    PhenoSrc = Column(String(DEFAULT_STR_SIZE), nullable=False)
+    FeatureType = Column(String(DEFAULT_STR_SIZE), nullable=False)
     TaxID = Column(Integer, nullable=False)
-    Xref = Column(String, nullable=False)
+    Xref = Column(String(DEFAULT_STR_SIZE), nullable=False)
     # External URL to (e.g. MongoDB)
-    URL = Column(String, nullable=False)
-    CreatedBy = Column(String, nullable=False)
+    URL = Column(String(DEFAULT_STR_SIZE), nullable=False)
+    CreatedBy = Column(String(DEFAULT_STR_SIZE), nullable=False)
     CreationTime = Column(DateTime, nullable=False)
+
+    __table_args__ = {'mysql_engine': 'InnoDB'}
 
     def __repr__(self):
         return "<DataSet(ID='%s', Name='%s')>" \
@@ -145,17 +160,18 @@ class DataSet(Model):
 class FeatureMapping(Model):
     __tablename__ = 'FeatureMapping'
 
-    FeatureIndex = Column(Integer, primary_key=True)
-    DataSetID = Column(Integer, ForeignKey(DataSet.ID), primary_key=True)
-    RogerGeneIndex = Column(Integer, ForeignKey(GeneAnnotation.RogerGeneIndex), primary_key=True)
-    Name = Column(String, nullable=False)
-    Description = Column(String)
+    RogerGeneIndex = Column(Integer, ForeignKey(GeneAnnotation.RogerGeneIndex))
+    FeatureIndex = Column(Integer, nullable=False, primary_key=True)
+    DataSetID = Column(Integer, ForeignKey(DataSet.ID, ondelete="CASCADE"), nullable=False, primary_key=True)
+    Name = Column(String(DEFAULT_STR_SIZE), nullable=False)
+    Description = Column(String(DEFAULT_STR_SIZE))
 
     DataSet = relationship("DataSet", foreign_keys=[DataSetID])
     Gene = relationship("GeneAnnotation", foreign_keys=[RogerGeneIndex])
 
     __table_args__ = (
         UniqueConstraint(DataSetID, Name, name='FeatureName'),
+        {'mysql_engine': 'InnoDB'}
     )
 
     def __repr__(self):
@@ -171,25 +187,26 @@ class Design(Model):
     DataSetID = Column(Integer, ForeignKey(DataSet.ID), nullable=False)
     # Number of variables in feature matrix
     VariableCount = Column(Integer, nullable=False)
-    Name = Column(String, nullable=False)
-    Description = Column(String)
+    Name = Column(String(DEFAULT_STR_SIZE), nullable=False)
+    Description = Column(String(DEFAULT_STR_SIZE))
     # TODO: Check real BLOB sizes & also consider JSON
     # R logic vector
-    SampleSubset = Column(BLOB, nullable=False)
+    SampleSubset = Column(LargeBinary, nullable=False)
     # R logic vector
-    FeatureSubset = Column(BLOB, nullable=False)
+    FeatureSubset = Column(LargeBinary, nullable=False)
     # R Matrix
-    DesignMatrix = Column(BLOB, nullable=False)
-    CreatedBy = Column(String, nullable=False)
+    DesignMatrix = Column(LargeBinary, nullable=False)
+    CreatedBy = Column(String(DEFAULT_STR_SIZE), nullable=False)
     # A flag that tells the user that no human entity has locked into the design
     # if NULL, the design was not reviewed by a user
-    LastReviewedBy = Column(String)
-    CreationTime = Column(String, nullable=False)
+    LastReviewedBy = Column(String(DEFAULT_STR_SIZE))
+    CreationTime = Column(String(DEFAULT_STR_SIZE), nullable=False)
 
     DataSet = relationship("DataSet", foreign_keys=[DataSetID])
 
     __table_args__ = (
-        UniqueConstraint(DataSetID, Name, name='FeatureName'),
+        UniqueConstraint(DataSetID, Name, name='DesignName'),
+        {'mysql_engine': 'InnoDB'}
     )
 
     def __repr__(self):
@@ -202,10 +219,12 @@ class OptimalDesign(Model):
     __tablename__ = 'OptimalDesign'
 
     DataSetID = Column(Integer, ForeignKey(DataSet.ID), primary_key=True)
-    DesignID = Column(Integer, ForeignKey(Design.ID), primary_key=True)
+    DesignID = Column(Integer, ForeignKey(Design.ID, ondelete="CASCADE"), primary_key=True)
 
     DataSet = relationship("DataSet", foreign_keys=[DataSetID])
     Design = relationship("Design", foreign_keys=[DesignID])
+
+    __table_args__ = {'mysql_engine': 'InnoDB'}
 
     def __repr__(self):
         return "<OptimalDesign(DataSetID='%s', DesignID='%s')>" \
@@ -217,17 +236,18 @@ class Contrast(Model):
 
     ID = Column(Integer, primary_key=True)
     DesignID = Column(Integer, ForeignKey(Design.ID), nullable=False)
-    Name = Column(String, nullable=False)
-    Description = Column(String)
+    Name = Column(String(DEFAULT_STR_SIZE), nullable=False)
+    Description = Column(String(DEFAULT_STR_SIZE))
     #  R numeric vector - numerical combination of variables in design matrix
-    Contrast = Column(String, nullable=False)
-    CreatedBy = Column(String, nullable=False)
+    Contrast = Column(String(DEFAULT_STR_SIZE), nullable=False)
+    CreatedBy = Column(String(DEFAULT_STR_SIZE), nullable=False)
     CreationTime = Column(DateTime, nullable=False)
 
     Design = relationship("Design", foreign_keys=[DesignID])
 
     __table_args__ = (
         UniqueConstraint(DesignID, Name, name='ContrastName'),
+        {'mysql_engine': 'InnoDB'}
     )
 
     def __repr__(self):
@@ -239,9 +259,11 @@ class DGEmethod(Model):
     __tablename__ = 'DGEmethod'
 
     ID = Column(Integer, primary_key=True)
-    Name = Column(String, nullable=False, unique=True)
-    Description = Column(String)
-    Version = Column(String, nullable=False)
+    Name = Column(String(DEFAULT_STR_SIZE), nullable=False, unique=True)
+    Description = Column(String(DEFAULT_STR_SIZE))
+    Version = Column(String(DEFAULT_STR_SIZE), nullable=False)
+
+    __table_args__ = {'mysql_engine': 'InnoDB'}
 
     def __repr__(self):
         return "<DGEmethod(ID='%s', Name='%s', Description='%s', Version='%s')>" \
@@ -255,12 +277,14 @@ class DGEmodel(Model):
     DGEmethodID = Column(Integer, ForeignKey(DGEmethod.ID), primary_key=True)
     # Link to external files in study-centric working directory
     # Untrained model TODO store in R binary file
-    InputObjFile = Column(String, nullable=False)
+    InputObjFile = Column(String(DEFAULT_STR_SIZE), nullable=False)
     # Evaluated model TODO store in R binary file
-    FitObjFile = Column(String, nullable=False)
+    FitObjFile = Column(String(DEFAULT_STR_SIZE), nullable=False)
 
     Design = relationship("Design", foreign_keys=[DesignID])
     Method = relationship("DGEmethod", foreign_keys=[DGEmethodID])
+
+    __table_args__ = {'mysql_engine': 'InnoDB'}
 
     def __repr__(self):
         return "<DGEmodel(DesignID='%s', DGEmethodID='%s')>" \
@@ -271,15 +295,21 @@ class DGEtable(Model):
     __tablename__ = 'DGEtable'
 
     ContrastID = Column(Integer, ForeignKey(Contrast.ID), primary_key=True)
-    FeatureIndex = Column(Integer, ForeignKey(FeatureMapping.FeatureIndex), primary_key=True)
-    AveExprs = Column(REAL, nullable=False)
-    Statistic = Column(REAL, nullable=False)
-    LogFC = Column(REAL, nullable=False)
-    PValue = Column(REAL, nullable=False)
-    FDR = Column(REAL, nullable=False)
+    FeatureIndex = Column(Integer, nullable=False, primary_key=True)
+    DataSetID = Column(Integer, nullable=False, primary_key=True)
+    AveExprs = Column(Float, nullable=False)
+    Statistic = Column(Float, nullable=False)
+    LogFC = Column(Float, nullable=False)
+    PValue = Column(Float, nullable=False)
+    FDR = Column(Float, nullable=False)
+
+    __table_args__ = (
+        ForeignKeyConstraint((FeatureIndex, DataSetID), [FeatureMapping.FeatureIndex, FeatureMapping.DataSetID]),
+        {'mysql_engine': 'InnoDB'}
+    )
 
     Contrast = relationship("Contrast", foreign_keys=[ContrastID])
-    FeatureMapping = relationship("FeatureMapping", foreign_keys=[FeatureIndex])
+    FeatureMapping = relationship("FeatureMapping", foreign_keys=[FeatureIndex, DataSetID])
 
     def __repr__(self):
         return "<DGEtable(ContrastID='%s', FeatureIndex='%s', AveExprs='%s', Statistic='%s'," \
@@ -291,9 +321,11 @@ class GSEmethod(Model):
     __tablename__ = 'GSEmethod'
 
     ID = Column(Integer, primary_key=True)
-    Name = Column(String, nullable=False, unique=True)
-    Description = Column(String)
-    Version = Column(String, nullable=False)
+    Name = Column(String(DEFAULT_STR_SIZE), nullable=False, unique=True)
+    Description = Column(String(DEFAULT_STR_SIZE))
+    Version = Column(String(DEFAULT_STR_SIZE), nullable=False)
+
+    __table_args__ = {'mysql_engine': 'InnoDB'}
 
     def __repr__(self):
         return "<GSEmethod(ID='%s', Name='%s', Description='%s', Version='%s')>" \
@@ -306,16 +338,18 @@ class GSEtable(Model):
     ContrastID = Column(Integer, ForeignKey(Contrast.ID), primary_key=True)
     GSEmethodID = Column(Integer, ForeignKey(GSEmethod.ID), primary_key=True)
     GeneSetID = Column(Integer, ForeignKey(GeneSet.ID), primary_key=True)
-    Correlation = Column(REAL, nullable=False)
+    Correlation = Column(Float, nullable=False)
     Direction = Column(Integer, nullable=False)
-    PValue = Column(REAL, nullable=False)
-    FDR = Column(REAL, nullable=False)
-    EnrichmentScore = Column(REAL, nullable=False)
+    PValue = Column(Float, nullable=False)
+    FDR = Column(Float, nullable=False)
+    EnrichmentScore = Column(Float, nullable=False)
     EffGeneCount = Column(Integer, nullable=False)
 
     Contrast = relationship("Contrast", foreign_keys=[ContrastID])
     Method = relationship("GSEmethod", foreign_keys=[GSEmethodID])
     GeneSet = relationship("GeneSet", foreign_keys=[GeneSetID])
+
+    __table_args__ = {'mysql_engine': 'InnoDB'}
 
     def __repr__(self):
         return "<GSEtable(ContrastID='%s', GSEmethodID='%s', GeneSetID='%s', Correlation='%s'," \

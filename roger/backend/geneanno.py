@@ -22,7 +22,8 @@ def query_biomart_data(dataset, params):
 
 
 def list_species(session):
-    return as_data_frame(session.query(GeneAnnotation.TaxID, GeneAnnotation.Version).group_by(GeneAnnotation.TaxID))
+    return as_data_frame(session.query(GeneAnnotation.TaxID, GeneAnnotation.Version)
+                         .group_by(GeneAnnotation.TaxID, GeneAnnotation.Version))
 
 
 def remove_species(session, tax_id):
@@ -33,16 +34,18 @@ def remove_species(session, tax_id):
     if species_table[species_table.TaxID == tax_id].empty:
         raise ROGERUsageError('Species does not exist in database: %s' % tax_id)
 
-    genes_and_orthologs = session.query(GeneAnnotation, Ortholog)\
-        .filter(GeneAnnotation.RogerGeneIndex == Ortholog.RogerGeneIndex)\
-        .filter(GeneAnnotation.TaxID == tax_id).all()
-    for (gene, ortholog) in genes_and_orthologs:
-        session.delete(ortholog)
     session.query(GeneAnnotation).filter(GeneAnnotation.TaxID == tax_id).delete()
     session.commit()
 
 
-#TODO Check if dataset exist in Ensembl BioMart ...
+def nan_to_none(val):
+    import math
+    if math.isnan(val):
+        return None
+    return val
+
+
+# TODO Check if dataset exist in Ensembl BioMart ...
 def add_species(session, dataset, tax_id):
     # Check if dataset is already preset in the database
     species_table = list_species(session)
@@ -68,7 +71,7 @@ def add_species(session, dataset, tax_id):
     genes = gene_anno.apply(lambda row: GeneAnnotation(Version=version,
                                                        TaxID=tax_id,
                                                        EnsemblGeneID=row.ensembl_gene_id,
-                                                       EntrezGeneID=row.entrezgene,
+                                                       EntrezGeneID=nan_to_none(row.entrezgene),
                                                        GeneType=row.gene_biotype,
                                                        GeneSymbol=row.external_gene_name,
                                                        IsObsolete=False), axis=1)

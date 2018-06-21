@@ -12,8 +12,6 @@ db.init_app(app)
 
 class TestDGEmethodsPersistence(unittest.TestCase):
 
-    # TODO
-    @unittest.skip("TODO skip for testing")
     def test_list_and_create_dge_method(self):
         with app.app_context():
             db.create_all()

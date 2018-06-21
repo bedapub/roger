@@ -31,6 +31,7 @@ def delete_method(session, name):
 
 def list_gmt(session):
     return as_data_frame(session.query(GeneSetCategory.Name, func.count(GeneSet.ID).label("GeneSetCount"))
+                         .filter(GeneSetCategory.ID == GeneSet.CategoryID)
                          .group_by(GeneSetCategory.Name))
 
 
@@ -74,7 +75,5 @@ def delete_gmt(session, category_name):
     if gmt_list[gmt_list.Name == category_name].empty:
         raise ROGERUsageError('GMT does not exist in database: %s' % category_name)
 
-    print(session.query(GeneSetCategory).filter(GeneSetCategory.Name == category_name).all()[0].GeneSets[0].Genes[0].Gene)
-    raise ValueError("AAA")
     session.query(GeneSetCategory).filter(GeneSetCategory.Name == category_name).delete()
     session.commit()
