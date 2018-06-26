@@ -29,7 +29,7 @@ class TestGSEPersistence(unittest.TestCase):
                                                roger.backend.geneanno.human_tax_id)
             self.assertTrue(roger.backend.gse.list_gmt(db.session()).empty)
             roger.backend.gse.add_gmt(db.session(), "test_gmt",
-                                      "../__data/gmt/small/homo-sapiens-9606-gene-symbol.small",
+                                      "../__data/gmt/test-userInput.gmt",
                                       roger.backend.geneanno.human_tax_id)
             self.assertTrue(len(roger.backend.gse.list_gmt(db.session())) == 1)
             roger.backend.gse.delete_gmt(db.session(), "test_gmt")
