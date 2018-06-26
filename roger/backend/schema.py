@@ -120,6 +120,7 @@ class DataSet(Model):
     ID = Column(Integer, primary_key=True)
     Name = Column(String(DEFAULT_STR_SIZE), unique=True, nullable=False)
     # To ensure that analysis is reproducible when loading new gene annotations into database
+    # TODO Do datasets contain data from multiple species?
     GeneAnnotationVersion = Column(String(DEFAULT_STR_SIZE), nullable=False)
     Description = Column(String(DEFAULT_STR_SIZE))
     FeatureCount = Column(Integer, nullable=False)
@@ -144,7 +145,7 @@ class DataSet(Model):
     PhenoSrc = Column(String(DEFAULT_STR_SIZE), nullable=False)
     FeatureType = Column(String(DEFAULT_STR_SIZE), nullable=False)
     TaxID = Column(Integer, nullable=False)
-    Xref = Column(String(DEFAULT_STR_SIZE), nullable=False)
+    Xref = Column(String(DEFAULT_STR_SIZE))
     # External URL to (e.g. MongoDB)
     URL = Column(String(DEFAULT_STR_SIZE), nullable=False)
     CreatedBy = Column(String(DEFAULT_STR_SIZE), nullable=False)
@@ -338,7 +339,7 @@ class GSEtable(Model):
     ContrastID = Column(Integer, ForeignKey(Contrast.ID), primary_key=True)
     GSEmethodID = Column(Integer, ForeignKey(GSEmethod.ID), primary_key=True)
     GeneSetID = Column(Integer, ForeignKey(GeneSet.ID), primary_key=True)
-    Correlation = Column(Float, nullable=False)
+    Correlation = Column(Float)
     Direction = Column(Integer, nullable=False)
     PValue = Column(Float, nullable=False)
     FDR = Column(Float, nullable=False)
