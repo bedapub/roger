@@ -11,7 +11,6 @@ from sqlalchemy import event
 from sqlalchemy.engine import Engine
 from sqlite3 import Connection as SQLite3Connection
 import tempfile
-import getpass
 
 import roger.rest
 import roger.backend.geneanno
@@ -104,7 +103,7 @@ def add_species(dataset, tax_id):
 
 @cli.command(name="remove-species", short_help='Removes gene annotation data from the database instance')
 @click.argument('tax_id', type=int, metavar='<tax_id>')
-def delete_gene_anno(tax_id):
+def remove_gene_anno(tax_id):
     """Used to delete imported gene annotation data from the database
     """
     roger.backend.geneanno.remove_species(db.session(), tax_id)
@@ -131,17 +130,17 @@ def add_gse_method(name, description, version):
 
 @cli.command(name="remove-gse-method", short_help='Removes the GSE method with the given name')
 @click.argument('name', metavar='<name>')
-def delete_gse_method(name):
+def remove_gse_method(name):
     roger.backend.gse.delete_method(db.session(), name)
     print("Deleted GSE method: %s" % name)
 
 
-@cli.command(name="list-small", short_help='Lists all gene set categories and their number of gene sets')
+@cli.command(name="list-gmt", short_help='Lists all gene set categories and their number of gene sets')
 def list_gmt():
     print(roger.backend.gse.list_gmt(db.session()))
 
 
-@cli.command(name="add-small", short_help='Adds a GMT file into the ROGER instance')
+@cli.command(name="add-gmt", short_help='Adds a GMT file into the ROGER instance')
 @click.argument('category_name', metavar='<category_name>')
 @click.argument('gmt_file', metavar='<gmt_file>')
 @click.argument('tax_id', metavar='<tax_id>')
@@ -152,9 +151,9 @@ def add_gmt(category_name, gmt_file, tax_id):
     print("Done")
 
 
-@cli.command(name="remove-small", short_help='Removes all gene sets associated with the given gene sete category')
+@cli.command(name="remove-gmt", short_help='Removes all gene sets associated with the given gene sete category')
 @click.argument('category_name', metavar='<category_name>')
-def delete_gse_method(category_name):
+def remove_gmt(category_name):
     roger.backend.gse.delete_gmt(db.session(), category_name)
     print("Deleted gene set category: %s" % category_name)
 
@@ -179,7 +178,7 @@ def add_dge_method(name, description, version):
 
 @cli.command(name="remove-dge-method", short_help='Removes the DGE method with the given name')
 @click.argument('name', metavar='<name>')
-def delete_dge_method(name):
+def remove_dge_method(name):
     roger.backend.dge.delete_method(db.session(), name)
     print("Deleted DGE method: %s" % name)
 
