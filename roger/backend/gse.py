@@ -1,6 +1,7 @@
 from functools import reduce
 from gseapy.parser import gsea_gmt_parser
 import pandas as pd
+import sys
 from sqlalchemy import func
 
 from roger.backend.schema import GSEmethod, GeneSetCategory, GeneSet, GeneSetGene
@@ -37,12 +38,12 @@ def list_gmt(session):
 
 # TODO: Support annotation of genes based on identifier types other than just gene symbols
 def add_gmt(session, category_name, file, tax_id, description=None):
-    huma_anno = as_data_frame(session.query(GeneAnnotation).filter(GeneAnnotation.TaxID == tax_id))
-    gmt = gsea_gmt_parser(file)
+    gene_anno = as_data_frame(session.query(GeneAnnotation).filter(GeneAnnotation.TaxID == tax_id))
+    # TODO Make min_size configurable?
+    gmt = gsea_gmt_parser(file, min_size=1, max_size=sys.maxsize)
     category = GeneSetCategory(Name=category_name)
     session.add(category)
     session.flush()
-
     gene_sets = [GeneSet(Category=category, Name=gene_set_name, TaxID=tax_id, Description=description,
                          GeneCount=len(genes), IsPrivate=False)
                  for gene_set_name, genes in gmt.items()]
@@ -52,7 +53,7 @@ def add_gmt(session, category_name, file, tax_id, description=None):
     genes_table_list = [pd.DataFrame({'GeneSetID': gene_set_dict[gene_set_name].ID, 'GeneSymbol': genes})
                         for gene_set_name, genes in gmt.items()]
     genes_table = reduce(lambda a, b: a.append(b), genes_table_list, pd.DataFrame())
-    annotated_genes = genes_table.join(huma_anno.set_index('GeneSymbol'), on='GeneSymbol')
+    annotated_genes = genes_table.join(gene_anno.set_index('GeneSymbol'), on='GeneSymbol')
     # Filter out non-matching genes
     matched_genes = annotated_genes[annotated_genes.RogerGeneIndex.notna()]\
         .drop_duplicates(subset=['RogerGeneIndex', 'GeneSetID'], keep=False)
