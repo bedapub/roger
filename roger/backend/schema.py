@@ -129,7 +129,7 @@ class DataSet(Model):
     ExprsWC = Column(String(DEFAULT_STR_SIZE))
     # Path to external / save copy of GCT file
     ExprsSrc = Column(String(DEFAULT_STR_SIZE), nullable=False)
-    # TODO Add Normalization Unit / Method(e.g.RPKM, TPM, MAS5, RMA)
+    # TODO Add Normalization Unit / Method (e.g.RPKM, TPM, MAS5, RMA)
     # TODO Add Scale linear, log2, log10, ln
     # Path to working copy of R Matrix from GCT file
     NormalizedExprsWC = Column(String(DEFAULT_STR_SIZE))
@@ -143,6 +143,7 @@ class DataSet(Model):
     #      #1 Header + 2 extra lines about #2 type and #3 levels
     # TODO: Check if JSON is a better format
     PhenoSrc = Column(String(DEFAULT_STR_SIZE), nullable=False)
+    # Transcript, Gene, Probeset, Protein
     FeatureType = Column(String(DEFAULT_STR_SIZE), nullable=False)
     TaxID = Column(Integer, nullable=False)
     Xref = Column(String(DEFAULT_STR_SIZE))
