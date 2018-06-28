@@ -1,7 +1,7 @@
 import unittest
 from flask import Flask
 
-from roger import db
+from roger.cli import db
 import roger.backend.geneanno
 
 app = Flask('roger_test')
