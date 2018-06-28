@@ -1,7 +1,7 @@
 import unittest
 from flask import Flask
 
-from roger.cli import db
+from roger.main import db
 import roger.backend.gse
 import roger.backend.geneanno
 
