@@ -2,12 +2,14 @@ import unittest
 from flask import Flask
 
 from roger.main import db
+import roger.mart
 import roger.persistence.geneanno
 
 app = Flask('roger_test')
 app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///:memory:"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
+roger.mart.init_annotation_service(app)
 
 rat_dataset = "rnorvegicus_gene_ensembl"
 rat_tax_id = 10116

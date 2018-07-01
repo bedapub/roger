@@ -13,6 +13,7 @@ from sqlite3 import Connection as SQLite3Connection
 import tempfile
 
 import roger.rest
+import roger.mart
 import roger.persistence.geneanno
 import roger.persistence.gse
 import roger.persistence.dge
@@ -43,6 +44,7 @@ def create_app(script_info):
         app.config.from_pyfile(os.environ['ROGER_CONFIG'], silent=True)
         roger.rest.decorate_app(app)
         db.init_app(app)
+        roger.mart.init_annotation_service(app)
     return app
 
 
