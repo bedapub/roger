@@ -4,25 +4,6 @@ import pandas as pd
 from pandas.compat import cStringIO
 from biomart import BiomartServer
 
-__annotation_service = None
-
-
-def init_annotation_service(app):
-    global __annotation_service
-    annotation_service_type = "ENSEMBL"
-    if 'ROGER_ANNOTATION_SERVICE' in app.config:
-        annotation_service_type = app.config['ROGER_ANNOTATION_SERVICE']
-    if annotation_service_type == 'ENSEMBL':
-        __annotation_service = RemoteEnsembleBioMartService()
-    else:
-        raise RuntimeError("Unknown annotation service type: %s" % annotation_service_type)
-
-
-def get_annotation_service():
-    if __annotation_service is None:
-        raise RuntimeError("Annotation service not  - pleas call 'init_annotation_service(app)' first")
-    return __annotation_service
-
 
 class AnnotationService(ABC):
     """Used to resolve probe sets, gene symbols and other gene-related identifiers to ROGER gene indices"""
@@ -62,3 +43,21 @@ class RemoteEnsembleBioMartService(AnnotationService):
         response = dataset.search(params=params)
         result = pd.read_csv(cStringIO(response.text), sep='\t', names=params['attributes'])
         return result
+
+
+__annotation_service = RemoteEnsembleBioMartService()
+
+
+def init_annotation_service(app):
+    global __annotation_service
+    annotation_service_type = "ENSEMBL"
+    if 'ROGER_ANNOTATION_SERVICE' in app.config:
+        annotation_service_type = app.config['ROGER_ANNOTATION_SERVICE']
+    if annotation_service_type == 'ENSEMBL':
+        __annotation_service = RemoteEnsembleBioMartService()
+    else:
+        raise RuntimeError("Unknown annotation service type: %s" % annotation_service_type)
+
+
+def get_annotation_service() -> AnnotationService:
+    return __annotation_service

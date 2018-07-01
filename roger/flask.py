@@ -4,7 +4,7 @@ import os
 
 from roger.persistence import db
 import roger.rest.rest
-import roger.mart
+import roger.logic.mart
 
 
 # TODO: Find a better way to pass --config option value to this factory
@@ -18,5 +18,5 @@ def create_app(script_info):
         app.config.from_pyfile(os.environ['ROGER_CONFIG'], silent=True)
         roger.rest.rest.decorate_app(app)
         db.init_app(app)
-        roger.mart.init_annotation_service(app)
+        roger.logic.mart.init_annotation_service(app)
     return app
