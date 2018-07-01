@@ -11,13 +11,12 @@ setup(
         'click',
         'pandas',
         'biomart',
-        'filecache',
         "gseapy",
         "flask_sqlalchemy"
     ],
     entry_points={
         'console_scripts': [
-            'roger=roger.cli:cli'
+            'roger=roger.main:cli'
         ],
     },
 )

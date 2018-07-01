@@ -5,18 +5,22 @@ from roger.util import as_data_frame
 from biomart import BiomartServer
 from pandas.compat import cStringIO
 import pandas as pd
-import filecache as fc
 import re
 
 human_dataset = "hsapiens_gene_ensembl"
 human_tax_id = 9606
 
 
-@fc.filecache(fc.DAY)
-def query_biomart_data(dataset, params):
+def query_biomart_by_ds_name(dataset_name, params):
     server = BiomartServer("http://www.ensembl.org/biomart")
-    ds = server.datasets[dataset]
-    response = ds.search(params=params)
+    dataset = server.datasets[dataset_name]
+    response = dataset.search(params=params)
+    result = pd.read_csv(cStringIO(response.text), sep='\t', names=params['attributes'])
+    return result
+
+
+def query_biomart_by_ds(dataset, params):
+    response = dataset.search(params=params)
     result = pd.read_csv(cStringIO(response.text), sep='\t', names=params['attributes'])
     return result
 
@@ -63,7 +67,7 @@ def add_species(session, dataset, tax_id):
     server = BiomartServer("http://www.ensembl.org/biomart")
     version = "%s %s" % (dataset, re.search(r'[^(]+\(([^)]+)\)', server.datasets[dataset].display_name).group(1))
 
-    gene_anno = query_biomart_data(dataset, params={
+    gene_anno = query_biomart_by_ds_name(dataset, params={
         'attributes': [
             "ensembl_gene_id", "entrezgene", "gene_biotype", "external_gene_name"
         ]
@@ -88,7 +92,7 @@ def add_species(session, dataset, tax_id):
         return
 
     anno_query = as_data_frame(session.query(GeneAnnotation).filter(GeneAnnotation.TaxID == tax_id))
-    ortho = query_biomart_data(human_dataset, params={
+    ortho = query_biomart_by_ds_name(human_dataset, params={
         'attributes': [
             "ensembl_gene_id", homolog_attr
         ],
