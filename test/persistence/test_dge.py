@@ -2,7 +2,7 @@ import unittest
 from flask import Flask
 
 from roger.main import db
-import roger.backend.dge
+import roger.persistence.dge
 
 app = Flask('roger_test')
 app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///:memory:"
@@ -15,9 +15,9 @@ class TestDGEmethodsPersistence(unittest.TestCase):
     def test_list_and_create_dge_method(self):
         with app.app_context():
             db.create_all()
-            self.assertTrue(roger.backend.dge.list_methods(db.session()).empty)
-            roger.backend.dge.add_method(db.session(), "DGEMethod1", "DGE method", "0.1")
-            self.assertTrue(len(roger.backend.dge.list_methods(db.session())) == 1)
+            self.assertTrue(roger.persistence.dge.list_methods(db.session()).empty)
+            roger.persistence.dge.add_method(db.session(), "DGEMethod1", "DGE method", "0.1")
+            self.assertTrue(len(roger.persistence.dge.list_methods(db.session())) == 1)
             db.drop_all()
 
 

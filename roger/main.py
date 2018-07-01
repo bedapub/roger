@@ -13,10 +13,10 @@ from sqlite3 import Connection as SQLite3Connection
 import tempfile
 
 import roger.rest
-import roger.backend.geneanno
-import roger.backend.gse
-import roger.backend.dge
-from roger.backend.schema import Model
+import roger.persistence.geneanno
+import roger.persistence.gse
+import roger.persistence.dge
+from roger.persistence.schema import Model
 
 
 # TODO move this to a appropriate location
@@ -71,7 +71,7 @@ def cli(config):
 def init_database():
     sys.stdout.write("Initializing database with human gene annotation data ...")
     sys.stdout.flush()
-    roger.backend.init_db(db)
+    roger.persistence.init_db(db)
     print("Done")
 
 # --------------------------
@@ -83,7 +83,7 @@ def init_database():
 def list_species():
     """Used to retrieve a table of species whose gene annotation data has been imported into the database instance.
     """
-    print(roger.backend.geneanno.list_species(db.session()))
+    print(roger.persistence.geneanno.list_species(db.session()))
 
 
 @cli.command(name="add-species", short_help='Import gene annotation data from Ensembl BioMart dataset')
@@ -97,7 +97,7 @@ def add_species(dataset, tax_id):
     """
     sys.stdout.write("Importing gene annotation for species %s ..." % tax_id)
     sys.stdout.flush()
-    roger.backend.geneanno.add_species(db.session(), dataset, tax_id)
+    roger.persistence.geneanno.add_species(db.session(), dataset, tax_id)
     print("Done")
 
 
@@ -106,7 +106,7 @@ def add_species(dataset, tax_id):
 def remove_gene_anno(tax_id):
     """Used to delete imported gene annotation data from the database
     """
-    roger.backend.geneanno.remove_species(db.session(), tax_id)
+    roger.persistence.geneanno.remove_species(db.session(), tax_id)
     print("Deleted gene annotation for species %s" % tax_id)
 
 # --------------------------
@@ -116,7 +116,7 @@ def remove_gene_anno(tax_id):
 
 @cli.command(name="list-gse-methods", short_help='Lists all GSE methods utilized in ROGER studies')
 def list_gse_methods():
-    print(roger.backend.gse.list_methods(db.session()))
+    print(roger.persistence.gse.list_methods(db.session()))
 
 
 @cli.command(name="add-gse-method", short_help='Adds a new GSE method to the database')
@@ -124,20 +124,20 @@ def list_gse_methods():
 @click.argument('description', metavar='<description>')
 @click.argument('version', metavar='<version>')
 def add_gse_method(name, description, version):
-    roger.backend.gse.add_method(db.session(), name, description, version)
+    roger.persistence.gse.add_method(db.session(), name, description, version)
     print("Added GSE method: %s" % name)
 
 
 @cli.command(name="remove-gse-method", short_help='Removes the GSE method with the given name')
 @click.argument('name', metavar='<name>')
 def remove_gse_method(name):
-    roger.backend.gse.delete_method(db.session(), name)
+    roger.persistence.gse.delete_method(db.session(), name)
     print("Deleted GSE method: %s" % name)
 
 
 @cli.command(name="list-gmt", short_help='Lists all gene set categories and their number of gene sets')
 def list_gmt():
-    print(roger.backend.gse.list_gmt(db.session()))
+    print(roger.persistence.gse.list_gmt(db.session()))
 
 
 @cli.command(name="add-gmt", short_help='Adds a GMT file into the ROGER instance')
@@ -147,14 +147,14 @@ def list_gmt():
 def add_gmt(category_name, gmt_file, tax_id):
     sys.stdout.write("Importing gene sets from GMT file '%s' ..." % gmt_file)
     sys.stdout.flush()
-    roger.backend.gse.add_gmt(db.session(), category_name, gmt_file, tax_id)
+    roger.persistence.gse.add_gmt(db.session(), category_name, gmt_file, tax_id)
     print("Done")
 
 
 @cli.command(name="remove-gmt", short_help='Removes all gene sets associated with the given gene sete category')
 @click.argument('category_name', metavar='<category_name>')
 def remove_gmt(category_name):
-    roger.backend.gse.delete_gmt(db.session(), category_name)
+    roger.persistence.gse.delete_gmt(db.session(), category_name)
     print("Deleted gene set category: %s" % category_name)
 
 # --------------------------
@@ -164,7 +164,7 @@ def remove_gmt(category_name):
 
 @cli.command(name="list-dge-methods", short_help='Lists all DGE methods utilized in ROGER studies')
 def list_dge_methods():
-    print(roger.backend.dge.list_methods(db.session()))
+    print(roger.persistence.dge.list_methods(db.session()))
 
 
 @cli.command(name="add-dge-method", short_help='Adds a new DGE method to the database')
@@ -172,14 +172,14 @@ def list_dge_methods():
 @click.argument('description', metavar='<description>')
 @click.argument('version', metavar='<version>')
 def add_dge_method(name, description, version):
-    roger.backend.dge.add_method(db.session(), name, description, version)
+    roger.persistence.dge.add_method(db.session(), name, description, version)
     print("Added DGE method: %s" % name)
 
 
 @cli.command(name="remove-dge-method", short_help='Removes the DGE method with the given name')
 @click.argument('name', metavar='<name>')
 def remove_dge_method(name):
-    roger.backend.dge.delete_method(db.session(), name)
+    roger.persistence.dge.delete_method(db.session(), name)
     print("Deleted DGE method: %s" % name)
 
 # TODO consume this

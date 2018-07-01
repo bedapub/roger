@@ -4,8 +4,8 @@ import pandas as pd
 import sys
 from sqlalchemy import func
 
-from roger.backend.schema import GSEmethod, GeneSetCategory, GeneSet, GeneSetGene
-from roger.backend.geneanno import GeneAnnotation
+from roger.persistence.schema import GSEmethod, GeneSetCategory, GeneSet, GeneSetGene
+from roger.persistence.geneanno import GeneAnnotation
 from roger.util import as_data_frame
 from roger.exception import ROGERUsageError
 

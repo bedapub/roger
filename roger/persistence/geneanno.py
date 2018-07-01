@@ -1,4 +1,4 @@
-from roger.backend.schema import GeneAnnotation, Ortholog
+from roger.persistence.schema import GeneAnnotation, Ortholog
 from roger.exception import ROGERUsageError
 from roger.util import as_data_frame
 
