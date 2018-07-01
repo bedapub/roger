@@ -1,7 +1,7 @@
 import unittest
 from flask import Flask
 
-from roger.persistence.schema import db
+from roger.persistence import db
 import roger.persistence.gse
 import roger.persistence.geneanno
 
@@ -28,8 +28,10 @@ class TestGSEPersistence(unittest.TestCase):
                                                    roger.persistence.geneanno.human_dataset,
                                                    roger.persistence.geneanno.human_tax_id)
             self.assertTrue(roger.persistence.gse.list_gmt(db.session()).empty)
-            roger.persistence.gse.add_gmt(db.session(), "test_gmt",
-                                      "../__data/gmt/test-userInput.gmt",
+            # TODO test file in __data is not part of open source distribution yet
+            roger.persistence.gse.add_gmt(db.session(),
+                                          "test_gmt",
+                                          "../__data/gmt/test-userInput.gmt",
                                           roger.persistence.geneanno.human_tax_id)
             self.assertTrue(len(roger.persistence.gse.list_gmt(db.session())) == 1)
             roger.persistence.gse.delete_gmt(db.session(), "test_gmt")

@@ -9,6 +9,12 @@ human_dataset = "hsapiens_gene_ensembl"
 human_tax_id = 9606
 
 
+def init(db):
+    db.create_all()
+    roger.persistence.geneanno.add_species(db.session(),
+                                           roger.persistence.geneanno.human_dataset,
+                                           roger.persistence.geneanno.human_tax_id)
+
 def list_species(session):
     return as_data_frame(session.query(GeneAnnotation.TaxID, GeneAnnotation.Version)
                          .group_by(GeneAnnotation.TaxID, GeneAnnotation.Version))

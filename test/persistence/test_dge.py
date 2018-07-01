@@ -1,7 +1,7 @@
 import unittest
 from flask import Flask
 
-from roger.persistence.schema import db
+from roger.persistence import db
 import roger.persistence.dge
 
 app = Flask('roger_test')

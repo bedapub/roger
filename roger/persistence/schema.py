@@ -1,9 +1,8 @@
 from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, LargeBinary
 from sqlalchemy import ForeignKey, UniqueConstraint, ForeignKeyConstraint
 from sqlalchemy.orm import relationship
-from flask_sqlalchemy import SQLAlchemy
 
-db = SQLAlchemy()
+from roger.persistence import db
 
 DEFAULT_STR_SIZE = 64
 
