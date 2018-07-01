@@ -6,7 +6,6 @@ import os.path
 import click
 from flask import Flask
 from flask.cli import FlaskGroup
-from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 from sqlite3 import Connection as SQLite3Connection
@@ -14,10 +13,11 @@ import tempfile
 
 import roger.rest
 import roger.mart
+
 import roger.persistence.geneanno
 import roger.persistence.gse
 import roger.persistence.dge
-from roger.persistence.schema import Model
+from roger.persistence.schema import db
 
 
 # TODO move this to a appropriate location
@@ -28,9 +28,6 @@ def _set_sqlite_pragma(dbapi_connection, connection_record):
         cursor = dbapi_connection.cursor()
         cursor.execute("PRAGMA foreign_keys=ON;")
         cursor.close()
-
-
-db = SQLAlchemy(model_class=Model)
 
 
 # TODO: Find a better way to pass --config option value to this factory

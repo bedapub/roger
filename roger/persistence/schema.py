@@ -1,14 +1,14 @@
 from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, LargeBinary
 from sqlalchemy import ForeignKey, UniqueConstraint, ForeignKeyConstraint
 from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
+from flask_sqlalchemy import SQLAlchemy
 
-Model = declarative_base()
+db = SQLAlchemy()
 
 DEFAULT_STR_SIZE = 64
 
 
-class GeneAnnotation(Model):
+class GeneAnnotation(db.Model):
     __tablename__ = 'GeneAnnotation'
 
     RogerGeneIndex = Column(Integer, primary_key=True)
@@ -35,7 +35,7 @@ class GeneAnnotation(Model):
 
 
 # TODO How to model joins?
-class Ortholog(Model):
+class Ortholog(db.Model):
     __tablename__ = 'Ortholog'
 
     RogerGeneIndex = Column(Integer, ForeignKey(GeneAnnotation.RogerGeneIndex, ondelete="CASCADE"), primary_key=True)
@@ -50,7 +50,7 @@ class Ortholog(Model):
                % (self.RogerGeneIndex, self.HumanRogerGeneIndex)
 
 
-class GeneSetCategory(Model):
+class GeneSetCategory(db.Model):
     __tablename__ = 'GeneSetCategory'
 
     ID = Column(Integer, primary_key=True)
@@ -65,7 +65,7 @@ class GeneSetCategory(Model):
                % (self.ID, self.Name)
 
 
-class GeneSet(Model):
+class GeneSet(db.Model):
     __tablename__ = 'GeneSet'
 
     ID = Column(Integer, primary_key=True)
@@ -96,7 +96,7 @@ class GeneSet(Model):
 
 
 # TODO: make this a regular table object, not a full-blown class
-class GeneSetGene(Model):
+class GeneSetGene(db.Model):
     __tablename__ = 'GeneSetGene'
 
     GeneSetID = Column(Integer, ForeignKey(GeneSet.ID, ondelete="CASCADE"), primary_key=True)
@@ -114,7 +114,7 @@ class GeneSetGene(Model):
                % (self.GeneSetID, self.RogerGeneIndex)
 
 
-class DataSet(Model):
+class DataSet(db.Model):
     __tablename__ = 'DataSet'
 
     ID = Column(Integer, primary_key=True)
@@ -159,7 +159,7 @@ class DataSet(Model):
                % (self.ID, self.Name)
 
 
-class FeatureMapping(Model):
+class FeatureMapping(db.Model):
     __tablename__ = 'FeatureMapping'
 
     RogerGeneIndex = Column(Integer, ForeignKey(GeneAnnotation.RogerGeneIndex))
@@ -182,7 +182,7 @@ class FeatureMapping(Model):
                % (self.FeatureIndex, self.DataSetID, self.RogerGeneIndex, self.Name, self.Description)
 
 
-class Design(Model):
+class Design(db.Model):
     __tablename__ = 'Design'
 
     ID = Column(Integer, primary_key=True)
@@ -217,7 +217,7 @@ class Design(Model):
 
 
 # TODO: Don't model it as explicit python type
-class OptimalDesign(Model):
+class OptimalDesign(db.Model):
     __tablename__ = 'OptimalDesign'
 
     DataSetID = Column(Integer, ForeignKey(DataSet.ID), primary_key=True)
@@ -233,7 +233,7 @@ class OptimalDesign(Model):
                % (self.DataSetID, self.DesignID)
 
 
-class Contrast(Model):
+class Contrast(db.Model):
     __tablename__ = 'Contrast'
 
     ID = Column(Integer, primary_key=True)
@@ -257,7 +257,7 @@ class Contrast(Model):
                % (self.ID, self.DesignID, self.Name)
 
 
-class DGEmethod(Model):
+class DGEmethod(db.Model):
     __tablename__ = 'DGEmethod'
 
     ID = Column(Integer, primary_key=True)
@@ -272,7 +272,7 @@ class DGEmethod(Model):
                % (self.ID, self.Name, self.Description, self.Version)
 
 
-class DGEmodel(Model):
+class DGEmodel(db.Model):
     __tablename__ = 'DGEmodel'
 
     DesignID = Column(Integer, ForeignKey(Design.ID), primary_key=True)
@@ -293,7 +293,7 @@ class DGEmodel(Model):
                % (self.DesignID, self.DGEmethodID)
 
 
-class DGEtable(Model):
+class DGEtable(db.Model):
     __tablename__ = 'DGEtable'
 
     ContrastID = Column(Integer, ForeignKey(Contrast.ID), primary_key=True)
@@ -319,7 +319,7 @@ class DGEtable(Model):
                % (self.ContrastID, self.FeatureIndex, self.AveExprs, self.Statistic, self.LogFC, self.PValue, self.FDR)
 
 
-class GSEmethod(Model):
+class GSEmethod(db.Model):
     __tablename__ = 'GSEmethod'
 
     ID = Column(Integer, primary_key=True)
@@ -334,7 +334,7 @@ class GSEmethod(Model):
                % (self.ID, self.Name, self.Description, self.Version)
 
 
-class GSEtable(Model):
+class GSEtable(db.Model):
     __tablename__ = 'GSEtable'
 
     ContrastID = Column(Integer, ForeignKey(Contrast.ID), primary_key=True)
