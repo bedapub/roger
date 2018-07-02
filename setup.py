@@ -12,6 +12,7 @@ setup(
         'pandas',
         'biomart',
         "gseapy",
+        "rpy2",
         "flask_sqlalchemy"
     ],
     entry_points={
