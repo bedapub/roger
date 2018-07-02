@@ -161,6 +161,7 @@ class DataSet(db.Model):
 class FeatureMapping(db.Model):
     __tablename__ = 'FeatureMapping'
 
+    # TODO add gene index & taxon id of original spceies
     RogerGeneIndex = Column(Integer, ForeignKey(GeneAnnotation.RogerGeneIndex))
     FeatureIndex = Column(Integer, nullable=False, primary_key=True)
     DataSetID = Column(Integer, ForeignKey(DataSet.ID, ondelete="CASCADE"), nullable=False, primary_key=True)
