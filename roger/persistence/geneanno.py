@@ -54,9 +54,10 @@ def add_species(session, dataset, tax_id):
 
     # Insert Gene annotation
     ds = annotation_service.get_dataset(dataset)
+    # TODO fix this, shoud move into mart.py
     version = "%s %s" % (dataset, re.search(r'[^(]+\(([^)]+)\)', ds.display_name).group(1))
 
-    gene_anno = annotation_service.get_bulk_query_by_ds(ds, params={
+    gene_anno = ds.get_bulk_query(params={
         'attributes': [
             "ensembl_gene_id", "entrezgene", "gene_biotype", "external_gene_name"
         ]
@@ -82,7 +83,7 @@ def add_species(session, dataset, tax_id):
         return
 
     anno_query = as_data_frame(session.query(GeneAnnotation).filter(GeneAnnotation.TaxID == tax_id))
-    ortho = annotation_service.get_bulk_query_by_ds_name(human_dataset, params={
+    ortho = annotation_service.get_bulk_query(human_dataset, params={
         'attributes': [
             "ensembl_gene_id", homolog_attr
         ],
