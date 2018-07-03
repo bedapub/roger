@@ -31,17 +31,15 @@ def delete_method(session, name):
 # --------------------------
 
 
-def list_datasets(session):
-    return as_data_frame(session.query(DataSet))
+def list_ds(session):
+    return as_data_frame(session.query(DataSet.Name,
+                                       DataSet.FeatureCount,
+                                       DataSet.SampleCount,
+                                       DataSet.CreatedBy,
+                                       DataSet.Xref))
 
 
-def add_dataset(session, name, description, version):
-    method = DataSet()
-    session.add(method)
-    session.commit()
-
-
-def delete_dataset(session, name):
+def delete_ds(session, name):
     # Check if DGE method is already preset in the database
     gse_methods = list_methods(session)
     if gse_methods[gse_methods.Name == name].empty:

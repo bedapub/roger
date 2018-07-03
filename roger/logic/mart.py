@@ -7,6 +7,8 @@ from rpy2.robjects.packages import importr
 from rpy2.robjects import pandas2ri
 from rpy2 import robjects
 
+from roger.logic import cache
+
 
 class BioMartDataSet(ABC):
 
@@ -67,6 +69,7 @@ class RemoteBioMartDataSet(BioMartDataSet):
         return pd.DataFrame([[getattr(i, j) for j in col_names] for i in self.__dataset.attributes.values()],
                             columns=col_names)
 
+    @cache.memoize()
     def get_bulk_query(self, params):
         response = self.__dataset.search(params=params)
         result = pd.read_csv(cStringIO(response.text), sep='\t', names=params['attributes'])

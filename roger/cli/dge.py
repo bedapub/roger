@@ -1,19 +1,13 @@
 import click
+import flask
 
 from roger.cli import cli
 from roger.persistence import db
 import roger.persistence.dge
-
-
-class CommaSeparatedListOfStrings(click.Option):
-
-    def type_cast_value(self, ctx, value):
-        try:
-            if not value:
-                return []
-            return value.split(',')
-        except:
-            raise click.BadParameter(value)
+import roger.logic.geneanno
+import roger.logic.dge
+import roger.persistence.geneanno
+import roger.util
 
 
 # ---------------
@@ -44,6 +38,7 @@ def remove_dge_method(name):
     roger.persistence.dge.delete_method(db.session(), name)
     print("Deleted DGE method: %s" % name)
 
+
 # ---------------
 # Datasets
 # ---------------
@@ -52,50 +47,61 @@ def remove_dge_method(name):
 @cli.command(name="list-ds",
              short_help='Lists available datasets')
 def list_ds():
-    print(roger.persistence.dge.list_methods(db.session()))
+    print(roger.persistence.dge.list_ds(db.session()))
 
 
-@cli.command(name="show-microarrays",
-             short_help='Gives a list of available microarray platforms for a given species')
+@cli.command(name="show-symbol-types",
+             short_help='Gives af supported symbol types')
 @click.argument('tax_id', metavar='<tax_id>', type=int)
-def add_dataset(tax_id):
-    import roger.persistence.geneanno
-    from roger.logic.mart import get_annotation_service
-    annotation_service = get_annotation_service()
+def show_symbol_types(tax_id):
+    dataset = roger.logic.geneanno.get_dataset_of(db.session(), tax_id)
 
-    species_list = roger.persistence.geneanno.list_species(db.session())
-    dataset_name = species_list.loc[species_list["TaxID"] == tax_id, "Version"].values[0].split(' ')[0]
+    common_identifiers = [x.value for x in roger.logic.geneanno.CommonGeneIdentifier]
 
-    dataset = annotation_service.get_dataset(dataset_name)
+    attributes = dataset.attributes
+    gene_attributes = attributes.loc[attributes['name'].isin(common_identifiers),
+                                     ["name", "display_name"]]
+    probe_attributes = attributes.loc[attributes.apply(lambda x: "probe" in x["display_name"], axis=1),
+                                      ["name", "display_name"]]
+    print("Gene identifiers:")
+    print(gene_attributes.to_string(index=False))
 
-    probe_attributes = [name for (name, attr) in dataset.attributes.items() if "probe" in attr.display_name]
-    for probe_attribute in probe_attributes:
-        print(probe_attribute)
+    print("Microarray probes:")
+    print(probe_attributes.to_string(index=False))
 
 
 @cli.command(name="add-ds",
              short_help='Adds a new data set to ROGER')
-@click.argument('gct_file', metavar='<gct_file>', type=click.Path(exists=True))
+@click.argument('dataset_file', metavar='<dataset_file>', type=click.Path(exists=True))
+@click.argument('design_file', metavar='<groups_file>', type=click.Path(exists=True))
 @click.argument('tax_id', metavar='<tax_id>', type=int)
-@click.option('--groups',
-              cls=CommaSeparatedListOfStrings,
-              help='Comma-separated list of groups - one entry for each sample')
-@click.option('--pheno-from-design',
-              type=click.Path(exists=True),
-              help='Use given design matrix to extract grouping information for the samples')
-@click.option('--microarray',
-              type=click.Path(exists=True),
-              help='The Ensembl BioMart name of the microarray platform used for annotating ')
-def add_dataset(gct_file, tax_id, groups, pheno_from_design, microarray):
-    print(gct_file)
-    print(groups)
-    #roger.persistence.dge.add_method(db.session(), name, description, version)
-    #print("Added DGE method: %s" % name)
+@click.argument('symbol_type', metavar='<symbol_type>')
+@click.option('--exprs-type',
+              type=click.Choice(["RMA", "MAS5"]),
+              default="RMA",
+              help='Type of expression data: Can be "RMA" or "MAS5"')
+@click.option('--name', help='A unique identifier for the data set (will use file name as default)')
+@click.option('--description', help='Dataset descriptioon')
+@click.option('--xref', help='External (GEO) reference')
+def add_ds(dataset_file, design_file, tax_id, symbol_type, exprs_type, name, description, xref):
+    ds = roger.logic.dge.add_ds(db.session(),
+                                flask.current_app.config['ROGER_DATA_FOLDER'],
+                                dataset_file,
+                                design_file,
+                                tax_id,
+                                symbol_type,
+                                exprs_type,
+                                name,
+                                description,
+                                xref)
+    print("Added data set:")
+    print(ds)
 
 
+# TODO does not delete properly
 @cli.command(name="remove-ds",
-             short_help='Removes the data set from ROGER with the given name')
+             short_help='Removes the Differential Gene Expression  method with the given name')
 @click.argument('name', metavar='<name>')
-def remove_dataset(name):
+def remove_ds(name):
     roger.persistence.dge.delete_method(db.session(), name)
-    print("Deleted DGE method: %s" % name)
+    print("Deleted data set: %s" % name)
