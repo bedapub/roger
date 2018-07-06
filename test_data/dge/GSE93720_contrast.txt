@@ -1,0 +1,7 @@
+	TNF_vs_Untreated	TNF+IL17_vs_Untreated
+(Intercept)	0	0
+IndividualOA-6	0	0
+IndividualRA-32	0	0
+IndividualRA-449	0	0
+TreatmentTNF	1	0
+TreatmentTNF + IL-17	0	1
