@@ -3,6 +3,7 @@ from rpy2.robjects.packages import importr
 from rpy2.robjects import pandas2ri
 from rpy2 import robjects
 import pandas as pd
+import numpy as np
 import os.path
 import shutil
 
@@ -123,6 +124,10 @@ def perform_limma(exprs_data, fdf, design_data, contrast_data, use_weighted=Fals
     return eset, eset_fit
 
 
+def r_blob(data):
+    return memoryview(np.array([x for x in ribios_roger.blobs(data)[0]]))
+
+
 def run_dge(session, roger_wd_dir, algorithm, dataset, design, contrast, design_name):
     print("Parsing data")
     if algorithm != "limma":
@@ -163,9 +168,9 @@ def run_dge(session, roger_wd_dir, algorithm, dataset, design, contrast, design_
                           Name=design_name,
                           Description="limma script default design",
                           # TODO cannot store as R blob
-                          FeatureSubset=memoryview("feature_subset".encode("utf-8")),
-                          SampleSubset=memoryview("sample_subset".encode("utf-8")),
-                          DesignMatrix=memoryview("A".encode("utf-8")),#ribios_epression.designMatrix(eset_fit),
+                          FeatureSubset=r_blob(pandas2ri.py2ri(feature_subset)),
+                          SampleSubset=r_blob(pandas2ri.py2ri(sample_subset)),
+                          DesignMatrix=r_blob(ribios_epression.designMatrix(eset_fit)),
                           CreatedBy=roger.util.get_current_user_name(),
                           CreationTime=roger.util.get_current_datetime())
     session.add(design_entry)
