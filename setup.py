@@ -18,7 +18,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'roger=roger.main:cli'
+            'roger=roger.main:entry_point'
         ],
     },
 )
