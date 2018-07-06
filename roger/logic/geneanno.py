@@ -30,17 +30,22 @@ def get_dataset_of(session, tax_id):
 def annotate(session, gct_data, tax_id, symbol_type):
     ensembl_dataset = get_dataset_of(session, tax_id)
 
-    all_sym = ensembl_dataset.get_bulk_query({
+    attributes = ensembl_dataset.attributes
+
+    params = {
         "attributes": [symbol_type, "ensembl_gene_id"],
-        "filters": {
-            "with_%s" % symbol_type: True
-        }
-    })
+    }
+
+    filter_attr = "with_%s" % symbol_type
+    if filter_attr in attributes["name"]:
+        params["filters"] = {filter_attr: True}
+
+    all_sym = ensembl_dataset.get_bulk_query(params)
 
     # TODO FeatureIndex starts at 1, but should be fixed later on
-    feature_anno = pd.DataFrame(data={"Name": gct_data.data_df.index,
-                                      "FeatureIndex": range(1, gct_data.data_df.shape[0] + 1)},
-                                index=gct_data.data_df.index)
+    feature_anno = pd.DataFrame(data={"Name": gct_data.index,
+                                      "FeatureIndex": range(1, gct_data.shape[0] + 1)},
+                                index=gct_data.index)
     feature_anno = feature_anno.join(all_sym.set_index(symbol_type))
 
     # TODO We should not "drop" multiple genes that map to the same chip id ...

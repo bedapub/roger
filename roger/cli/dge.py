@@ -1,6 +1,5 @@
 import click
 import flask
-import os
 
 from roger.cli import cli
 from roger.persistence import db
@@ -98,15 +97,12 @@ def add_ds(dataset_file, design_file, tax_id, symbol_type, exprs_type, name, des
     print("Done")
 
 
+# TODO remove directories
 @cli.command(name="remove-ds",
              short_help='Removes the Differential Gene Expression  method with the given name')
 @click.argument('name', metavar='<name>')
 def remove_ds(name):
-    ds_entiry = roger.persistence.dge.get_ds(db.session(), name)
-    os.remove(ds_entiry.PhenoWC)
-    os.remove(ds_entiry.ExprsWC)
-    os.remove(ds_entiry.NormalizedExprsWC)
-    roger.persistence.dge.delete_method(db.session(), name)
+    roger.persistence.dge.delete_ds(db.session(), name)
     print("Deleted data set: %s" % name)
 
 

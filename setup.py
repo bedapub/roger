@@ -13,10 +13,12 @@ setup(
         'biomart',
         "gseapy",
         "rpy2",
-        "cmapPy",
+        "numpy",
+        #TODO official release is not compatible with python 3 yet
+        #"cmapPy",
         "flask_sqlalchemy"
     ],
-    entry_points={
+    entry_points ={
         'console_scripts': [
             'roger=roger.main:entry_point'
         ],

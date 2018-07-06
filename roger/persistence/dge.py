@@ -1,6 +1,6 @@
 from roger.persistence.schema import DGEmethod, DataSet
-from roger.util import as_data_frame
 from roger.exception import ROGERUsageError
+import roger.util
 
 # --------------------------
 # DGE methods
@@ -8,7 +8,7 @@ from roger.exception import ROGERUsageError
 
 
 def list_methods(session):
-    return as_data_frame(session.query(DGEmethod.Name, DGEmethod.Description, DGEmethod.Version))
+    return roger.util.as_data_frame(session.query(DGEmethod.Name, DGEmethod.Description, DGEmethod.Version))
 
 
 def add_method(session, name, description, version):
@@ -21,7 +21,7 @@ def delete_method(session, name):
     # Check if DGE method is already preset in the database
     gse_methods = list_methods(session)
     if gse_methods[gse_methods.Name == name].empty:
-        raise ROGERUsageError('DGE does not exist in database: %s' % name)
+        raise ROGERUsageError('DGE method does not exist in database: %s' % name)
 
     session.query(DGEmethod).filter(DGEmethod.Name == name).delete()
     session.commit()
@@ -39,18 +39,18 @@ def get_ds(session, name) -> DataSet:
 
 
 def list_ds(session):
-    return as_data_frame(session.query(DataSet.Name,
-                                       DataSet.FeatureCount,
-                                       DataSet.SampleCount,
-                                       DataSet.CreatedBy,
-                                       DataSet.Xref))
+    return roger.util.as_data_frame(session.query(DataSet.Name,
+                                                  DataSet.FeatureCount,
+                                                  DataSet.SampleCount,
+                                                  DataSet.CreatedBy,
+                                                  DataSet.Xref))
 
 
 def delete_ds(session, name):
-    # Check if DGE method is already preset in the database
-    gse_methods = list_methods(session)
-    if gse_methods[gse_methods.Name == name].empty:
-        raise ROGERUsageError('DGE does not exist in database: %s' % name)
+    ds_entiry = get_ds(session, name)
+    roger.util.silent_remove(ds_entiry.PhenoWC)
+    roger.util.silent_remove(ds_entiry.ExprsWC)
+    roger.util.silent_remove(ds_entiry.NormalizedExprsWC)
 
-    session.query(DGEmethod).filter(DGEmethod.Name == name).delete()
+    session.query(DataSet).filter(DataSet.Name == name).delete()
     session.commit()

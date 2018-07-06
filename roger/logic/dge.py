@@ -1,4 +1,3 @@
-from cmapPy.pandasGEXpress.parse import parse as gct_parse
 from rpy2.robjects.packages import importr
 from rpy2.robjects import pandas2ri
 from rpy2 import robjects
@@ -32,10 +31,10 @@ limma = importr("limma")
 def parse_pheno_data(design_file, gct_data):
     design_data = pd.read_table(design_file, sep='\t', index_col=0)
     groups = design_data.apply(lambda row: "_".join(["%s.%d" % (key, value) for (key, value) in row.items()]), axis=1)
-    pheno_data = pd.DataFrame({"Sample": list(gct_data.data_df)})
+    pheno_data = pd.DataFrame({"Sample": list(gct_data)})
 
     pheno_data["_DatasetSampleIndex"] = range(1, pheno_data.shape[0] + 1)
-    pheno_data["_Sample"] = list(gct_data.data_df)
+    pheno_data["_Sample"] = list(gct_data)
     pheno_data["_SampleGroup"] = groups.values
     return pheno_data
 
@@ -59,7 +58,7 @@ def add_ds(session,
         ds_name = os.path.splitext(os.path.basename(dataset_file))[0]
 
     # Read and annotate data
-    gct_data = gct_parse(file_path=dataset_file)
+    gct_data = roger.util.parse_gct(file_path=dataset_file)
     pheno_data = parse_pheno_data(design_file, gct_data)
     print("Annotating features")
     (feature_data, annotation_version) = roger.logic.geneanno.annotate(session, gct_data, tax_id, symbol_type)
@@ -81,7 +80,7 @@ def add_ds(session,
                             GeneAnnotationVersion=annotation_version,
                             Description=description,
                             FeatureCount=feature_data.shape[0],
-                            SampleCount=gct_data.data_df.shape[1],
+                            SampleCount=gct_data.shape[1],
                             ExprsWC=exprs_file,
                             ExprsSrc=exprs_file,
                             NormalizedExprsWC=exprs_file,

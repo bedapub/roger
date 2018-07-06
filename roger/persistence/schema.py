@@ -2,7 +2,6 @@ from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, LargeB
 from sqlalchemy import ForeignKey, UniqueConstraint, ForeignKeyConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property
-from cmapPy.pandasGEXpress.parse import parse as gct_parse
 import pandas as pd
 
 from roger.persistence import db
@@ -163,7 +162,7 @@ class DataSet(db.Model):
 
     @hybrid_property
     def exprs_data(self):
-        return gct_parse(self.ExprsWC)
+        return roger.util.parse_gct(self.ExprsWC)
 
     @hybrid_property
     def pheno_data(self):
