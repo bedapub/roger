@@ -1,8 +1,12 @@
 from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, LargeBinary
 from sqlalchemy import ForeignKey, UniqueConstraint, ForeignKeyConstraint
 from sqlalchemy.orm import relationship
+from sqlalchemy.ext.hybrid import hybrid_property
+from cmapPy.pandasGEXpress.parse import parse as gct_parse
+import pandas as pd
 
 from roger.persistence import db
+import roger.util
 
 DEFAULT_STR_SIZE = 64
 
@@ -157,12 +161,24 @@ class DataSet(db.Model):
         return "<DataSet(ID='%s', Name='%s')>" \
                % (self.ID, self.Name)
 
+    @hybrid_property
+    def exprs_data(self):
+        return gct_parse(self.ExprsWC)
+
+    @hybrid_property
+    def pheno_data(self):
+        return pd.read_table(self.PhenoWC, sep='\t')
+
+    @hybrid_property
+    def feature_data(self):
+        return roger.util.as_data_frame(FeatureMapping.query.filter(FeatureMapping.DataSetID == self.ID))
+
 
 class FeatureMapping(db.Model):
     __tablename__ = 'FeatureMapping'
 
     # TODO add gene index & taxon id of original spceies
-    RogerGeneIndex = Column(Integer, ForeignKey(GeneAnnotation.RogerGeneIndex))
+    RogerGeneIndex = Column(Integer, ForeignKey(GeneAnnotation.RogerGeneIndex, ondelete="CASCADE"))
     FeatureIndex = Column(Integer, nullable=False, primary_key=True)
     DataSetID = Column(Integer, ForeignKey(DataSet.ID, ondelete="CASCADE"), nullable=False, primary_key=True)
     Name = Column(String(DEFAULT_STR_SIZE), nullable=False)
@@ -296,7 +312,7 @@ class DGEmodel(db.Model):
 class DGEtable(db.Model):
     __tablename__ = 'DGEtable'
 
-    ContrastID = Column(Integer, ForeignKey(Contrast.ID), primary_key=True)
+    ContrastID = Column(Integer, ForeignKey(Contrast.ID, ondelete="CASCADE"), primary_key=True)
     FeatureIndex = Column(Integer, nullable=False, primary_key=True)
     DataSetID = Column(Integer, nullable=False, primary_key=True)
     AveExprs = Column(Float, nullable=False)

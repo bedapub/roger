@@ -31,6 +31,13 @@ def delete_method(session, name):
 # --------------------------
 
 
+def get_ds(session, name) -> DataSet:
+    entities = session.query(DataSet).filter(DataSet.Name == name).all()
+    if len(entities) == 0:
+        raise ROGERUsageError("Data set with name '%s' does not exist" % name)
+    return entities[0]
+
+
 def list_ds(session):
     return as_data_frame(session.query(DataSet.Name,
                                        DataSet.FeatureCount,

@@ -1,6 +1,11 @@
-from pandas import read_sql
+from pandas import read_sql, DataFrame
 import getpass
 import datetime
+
+
+# TODO not transactional, each call to this method is atomic / includes commits
+def insert_data_frame(session, df: DataFrame, table_name : str):
+    df.to_sql(table_name, session.bind, if_exists='append', index=False)
 
 
 def as_data_frame(query):
@@ -14,4 +19,3 @@ def get_current_datetime():
 # TODO not that reliable, consider real account management here
 def get_current_user_name():
     return getpass.getuser()
-
