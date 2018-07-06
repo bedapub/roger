@@ -52,7 +52,7 @@ def list_ds():
 
 
 @cli.command(name="show-symbol-types",
-             short_help='Gives af supported symbol types')
+             short_help='Shows a list of supported symbol types')
 @click.argument('tax_id', metavar='<tax_id>', type=int)
 def show_symbol_types(tax_id):
     dataset = roger.logic.geneanno.get_dataset_of(db.session(), tax_id)
@@ -85,20 +85,19 @@ def show_symbol_types(tax_id):
 @click.option('--description', help='Dataset descriptioon')
 @click.option('--xref', help='External (GEO) reference')
 def add_ds(dataset_file, design_file, tax_id, symbol_type, exprs_type, name, description, xref):
-    ds = roger.logic.dge.add_ds(db.session(),
-                                flask.current_app.config['ROGER_DATA_FOLDER'],
-                                dataset_file,
-                                design_file,
-                                tax_id,
-                                symbol_type,
-                                exprs_type,
-                                name,
-                                description,
-                                xref)
+    roger.logic.dge.add_ds(db.session(),
+                           flask.current_app.config['ROGER_DATA_FOLDER'],
+                           dataset_file,
+                           design_file,
+                           tax_id,
+                           symbol_type,
+                           exprs_type,
+                           name,
+                           description,
+                           xref)
     print("Done")
 
 
-# TODO does not delete properly
 @cli.command(name="remove-ds",
              short_help='Removes the Differential Gene Expression  method with the given name')
 @click.argument('name', metavar='<name>')
@@ -130,12 +129,11 @@ def list_dge_models():
 @click.argument('contrast', metavar='<contrast>', type=click.Path(exists=True))
 @click.option('--design_name', help='Name of the design (must be unique within each data set / study)')
 def run_dge(algorithm, dataset, design, contrast, design_name):
-    ds = roger.logic.dge.run_dge(db.session(),
-                                 flask.current_app.config['ROGER_DATA_FOLDER'],
-                                 algorithm,
-                                 dataset,
-                                 design,
-                                 contrast,
-                                 design_name)
-    print("Added data set:")
-    print(ds)
+    roger.logic.dge.run_dge(db.session(),
+                            flask.current_app.config['ROGER_DATA_FOLDER'],
+                            algorithm,
+                            dataset,
+                            design,
+                            contrast,
+                            design_name)
+    print("Done")
