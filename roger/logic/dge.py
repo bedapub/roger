@@ -109,6 +109,12 @@ def perform_limma(exprs_data, fdf, design_data, contrast_data, use_weighted=Fals
     # colnames(contrast_data) < - make.names(colnames(contrast_data))
     eset = methods.new("ExpressionSet", exprs=exprs_data)
 
+    # fData(x) <- y
+    # x$fData <- y ; return x
+    # feature
+    # fData(eset) <- feature
+    # names(x) <- 1:10
+
     # Yep, this is how you call replacement functions from python
     eset = biobase.__dict__["fData<-"](eset, fdf)
 

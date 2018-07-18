@@ -2,7 +2,7 @@ import re
 
 from roger.persistence.schema import GeneAnnotation, Ortholog
 from roger.exception import ROGERUsageError
-from roger.util import as_data_frame
+from roger.util import as_data_frame, nan_to_none
 import roger.logic.mart
 
 human_dataset = "hsapiens_gene_ensembl"
@@ -31,13 +31,6 @@ def remove_species(session, tax_id):
     session.commit()
 
 
-def nan_to_none(val):
-    import math
-    if math.isnan(val):
-        return None
-    return val
-
-
 # TODO Check if dataset exist in Ensembl BioMart ...
 def add_species(session, dataset, tax_id):
     annotation_service = roger.logic.mart.get_annotation_service()
@@ -62,7 +55,6 @@ def add_species(session, dataset, tax_id):
             "ensembl_gene_id", "entrezgene", "gene_biotype", "external_gene_name"
         ]
     })
-
     genes = gene_anno.apply(lambda row: GeneAnnotation(Version=version,
                                                        TaxID=tax_id,
                                                        EnsemblGeneID=row.ensembl_gene_id,

@@ -217,7 +217,7 @@ class Design(db.Model):
     # A flag that tells the user that no human entity has locked into the design
     # if NULL, the design was not reviewed by a user
     LastReviewedBy = Column(String(DEFAULT_STR_SIZE))
-    CreationTime = Column(String(DEFAULT_STR_SIZE), nullable=False)
+    CreationTime = Column(DateTime, nullable=False)
 
     DataSet = relationship("DataSet", foreign_keys=[DataSetID])
 

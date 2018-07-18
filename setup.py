@@ -14,8 +14,7 @@ setup(
         "gseapy",
         "rpy2",
         "numpy",
-        #TODO official release is not compatible with python 3 yet
-        #"cmapPy",
+        "cmapPy",
         "flask_sqlalchemy"
     ],
     entry_points ={
