@@ -5,7 +5,6 @@ import os
 from flask.cli import FlaskGroup
 
 import roger.flask
-import roger.persistence
 
 
 @click.group(cls=FlaskGroup, create_app=roger.flask.create_app)
