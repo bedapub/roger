@@ -9,4 +9,6 @@ app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///:memory:"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 roger.logic.mart.init_annotation_service(app)
-roger.logic.cache.init_app(app, config={'CACHE_TYPE': 'simple'})
+roger.logic.cache.init_app(app, config={'CACHE_TYPE': 'filesystem',
+                                        'CACHE_DEFAULT_TIMEOUT': 60*60*24*2,
+                                        'CACHE_DIR': "__data/roger_db/roger_test_cache"})
