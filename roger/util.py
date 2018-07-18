@@ -42,7 +42,6 @@ def insert_data(frame: pd.DataFrame):
     #return column_names, data_list
 
 
-# TODO not transactional, each call to this method is atomic / includes commits
 def insert_data_frame(session: Session, frame: pd.DataFrame, table: Table, chunk_size=None):
     keys, data_list = insert_data(frame)
 
