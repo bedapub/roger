@@ -1,6 +1,8 @@
+import pytest
+
 from tests import app
 from tests import db
-
+from roger.exception import ROGERUsageError
 import roger.logic.mart
 import roger.persistence.geneanno
 
@@ -23,4 +25,14 @@ class TestGeneAnnotationPersistence(object):
             assert len(roger.persistence.geneanno.list_species(db.session())) == 2
             roger.persistence.geneanno.remove_species(db.session(), rat_tax_id)
             assert len(roger.persistence.geneanno.list_species(db.session())) == 1
+            db.drop_all()
+
+    def test_fail_on_unknown_ds(self):
+        with app.app_context():
+            db.create_all()
+            assert roger.persistence.geneanno.list_species(db.session()).empty
+            with pytest.raises(ROGERUsageError):
+                roger.persistence.geneanno.add_species(db.session(),
+                                                       "draco_gene_ensembl",
+                                                       roger.persistence.geneanno.human_tax_id)
             db.drop_all()

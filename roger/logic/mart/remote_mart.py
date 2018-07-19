@@ -6,6 +6,7 @@ from pandas.compat import cStringIO
 from . import BioMartDataSet, AnnotationService
 
 from roger.logic import cache
+from roger.exception import ROGERUsageError
 
 
 class RemoteBioMartDataSet(BioMartDataSet):
@@ -41,4 +42,7 @@ class RemoteEnsemblBioMartService(AnnotationService):
         self.__server = BiomartServer("http://www.ensembl.org/biomart")
 
     def get_dataset(self, dataset_name):
-        return RemoteBioMartDataSet(self.__server.datasets[dataset_name])
+        try:
+            return RemoteBioMartDataSet(self.__server.datasets[dataset_name])
+        except KeyError:
+            raise ROGERUsageError("Dataset not found on Ensembl BioMart: %s" % dataset_name)
