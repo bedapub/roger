@@ -12,7 +12,7 @@ class TestUtil(object):
         with app.app_context():
             db.create_all()
             session = db.session()
-            df = pd.read_table("../test_data/annotation/example_insert.csv", sep=",")
+            df = pd.read_table("../test_data/annotation/rat_geneanno_92.csv", sep=",")
 
             genes = pd.DataFrame({'Version': "tests",
                                   'TaxID': 1234,
