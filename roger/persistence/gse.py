@@ -1,4 +1,3 @@
-from functools import reduce
 from gseapy.parser import gsea_gmt_parser
 import pandas as pd
 import sys
@@ -54,16 +53,20 @@ def add_gmt(session, category_name, file, tax_id, description=None):
     session.add_all(gene_sets)
     session.flush()
     gene_set_dict = {gene_set.Name: gene_set for gene_set in gene_sets}
-    genes_table_list = [pd.DataFrame({'GeneSetID': gene_set_dict[gene_set_name].ID, 'GeneSymbol': genes})
-                        for gene_set_name, genes in gmt.items()]
-    genes_table = reduce(lambda a, b: a.append(b), genes_table_list, pd.DataFrame())
+
+    gene_set_data = {'GeneSetID': [], 'GeneSymbol': []}
+    for gene_set_name, genes in gmt.items():
+        gene_set_data['GeneSetID'] += [gene_set_dict[gene_set_name].ID] * len(genes)
+        gene_set_data['GeneSymbol'] += genes
+
+    genes_table = pd.DataFrame.from_dict(gene_set_data)
     annotated_genes = genes_table.join(gene_anno.set_index('GeneSymbol'), on='GeneSymbol')
     # Filter out non-matching genes
     matched_genes = annotated_genes[annotated_genes.RogerGeneIndex.notna()]\
         .drop_duplicates(subset=['RogerGeneIndex', 'GeneSetID'], keep=False)
 
     # Bulk insert all gene set genes
-    insert_data_frame(session, matched_genes, GeneSetGene.__table__)
+    insert_data_frame(session, matched_genes, GeneSetGene.__table__, chunk_size=100000)
     session.commit()
 
     # Report number of gene symbols that could not be matched with gene annotation
