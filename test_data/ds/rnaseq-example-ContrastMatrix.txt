@@ -1,0 +1,4 @@
+	DHQ_Inactive_24h	DHQ_Active_24h	DHQ_ActiveVSInactive_24h
+NDC_24h	0	0	0
+DHQ_Inactive_24h	1	0	-1
+DHQ_Active_24h	0	1	1

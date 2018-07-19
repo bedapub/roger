@@ -1,0 +1,2 @@
+/pstore/apps/bioinfo/geneexpression/data/testdata/fastq/file1.fastq.gz
+/pstore/apps/bioinfo/geneexpression/data/testdata/fastq/file2.fastq.gz

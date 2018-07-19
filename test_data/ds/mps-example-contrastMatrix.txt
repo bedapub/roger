@@ -1,0 +1,16 @@
+	nsc_Hetero	nsc_Homo	nsc_Homo_vs_Hetero	neuron_Hetero	neuron_Homo	neuron_Homo_vs_Hetero	neuron_vs_nsc_WT	neuron_vs_nsc_Hetero	neuron_vs_nsc_Homo	nsc_WT_CerezymeAcute	nsc_Hetero_CerezymeAcute	nsc_Homo_CerezymeAcute	neuron_WT_CerezymeAcute	neuron_Hetero_CerezymeAcute	neuron_Homo_CerezymeAcute	neuron_WT_CerezymeChronic	neuron_Hetero_CerezymeChronic	neuron_Homo_CerezymeChronic	neuron_WT_Cerezyme_Chronic_vs_Acute	neuron_Hetero_Cerezyme_Chronic_vs_Acute	neuron_Homo_Cerezyme_Chronic_vs_Acute
+nsc_WT_vehicle	-1	-1	0	0	0	0	-1	0	0	-1	0	0	0	0	0	0	0	0	0	0	0
+nsc_Hetero_vehicle	1	0	-1	0	0	0	0	-1	0	0	-1	0	0	0	0	0	0	0	0	0	0
+nsc_Homo_vehicle	0	1	1	0	0	0	0	0	-1	0	0	-1	0	0	0	0	0	0	0	0	0
+nsc_WT_CerezymeAcute	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
+nsc_Hetero_CerezymeAcute	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0
+nsc_Homo_CerezymeAcute	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
+neuron_WT_vehicle	0	0	0	-1	-1	0	1	0	0	0	0	0	-1	0	0	-1	0	0	0	0	0
+neuron_Hetero_vehicle	0	0	0	1	0	-1	0	1	0	0	0	0	0	-1	0	0	-1	0	0	0	0
+neuron_Homo_vehicle	0	0	0	0	1	1	0	0	1	0	0	0	0	0	-1	0	0	-1	0	0	0
+neuron_WT_CerezymeAcute	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	-1	0	0
+neuron_Hetero_CerezymeAcute	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	-1	0
+neuron_Homo_CerezymeAcute	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	-1
+neuron_WT_CerezymeChronic	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	1	0	0
+neuron_Hetero_CerezymeChronic	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	1	0
+neuron_Homo_CerezymeChronic	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	1

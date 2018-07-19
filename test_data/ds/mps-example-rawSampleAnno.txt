@@ -1,0 +1,25 @@
+Barcode ID	Sample Name	Sample ID	Coverage	Tracking Reads
+IonXpress_001	neuron_Ctrl16B	N/A	0.0%	0%
+IonXpress_002	neuron_GBA12_6	N/A	0.0%	0%
+IonXpress_003	neuron_GBA10_18_11	N/A	0.0%	0%
+IonXpress_004	neuron_Ctrl16B_Cerezyme_chronic	N/A	0.0%	0%
+IonXpress_005	neuron_GBA12_6_Cerezyme_chronic	N/A	0.0%	0%
+IonXpress_006	neuron_GBA10_18_11_Cerezyme_chronic	N/A	0.0%	0%
+IonXpress_007	neuron_Ctrl16B	N/A	0.0%	0%
+IonXpress_008	neuron_GBA12_6	N/A	0.0%	0%
+IonXpress_009	neuron_GBA10_18_11	N/A	0.0%	0%
+IonXpress_010	neuron_Ctrl16B_Cerezyme_chronic	N/A	0.0%	0%
+IonXpress_011	neuron_GBA12_6__Cerezyme_chronic	N/A	0.0%	0%
+IonXpress_012	neuron_GBA10_18_11_Cerezyme_chronic	N/A	0.0%	0%
+IonXpress_013	neuron_Ctrl16B_Cerezyme_acute	N/A	0.0%	0%
+IonXpress_014	neuron_GBA12_6_Cerezyme_acute	N/A	0.0%	0%
+IonXpress_015	neuron_GBA10_18_11_Cerezyme_acute	N/A	0.0%	0%
+IonXpress_019	neuron_Ctrl16B_Cerezyme_acute	N/A	0.0%	0%
+IonXpress_020	neuron_GBA12_6_Cerezyme_acute	N/A	0.0%	0%
+IonXpress_021	neuron_GBA10_18_11_Cerezyme_acute	N/A	0.0%	0%
+IonXpress_025	nsc_Ctrl16B	N/A	0.0%	0%
+IonXpress_026	nsc_GBA12_6	N/A	0.0%	0%
+IonXpress_027	nsc_GBA10_18_11	N/A	0.0%	0%
+IonXpress_031	nsc_Ctrl16B_Cerezyme_acute	N/A	0.0%	0%
+IonXpress_032	nsc_GBA12_6_Cerezyme_acute	N/A	0.0%	0%
+IonXpress_033	nsc_GBA10_18_11_Cerezyme_acute	N/A	0.0%	0%
