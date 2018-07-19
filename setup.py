@@ -4,6 +4,7 @@ setup(
     name='ROGER',
     packages=['roger'],
     include_package_data=True,
+    test_suite="test",
     install_requires=[
         'flask',
         'sqlalchemy',
