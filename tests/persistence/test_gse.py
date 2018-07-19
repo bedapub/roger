@@ -19,6 +19,8 @@ class TestGSEPersistence(object):
 
     def test_list_and_create_gmt(self):
         with app.app_context():
+            gmt_cat_name = "dummy_gmt"
+
             db.create_all()
             roger.persistence.geneanno.add_species(db.session(),
                                                    roger.persistence.geneanno.human_dataset,
@@ -26,10 +28,10 @@ class TestGSEPersistence(object):
             assert roger.persistence.gse.list_gmt(db.session()).empty
             # TODO tests file in __data is not part of open source distribution yet
             roger.persistence.gse.add_gmt(db.session(),
-                                          "test_gmt",
-                                          "../__data/gmt/tests-userInput.gmt",
+                                          gmt_cat_name,
+                                          "test_data/gmt/dummy.gmt",
                                           roger.persistence.geneanno.human_tax_id)
             assert len(roger.persistence.gse.list_gmt(db.session())) == 1
-            roger.persistence.gse.delete_gmt(db.session(), "test_gmt")
+            roger.persistence.gse.delete_gmt(db.session(), gmt_cat_name)
             assert roger.persistence.gse.list_gmt(db.session()).empty
             db.drop_all()

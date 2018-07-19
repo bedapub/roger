@@ -6,7 +6,7 @@ from sqlalchemy import func
 
 from roger.persistence.schema import GSEmethod, GeneSetCategory, GeneSet, GeneSetGene
 from roger.persistence.geneanno import GeneAnnotation
-from roger.util import as_data_frame
+from roger.util import as_data_frame, insert_data_frame
 from roger.exception import ROGERUsageError
 
 
@@ -44,8 +44,12 @@ def add_gmt(session, category_name, file, tax_id, description=None):
     category = GeneSetCategory(Name=category_name)
     session.add(category)
     session.flush()
-    gene_sets = [GeneSet(Category=category, Name=gene_set_name, TaxID=tax_id, Description=description,
-                         GeneCount=len(genes), IsPrivate=False)
+    gene_sets = [GeneSet(Category=category,
+                         Name=gene_set_name,
+                         TaxID=tax_id,
+                         Description=description,
+                         GeneCount=len(genes),
+                         IsPrivate=False)
                  for gene_set_name, genes in gmt.items()]
     session.add_all(gene_sets)
     session.flush()
@@ -59,9 +63,7 @@ def add_gmt(session, category_name, file, tax_id, description=None):
         .drop_duplicates(subset=['RogerGeneIndex', 'GeneSetID'], keep=False)
 
     # Bulk insert all gene set genes
-    gene_set_genes = matched_genes.apply(lambda row: GeneSetGene(RogerGeneIndex=row.RogerGeneIndex,
-                                                                 GeneSetID=row.GeneSetID), axis=1)
-    session.bulk_save_objects(gene_set_genes)
+    insert_data_frame(session, matched_genes, GeneSetGene.__table__)
     session.commit()
 
     # Report number of gene symbols that could not be matched with gene annotation
