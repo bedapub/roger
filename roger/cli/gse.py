@@ -13,28 +13,29 @@ def list_gse_methods():
     print("Done")
 
 
-@cli.command(name="add-gse-method", short_help='Adds a new Gene Set Enrichment method to the database')
-@click.argument('name', metavar='<name>')
-@click.argument('description', metavar='<description>')
-@click.argument('version', metavar='<version>')
-def add_gse_method(name, description, version):
-    print("Adding GSE method '%s' ..." % name)
-    from roger.persistence import db
-    import roger.persistence.gse
+# TODO: No method customization for now
+# @cli.command(name="add-gse-method", short_help='Adds a new Gene Set Enrichment method to the database')
+# @click.argument('name', metavar='<name>')
+# @click.argument('description', metavar='<description>')
+# @click.argument('version', metavar='<version>')
+# def add_gse_method(name, description, version):
+#     print("Adding GSE method '%s' ..." % name)
+#     from roger.persistence import db
+#     import roger.persistence.gse
+#
+#     roger.persistence.gse.add_method(db.session(), name, description, version)
+#     print("Done")
 
-    roger.persistence.gse.add_method(db.session(), name, description, version)
-    print("Done")
-
-
-@cli.command(name="remove-gse-method", short_help='Removes the Gene Set Enrichment method with the given name')
-@click.argument('name', metavar='<name>')
-def remove_gse_method(name):
-    print("Deleting GSE method '%s' ..." % name)
-    from roger.persistence import db
-    import roger.persistence.gse
-
-    roger.persistence.gse.delete_method(db.session(), name)
-    print("Done")
+# TODO: No method customization for now
+# @cli.command(name="remove-gse-method", short_help='Removes the Gene Set Enrichment method with the given name')
+# @click.argument('name', metavar='<name>')
+# def remove_gse_method(name):
+#     print("Deleting GSE method '%s' ..." % name)
+#     from roger.persistence import db
+#     import roger.persistence.gse
+#
+#     roger.persistence.gse.delete_method(db.session(), name)
+#     print("Done")
 
 
 @cli.command(name="list-gmt", short_help='Lists all gene set categories and their number of gene sets')
