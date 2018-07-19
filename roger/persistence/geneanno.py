@@ -4,7 +4,7 @@ from roger.persistence.schema import GeneAnnotation, Ortholog
 from roger.exception import ROGERUsageError
 from roger.util import as_data_frame, nan_to_none, insert_data_frame
 from pandas import DataFrame
-import roger.logic.mart
+import roger.logic.mart.provider
 
 human_dataset = "hsapiens_gene_ensembl"
 human_tax_id = 9606
@@ -34,7 +34,7 @@ def remove_species(session, tax_id):
 
 # TODO Check if dataset exist in Ensembl BioMart ...
 def add_species(session, dataset_name, tax_id):
-    annotation_service = roger.logic.mart.get_annotation_service()
+    annotation_service = roger.logic.mart.provider.get_annotation_service()
     # Check if dataset is already preset in the database
     species_table = list_species(session)
 
@@ -48,7 +48,7 @@ def add_species(session, dataset_name, tax_id):
 
     # Insert Gene annotation
     dataset = annotation_service.get_dataset(dataset_name)
-    # TODO fix this, shoud move into mart.py
+    # TODO fix this, should move into provider.py
     version = "%s %s" % (dataset_name, re.search(r'[^(]+\(([^)]+)\)', dataset.display_name).group(1))
 
     gene_anno = dataset.get_bulk_query(params={

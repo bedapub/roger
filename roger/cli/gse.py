@@ -1,14 +1,16 @@
 import click
-import sys
 
 from roger.cli import cli
-from roger.persistence import db
-import roger.persistence.gse
 
 
 @cli.command(name="list-gse-methods", short_help='Lists all Gene Set Enrichment methods utilized in ROGER studies')
 def list_gse_methods():
+    print('Querying available GSE methods ...')
+    from roger.persistence import db
+    import roger.persistence.gse
+
     print(roger.persistence.gse.list_methods(db.session()))
+    print("Done")
 
 
 @cli.command(name="add-gse-method", short_help='Adds a new Gene Set Enrichment method to the database')
@@ -16,19 +18,31 @@ def list_gse_methods():
 @click.argument('description', metavar='<description>')
 @click.argument('version', metavar='<version>')
 def add_gse_method(name, description, version):
+    print("Adding GSE method '%s' ..." % name)
+    from roger.persistence import db
+    import roger.persistence.gse
+
     roger.persistence.gse.add_method(db.session(), name, description, version)
-    print("Added GSE method: %s" % name)
+    print("Done")
 
 
 @cli.command(name="remove-gse-method", short_help='Removes the Gene Set Enrichment method with the given name')
 @click.argument('name', metavar='<name>')
 def remove_gse_method(name):
+    print("Deleting GSE method '%s' ..." % name)
+    from roger.persistence import db
+    import roger.persistence.gse
+
     roger.persistence.gse.delete_method(db.session(), name)
-    print("Deleted GSE method: %s" % name)
+    print("Done")
 
 
 @cli.command(name="list-gmt", short_help='Lists all gene set categories and their number of gene sets')
 def list_gmt():
+    print('Querying available GSE methods ...')
+    from roger.persistence import db
+    import roger.persistence.gse
+
     print(roger.persistence.gse.list_gmt(db.session()))
 
 
@@ -37,8 +51,10 @@ def list_gmt():
 @click.argument('gmt_file', metavar='<gmt_file>')
 @click.argument('tax_id', metavar='<tax_id>')
 def add_gmt(category_name, gmt_file, tax_id):
-    sys.stdout.write("Importing gene sets from GMT file '%s' ..." % gmt_file)
-    sys.stdout.flush()
+    print("Importing gene sets from GMT file '%s' ..." % gmt_file)
+    from roger.persistence import db
+    import roger.persistence.gse
+
     roger.persistence.gse.add_gmt(db.session(), category_name, gmt_file, tax_id)
     print("Done")
 
@@ -46,5 +62,9 @@ def add_gmt(category_name, gmt_file, tax_id):
 @cli.command(name="remove-gmt", short_help='Removes all gene sets associated with the given gene sete category')
 @click.argument('category_name', metavar='<category_name>')
 def remove_gmt(category_name):
+    print("Deleting gene set category '%s' ..." % category_name)
+    from roger.persistence import db
+    import roger.persistence.gse
+
     roger.persistence.gse.delete_gmt(db.session(), category_name)
-    print("Deleted gene set category: %s" % category_name)
+    print("Done")

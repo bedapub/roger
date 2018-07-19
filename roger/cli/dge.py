@@ -2,13 +2,6 @@ import click
 import flask
 
 from roger.cli import cli
-from roger.persistence import db
-import roger.persistence.dge
-import roger.logic.geneanno
-import roger.logic.dge
-import roger.persistence.geneanno
-import roger.util
-
 
 # ---------------
 # DGE methods
@@ -18,6 +11,10 @@ import roger.util
 @cli.command(name="list-dge-methods",
              short_help='Lists all Differential Gene Expression methods utilized in ROGER studies')
 def list_dge_methods():
+    print('Querying available DGE methods ...')
+    from roger.persistence import db
+    import roger.persistence.dge
+
     print(roger.persistence.dge.list_methods(db.session()))
 
 
@@ -27,16 +24,24 @@ def list_dge_methods():
 @click.argument('description', metavar='<description>')
 @click.argument('version', metavar='<version>')
 def add_dge_method(name, description, version):
+    print("Adding DGE method '%s' ..." % name)
+    from roger.persistence import db
+    import roger.persistence.dge
+
     roger.persistence.dge.add_method(db.session(), name, description, version)
-    print("Added DGE method: %s" % name)
+    print("Done")
 
 
 @cli.command(name="remove-dge-method",
-             short_help='Removes the Differential Gene Expression  method with the given name')
+             short_help='Removes the Differential Gene Expression method with the given name')
 @click.argument('name', metavar='<name>')
 def remove_dge_method(name):
+    print("Deleting DGE method '%s' ..." % name)
+    from roger.persistence import db
+    import roger.persistence.dge
+
     roger.persistence.dge.delete_method(db.session(), name)
-    print("Deleted DGE method: %s" % name)
+    print("Done")
 
 
 # ---------------
@@ -47,6 +52,10 @@ def remove_dge_method(name):
 @cli.command(name="list-ds",
              short_help='Lists available datasets')
 def list_ds():
+    print('Querying available data sets ...')
+    from roger.persistence import db
+    import roger.persistence.dge
+
     print(roger.persistence.dge.list_ds(db.session()))
 
 
@@ -54,6 +63,12 @@ def list_ds():
              short_help='Shows a list of supported symbol types')
 @click.argument('tax_id', metavar='<tax_id>', type=int)
 def show_symbol_types(tax_id):
+    print('Querying available symbol types ...')
+
+    from roger.persistence import db
+    import roger.logic.geneanno
+    import roger.util
+
     dataset = roger.logic.geneanno.get_dataset_of(db.session(), tax_id)
 
     common_identifiers = [x.value for x in roger.logic.geneanno.CommonGeneIdentifier]
@@ -84,6 +99,10 @@ def show_symbol_types(tax_id):
 @click.option('--description', help='Dataset descriptioon')
 @click.option('--xref', help='External (GEO) reference')
 def add_ds(dataset_file, design_file, tax_id, symbol_type, exprs_type, name, description, xref):
+    print('Adding data set %s ...' % name)
+    from roger.persistence import db
+    import roger.logic.dge
+
     roger.logic.dge.add_ds(db.session(),
                            flask.current_app.config['ROGER_DATA_FOLDER'],
                            dataset_file,
@@ -102,19 +121,17 @@ def add_ds(dataset_file, design_file, tax_id, symbol_type, exprs_type, name, des
              short_help='Removes the Differential Gene Expression  method with the given name')
 @click.argument('name', metavar='<name>')
 def remove_ds(name):
+    print("Deleting data set '%s' ..." % name)
+    from roger.persistence import db
+    import roger.persistence.dge
+
     roger.persistence.dge.delete_ds(db.session(), name)
-    print("Deleted data set: %s" % name)
+    print("Done")
 
 
 # ---------------
 # DGE & executions
 # ---------------
-
-
-@cli.command(name="list-ds",
-             short_help='Lists available datasets')
-def list_dge_models():
-    print(roger.persistence.dge.list_ds(db.session()))
 
 
 @cli.command(name="run-dge",
@@ -125,6 +142,10 @@ def list_dge_models():
 @click.argument('contrast', metavar='<contrast>', type=click.Path(exists=True))
 @click.option('--design_name', help='Name of the design (must be unique within each data set / study)')
 def run_dge(algorithm, dataset, design, contrast, design_name):
+    print("Performing DGE algorithm '%s' ..." % algorithm)
+    from roger.persistence import db
+    import roger.logic.dge
+
     roger.logic.dge.run_dge(db.session(),
                             flask.current_app.config['ROGER_DATA_FOLDER'],
                             algorithm,
