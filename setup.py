@@ -4,7 +4,6 @@ setup(
     name='ROGER',
     packages=['roger'],
     include_package_data=True,
-    test_suite="test",
     install_requires=[
         'flask',
         'sqlalchemy',
@@ -18,7 +17,9 @@ setup(
         "cmapPy",
         "flask_sqlalchemy"
     ],
-    entry_points ={
+    setup_requires=["pytest-runner"],
+    tests_require=["pytest"],
+    entry_points={
         'console_scripts': [
             'roger=roger.main:entry_point'
         ],

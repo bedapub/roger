@@ -1,13 +1,12 @@
-import unittest
 import pandas as pd
 
-from test import app
-from test import db
+from tests import app
+from tests import db
 from roger.persistence.schema import GeneAnnotation
 import roger.util
 
 
-class TestUtil(unittest.TestCase):
+class TestUtil(object):
 
     def test_insert_data_frame(self):
         with app.app_context():
@@ -15,7 +14,7 @@ class TestUtil(unittest.TestCase):
             session = db.session()
             df = pd.read_table("../test_data/annotation/example_insert.csv", sep=",")
 
-            genes = pd.DataFrame({'Version': "test",
+            genes = pd.DataFrame({'Version': "tests",
                                   'TaxID': 1234,
                                   'EnsemblGeneID': df["ensembl_gene_id"],
                                   'EntrezGeneID': df["entrezgene"].apply(roger.util.nan_to_none),
@@ -25,9 +24,5 @@ class TestUtil(unittest.TestCase):
 
             roger.util.insert_data_frame(session, genes, GeneAnnotation.__table__)
             session.commit()
-            self.assertTrue(len(db.session().query(GeneAnnotation).all()) > 1)
+            assert len(db.session().query(GeneAnnotation).all()) > 1
             db.drop_all()
-
-
-if __name__ == '__main__':
-    unittest.main()
