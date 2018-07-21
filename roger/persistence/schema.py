@@ -1,13 +1,28 @@
-from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, LargeBinary
+from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, LargeBinary, Enum
 from sqlalchemy import ForeignKey, UniqueConstraint, ForeignKeyConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property
-import pandas as pd
+from pandas import read_table
+import enum
 
 from roger.persistence import db
 import roger.util
 
 DEFAULT_STR_SIZE = 64
+
+
+class ExprsType(enum.Enum):
+    MICRO_ARRAY = 1
+    RNA_SEQ = 2
+
+
+class MicroArrayType(enum.Enum):
+    RMA = 1
+    MAS5 = 2
+
+
+class RNASeqType(enum.Enum):
+    RPKMS = 1
 
 
 class GeneAnnotation(db.Model):
@@ -119,58 +134,78 @@ class GeneSetGene(db.Model):
 class DataSet(db.Model):
     __tablename__ = 'DataSet'
 
+    Type = Column(Enum(ExprsType), nullable=False)
     ID = Column(Integer, primary_key=True)
     Name = Column(String(DEFAULT_STR_SIZE), unique=True, nullable=False)
     # To ensure that analysis is reproducible when loading new gene annotations into database
-    # TODO Do datasets contain data from multiple species?
     GeneAnnotationVersion = Column(String(DEFAULT_STR_SIZE), nullable=False)
     Description = Column(String(DEFAULT_STR_SIZE))
     FeatureCount = Column(Integer, nullable=False)
     SampleCount = Column(Integer, nullable=False)
     # Path to working copy of GCT file
-    ExprsWC = Column(String(DEFAULT_STR_SIZE))
+    ExprsWC = Column(String(DEFAULT_STR_SIZE), nullable=False)
     # Path to external / save copy of GCT file
     ExprsSrc = Column(String(DEFAULT_STR_SIZE), nullable=False)
-    # TODO Add Normalization Unit / Method (e.g.RPKM, TPM, MAS5, RMA)
-    # TODO Add Scale linear, log2, log10, ln
     # Path to working copy of R Matrix from GCT file
-    NormalizedExprsWC = Column(String(DEFAULT_STR_SIZE))
+    NormalizedExprsWC = Column(String(DEFAULT_STR_SIZE), nullable=False)
     # Path to external / save copy of R Matrix from GCT file
     NormalizedExprsSrc = Column(String(DEFAULT_STR_SIZE), nullable=False)
-    ExprsType = Column(String(DEFAULT_STR_SIZE), nullable=False)
     # Path to working copy of TDF file
-    PhenoWC = Column(String(DEFAULT_STR_SIZE))
+    PhenoWC = Column(String(DEFAULT_STR_SIZE), nullable=False)
     # Path to external / save copy of TDF file
-    # TODO: TEXT or BLOB - BLOB makes levels-handling easier / Alternative: Develop own format:
-    #      #1 Header + 2 extra lines about #2 type and #3 levels
-    # TODO: Check if JSON is a better format
     PhenoSrc = Column(String(DEFAULT_STR_SIZE), nullable=False)
-    # Transcript, Gene, Probeset, Protein
-    FeatureType = Column(String(DEFAULT_STR_SIZE), nullable=False)
     TaxID = Column(Integer, nullable=False)
     Xref = Column(String(DEFAULT_STR_SIZE))
-    # External URL to (e.g. MongoDB)
-    URL = Column(String(DEFAULT_STR_SIZE), nullable=False)
+    # TODO: External URL to (e.g. MongoDB)
+    # URL = Column(String(DEFAULT_STR_SIZE), nullable=False)
     CreatedBy = Column(String(DEFAULT_STR_SIZE), nullable=False)
     CreationTime = Column(DateTime, nullable=False)
 
     __table_args__ = {'mysql_engine': 'InnoDB'}
 
+    __mapper_args__ = {
+        'polymorphic_on': Type
+    }
+
     def __repr__(self):
-        return "<DataSet(ID='%s', Name='%s')>" \
-               % (self.ID, self.Name)
+        return "<DataSet(ID='%s', Name='%s' Type='%s')>" \
+               % (self.ID, self.Name, self.Type)
 
     @hybrid_property
     def exprs_data(self):
         return roger.util.parse_gct(self.ExprsWC)
 
     @hybrid_property
+    def norm_exprs_data(self):
+        return roger.util.parse_gct(self.NormalizedExprsWC)
+
+    @hybrid_property
     def pheno_data(self):
-        return pd.read_table(self.PhenoWC, sep='\t')
+        return read_table(self.PhenoWC, sep='\t')
 
     @hybrid_property
     def feature_data(self):
         return roger.util.as_data_frame(FeatureMapping.query.filter(FeatureMapping.DataSetID == self.ID))
+
+
+class MicroArrayDataSet(DataSet):
+    __tablename__ = 'MicroArrayDataSet'
+
+    NormalizationMethod = Column("MicroArrayNormalizationMethod", Enum(MicroArrayType))
+
+    __mapper_args__ = {
+        'polymorphic_identity': ExprsType.MICRO_ARRAY
+    }
+
+
+class RNASeqDataSet(DataSet):
+    __tablename__ = 'RNASeqDataSet'
+
+    NormalizationMethod = Column("RNASeqNormalizationMethod", Enum(RNASeqType))
+
+    __mapper_args__ = {
+        'polymorphic_identity': ExprsType.RNA_SEQ
+    }
 
 
 class FeatureMapping(db.Model):

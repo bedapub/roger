@@ -1,10 +1,11 @@
 import re
+from pandas import DataFrame
 
 from roger.persistence.schema import GeneAnnotation, Ortholog
 from roger.exception import ROGERUsageError
-from roger.util import as_data_frame, nan_to_none, insert_data_frame
-from pandas import DataFrame
+from roger.util import as_data_frame, nan_to_none, insert_data_frame, get_next_free_db_id
 import roger.logic.mart.provider
+
 
 human_dataset = "hsapiens_gene_ensembl"
 human_tax_id = 9606
@@ -32,7 +33,6 @@ def remove_species(session, tax_id):
     session.commit()
 
 
-# TODO Check if dataset exist in Ensembl BioMart ...
 def add_species(session, dataset_name, tax_id):
     annotation_service = roger.logic.mart.provider.get_annotation_service()
     # Check if dataset is already preset in the database
@@ -56,7 +56,11 @@ def add_species(session, dataset_name, tax_id):
             "ensembl_gene_id", "entrezgene", "gene_biotype", "external_gene_name"
         ]
     })
-    genes = DataFrame({'Version': version,
+
+    next_id = get_next_free_db_id(session, GeneAnnotation.RogerGeneIndex)
+
+    genes = DataFrame({'RogerGeneIndex': range(next_id, next_id + gene_anno.shape[0]),
+                       'Version': version,
                        'TaxID': tax_id,
                        'EnsemblGeneID': gene_anno["ensembl_gene_id"],
                        'EntrezGeneID': gene_anno["entrezgene"].apply(nan_to_none),
@@ -66,16 +70,14 @@ def add_species(session, dataset_name, tax_id):
     insert_data_frame(session, genes, GeneAnnotation.__table__)
 
     # Insert orthologs
-    huma_anno_query = as_data_frame(session.query(GeneAnnotation).filter(GeneAnnotation.TaxID == human_tax_id))
-
     if tax_id == human_tax_id:
-        orthologs = DataFrame({'RogerGeneIndex': huma_anno_query["RogerGeneIndex"],
-                               'HumanRogerGeneIndex': huma_anno_query["RogerGeneIndex"]})
+        orthologs = DataFrame({'RogerGeneIndex': genes["RogerGeneIndex"],
+                               'HumanRogerGeneIndex': genes["RogerGeneIndex"]})
         insert_data_frame(session, orthologs, Ortholog.__table__)
         session.commit()
         return
 
-    anno_query = as_data_frame(session.query(GeneAnnotation).filter(GeneAnnotation.TaxID == tax_id))
+    huma_anno_query = as_data_frame(session.query(GeneAnnotation).filter(GeneAnnotation.TaxID == human_tax_id))
     ortho = annotation_service.get_bulk_query(human_dataset, params={
         'attributes': [
             "ensembl_gene_id", homolog_attr
@@ -85,7 +87,7 @@ def add_species(session, dataset_name, tax_id):
         }
     })
     merged_ortho = ortho.join(huma_anno_query.set_index('EnsemblGeneID'), on='ensembl_gene_id') \
-        .join(anno_query.set_index('EnsemblGeneID'), on=homolog_attr, lsuffix='Human', rsuffix='Other')
+        .join(genes.set_index('EnsemblGeneID'), on=homolog_attr, lsuffix='Human', rsuffix='Other')
 
     orthologs = DataFrame({'RogerGeneIndex': merged_ortho["RogerGeneIndexOther"],
                            'HumanRogerGeneIndex': merged_ortho["RogerGeneIndexHuman"]})

@@ -5,8 +5,12 @@ import errno
 from cmapPy.pandasGEXpress.parse import parse as cmap_parse
 import numpy as np
 import pandas as pd
-from sqlalchemy import Table
+from sqlalchemy import Table, func
 from sqlalchemy.orm import Session
+
+
+def get_next_free_db_id(session: Session, id_col):
+    return session.query(func.coalesce(func.max(id_col), -1)).scalar() + 1
 
 
 def nan_to_none(val):
