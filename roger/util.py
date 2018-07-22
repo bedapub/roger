@@ -1,7 +1,6 @@
 import getpass
 import datetime
 import os
-import re
 import errno
 from cmapPy.pandasGEXpress.parse import parse as cmap_parse
 import numpy as np
