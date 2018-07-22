@@ -51,7 +51,6 @@ class GeneAnnotation(db.Model):
                   self.EnsemblGeneID, self.EntrezGeneID, self.GeneSymbol, self.IsObsolete)
 
 
-# TODO How to model joins?
 class Ortholog(db.Model):
     __tablename__ = 'Ortholog'
 
@@ -143,17 +142,17 @@ class DataSet(db.Model):
     FeatureCount = Column(Integer, nullable=False)
     SampleCount = Column(Integer, nullable=False)
     # Path to working copy of GCT file
-    ExprsWC = Column(String(DEFAULT_STR_SIZE), nullable=False)
+    ExprsWC = Column(String(DEFAULT_STR_SIZE))
     # Path to external / save copy of GCT file
-    ExprsSrc = Column(String(DEFAULT_STR_SIZE), nullable=False)
+    ExprsSrc = Column(String(DEFAULT_STR_SIZE))
     # Path to working copy of R Matrix from GCT file
     NormalizedExprsWC = Column(String(DEFAULT_STR_SIZE), nullable=False)
     # Path to external / save copy of R Matrix from GCT file
-    NormalizedExprsSrc = Column(String(DEFAULT_STR_SIZE), nullable=False)
+    NormalizedExprsSrc = Column(String(DEFAULT_STR_SIZE))
     # Path to working copy of TDF file
     PhenoWC = Column(String(DEFAULT_STR_SIZE), nullable=False)
     # Path to external / save copy of TDF file
-    PhenoSrc = Column(String(DEFAULT_STR_SIZE), nullable=False)
+    PhenoSrc = Column(String(DEFAULT_STR_SIZE))
     TaxID = Column(Integer, nullable=False)
     Xref = Column(String(DEFAULT_STR_SIZE))
     # TODO: External URL to (e.g. MongoDB)
@@ -211,8 +210,9 @@ class RNASeqDataSet(DataSet):
 class FeatureMapping(db.Model):
     __tablename__ = 'FeatureMapping'
 
-    # TODO add gene index & taxon id of original spceies
-    RogerGeneIndex = Column(Integer, ForeignKey(GeneAnnotation.RogerGeneIndex, ondelete="CASCADE"))
+    RogerGeneIndex = Column(Integer, ForeignKey(GeneAnnotation.RogerGeneIndex))
+    OriRogerGeneIndex = Column(Integer, ForeignKey(GeneAnnotation.RogerGeneIndex))
+    OriTaxID = Column(Integer)
     FeatureIndex = Column(Integer, nullable=False, primary_key=True)
     DataSetID = Column(Integer, ForeignKey(DataSet.ID, ondelete="CASCADE"), nullable=False, primary_key=True)
     Name = Column(String(DEFAULT_STR_SIZE), nullable=False)
@@ -220,6 +220,7 @@ class FeatureMapping(db.Model):
 
     DataSet = relationship("DataSet", foreign_keys=[DataSetID])
     Gene = relationship("GeneAnnotation", foreign_keys=[RogerGeneIndex])
+    OriGene = relationship("GeneAnnotation", foreign_keys=[OriRogerGeneIndex])
 
     __table_args__ = (
         UniqueConstraint(DataSetID, Name, name='FeatureName'),
@@ -328,9 +329,9 @@ class DGEmodel(db.Model):
     DesignID = Column(Integer, ForeignKey(Design.ID), primary_key=True)
     DGEmethodID = Column(Integer, ForeignKey(DGEmethod.ID), primary_key=True)
     # Link to external files in study-centric working directory
-    # Untrained model TODO store in R binary file
+    # Untrained model
     InputObjFile = Column(String(DEFAULT_STR_SIZE), nullable=False)
-    # Evaluated model TODO store in R binary file
+    # Evaluated model
     FitObjFile = Column(String(DEFAULT_STR_SIZE), nullable=False)
 
     Design = relationship("Design", foreign_keys=[DesignID])

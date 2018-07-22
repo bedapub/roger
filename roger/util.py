@@ -77,9 +77,21 @@ def parse_gct(file_path):
     return df.drop(columns=df.columns[0])
 
 
+def silent_rmdir(dir_path):
+    if dir_path is None:
+        return
+    try:
+        os.rmdir(dir_path)
+    except OSError as e:
+        if e.errno != errno.ENOENT:  # errno.ENOENT = no such file or directory
+            raise e  # re-raise exception if a different error occurred
+
+
 def silent_remove(filename):
+    if filename is None:
+        return
     try:
         os.remove(filename)
-    except OSError as e:  # this would be "except OSError, e:" before Python 2.6
+    except OSError as e:
         if e.errno != errno.ENOENT:  # errno.ENOENT = no such file or directory
             raise e  # re-raise exception if a different error occurred

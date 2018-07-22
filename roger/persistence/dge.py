@@ -1,3 +1,5 @@
+import os.path
+
 from roger.persistence.schema import DGEmethod, DataSet
 from roger.exception import ROGERUsageError
 import roger.util
@@ -32,14 +34,15 @@ def delete_method(session, name):
 
 
 def get_ds(session, name) -> DataSet:
-    entities = session.query(DataSet).filter(DataSet.Name == name).all()
-    if len(entities) == 0:
+    ds = session.query(DataSet).filter(DataSet.Name == name).one_or_none()
+    if ds is None:
         raise ROGERUsageError("Data set with name '%s' does not exist" % name)
-    return entities[0]
+    return ds
 
 
 def list_ds(session):
     return roger.util.as_data_frame(session.query(DataSet.Name,
+                                                  DataSet.Type,
                                                   DataSet.FeatureCount,
                                                   DataSet.SampleCount,
                                                   DataSet.CreatedBy,
@@ -51,6 +54,7 @@ def delete_ds(session, name):
     roger.util.silent_remove(ds_entiry.PhenoWC)
     roger.util.silent_remove(ds_entiry.ExprsWC)
     roger.util.silent_remove(ds_entiry.NormalizedExprsWC)
+    roger.util.silent_rmdir(os.path.dirname(ds_entiry.NormalizedExprsWC))
 
     session.query(DataSet).filter(DataSet.Name == name).delete()
     session.commit()

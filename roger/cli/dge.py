@@ -1,9 +1,11 @@
 import click
 import flask
+import os.path
 
 from roger.cli import cli
 from roger.persistence.schema import MicroArrayType
 from roger.util import get_enum_names
+
 
 # ---------------
 # DGE methods
@@ -108,15 +110,17 @@ def show_symbol_types(tax_id):
               help='Used method method for normalization')
 @click.option('--description', help='Dataset descriptioon')
 @click.option('--xref', help='External (GEO) reference')
-def add_ma_data(norm_exprs_file,
-                tax_id,
-                symbol_type,
-                exprs_file,
-                pheno_file,
-                name,
-                normalization,
-                description,
-                xref):
+def add_ma_ds(norm_exprs_file,
+              tax_id,
+              symbol_type,
+              exprs_file,
+              pheno_file,
+              name,
+              normalization,
+              description,
+              xref):
+    name = os.path.splitext(os.path.basename(norm_exprs_file))[0] if name is None else name
+
     print("Adding microarray data set '%s' ..." % name)
     from roger.persistence import db
     import roger.logic.dge
@@ -135,7 +139,6 @@ def add_ma_data(norm_exprs_file,
     print("Done")
 
 
-# TODO remove directories
 @cli.command(name="remove-ds",
              short_help='Removes the Differential Gene Expression  method with the given name')
 @click.argument('name', metavar='<name>')

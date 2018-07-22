@@ -6,7 +6,8 @@ import numpy as np
 import os.path
 import shutil
 
-from roger.persistence.schema import MicroArrayDataSet, Design, DGEmethod, Contrast, FeatureMapping, DGEtable, DGEmodel
+from roger.persistence.schema import MicroArrayDataSet, Design, DGEmethod, Contrast, \
+    FeatureMapping, DGEtable, DGEmodel, MicroArrayType, DataSet
 import roger.logic.geneanno
 import roger.util
 import roger.persistence.geneanno
@@ -19,23 +20,19 @@ DGE_MODEL_SUB_FOLDER = "dge_model"
 pandas2ri.activate()
 
 base = importr("base")
-ribios_io = importr("ribiosIO")
-ribios_util = importr("ribiosUtils")
-ribios_roger = importr("ribiosROGER")
-ribios_epression = importr("ribiosExpression")
-methods = importr("methods")
-biobase = importr("Biobase")
-limma = importr("limma")
 
 
-def parse_pheno_data(design_file, gct_data):
-    design_data = pd.read_table(design_file, sep='\t', index_col=0)
-    groups = design_data.apply(lambda row: "_".join(["%s.%d" % (key, value) for (key, value) in row.items()]), axis=1)
-    pheno_data = pd.DataFrame({"Sample": list(gct_data)})
+def annotate_ds_pheno_data(gct_data, pheno_file):
+    # TODO: Move this to separate
+    # design_data = pd.read_table(design_file, sep='\t', index_col=0)
+    # groups = design_data.apply(lambda row: "_".join(["%s.%d" % (key, value) for (key, value) in row.items()]), axis=1)
+    pheno_data = pd.DataFrame()
+    if pheno_file is not None:
+        pheno_data = pd.read_table(pheno_file, sep='\t', index_col=0)
 
-    pheno_data["_DatasetSampleIndex"] = range(0, pheno_data.shape[0])
-    pheno_data["_Sample"] = list(gct_data)
-    pheno_data["_SampleGroup"] = groups.values
+    pheno_data["ROGER_SampleName"] = list(gct_data)
+    pheno_data["ROGER_SampleIndex"] = list(range(0, pheno_data.shape[0]))
+    # pheno_data["_SampleGroup"] = groups.values
     return pheno_data
 
 
@@ -48,7 +45,7 @@ def add_ma_ds(session,
               exprs_file=None,
               pheno_file=None,
               name=None,
-              normalization_method=None,
+              normalization_method: MicroArrayType = None,
               description=None,
               xref=None):
     # Input checking
@@ -59,9 +56,11 @@ def add_ma_ds(session,
     if name is None:
         name = os.path.splitext(os.path.basename(norm_exprs_file))[0]
 
+    if session.query(DataSet).filter(DataSet.Name == name).one_or_none() is not None:
+        raise ROGERUsageError("Data set with name '%s' already exists" % name)
+
     # Read and annotate data
     gct_data = roger.util.parse_gct(file_path=norm_exprs_file)
-    pheno_data = parse_pheno_data(pheno_file, gct_data)
     print("Annotating features")
     (feature_data, annotation_version) = roger.logic.geneanno.annotate(session, gct_data, tax_id, symbol_type)
 
@@ -73,15 +72,16 @@ def add_ma_ds(session,
         os.makedirs(dataset_path)
 
     wc_norm_exprs_file = os.path.abspath(os.path.join(dataset_path, "norm_exprs.gct"))
-    shutil.copy(wc_norm_exprs_file, norm_exprs_file)
+    shutil.copy(norm_exprs_file, wc_norm_exprs_file)
+
+    wc_pheno_file = os.path.abspath(os.path.join(dataset_path, "pheno.tsv"))
+    pheno_data = annotate_ds_pheno_data(gct_data, pheno_file)
+    pheno_data.to_csv(wc_pheno_file, sep="\t")
 
     wc_exprs_file = None
     if exprs_file is not None:
         wc_exprs_file = os.path.abspath(os.path.join(dataset_path, "exprs.gct"))
-        shutil.copy(wc_exprs_file, exprs_file)
-
-    wc_pheno_file = os.path.abspath(os.path.join(dataset_path, "pheno.tsv"))
-    pheno_data.to_csv(wc_pheno_file, sep="\t", index=False)
+        shutil.copy(exprs_file, wc_exprs_file)
 
     dataset_entry = MicroArrayDataSet(Name=name,
                                       GeneAnnotationVersion=annotation_version,
@@ -95,7 +95,6 @@ def add_ma_ds(session,
                                       NormalizationMethod=normalization_method,
                                       PhenoWC=wc_pheno_file,
                                       PhenoSrc=pheno_file,
-                                      FeatureType="transcriptome",
                                       TaxID=tax_id,
                                       Xref=xref,
                                       CreatedBy=roger.util.get_current_user_name(),
@@ -103,12 +102,16 @@ def add_ma_ds(session,
     session.add(dataset_entry)
     session.flush()
     feature_data["DataSetID"] = dataset_entry.ID
+    roger.util.insert_data_frame(session, feature_data, FeatureMapping.__table__)
     session.commit()
-    roger.util.insert_data_frame(session, feature_data, FeatureMapping.__tablename__)
     return dataset_entry
 
 
 def perform_limma(exprs_data, fdf, design_data, contrast_data, use_weighted=False):
+    methods = importr("methods")
+    biobase = importr("Biobase")
+    limma = importr("limma")
+
     # conts_names_backup < - colnames(contrast_data)
     # colnames(contrast_data) < - make.names(colnames(contrast_data))
     eset = methods.new("ExpressionSet", exprs=exprs_data)
@@ -128,10 +131,15 @@ def perform_limma(exprs_data, fdf, design_data, contrast_data, use_weighted=Fals
 
 
 def r_blob(data):
+    ribios_roger = importr("ribiosROGER")
     return memoryview(np.array([x for x in ribios_roger.blobs(data)[0]]))
 
 
 def run_dge(session, roger_wd_dir, algorithm, dataset, design, contrast, design_name):
+    ribios_io = importr("ribiosIO")
+    ribios_roger = importr("ribiosROGER")
+    ribios_epression = importr("ribiosExpression")
+
     print("Parsing data")
     if algorithm != "limma":
         raise ROGERUsageError("Only limma is supported for now")
