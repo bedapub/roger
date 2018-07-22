@@ -33,7 +33,7 @@ def parse_pheno_data(design_file, gct_data):
     groups = design_data.apply(lambda row: "_".join(["%s.%d" % (key, value) for (key, value) in row.items()]), axis=1)
     pheno_data = pd.DataFrame({"Sample": list(gct_data)})
 
-    pheno_data["_DatasetSampleIndex"] = range(1, pheno_data.shape[0] + 1)
+    pheno_data["_DatasetSampleIndex"] = range(0, pheno_data.shape[0])
     pheno_data["_Sample"] = list(gct_data)
     pheno_data["_SampleGroup"] = groups.values
     return pheno_data
@@ -90,7 +90,7 @@ def add_ma_ds(session,
                                       SampleCount=gct_data.shape[1],
                                       ExprsWC=wc_exprs_file,
                                       ExprsSrc=exprs_file,
-                                      NormalizedExprsWC=qc_norm_exprs_file,
+                                      NormalizedExprsWC=wc_norm_exprs_file,
                                       NormalizedExprsSrc=norm_exprs_file,
                                       NormalizationMethod=normalization_method,
                                       PhenoWC=wc_pheno_file,

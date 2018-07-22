@@ -1,3 +1,4 @@
+from sqlalchemy.sql.expression import literal
 from enum import Enum
 import pandas as pd
 
@@ -15,7 +16,6 @@ class CommonGeneIdentifier(Enum):
 
 
 def get_dataset_of(session, tax_id):
-
     annotation_service = get_annotation_service()
 
     species_list = roger.persistence.geneanno.list_species(session)
@@ -40,27 +40,43 @@ def annotate(session, gct_data, tax_id, symbol_type):
     if filter_attr in attributes["name"]:
         params["filters"] = {filter_attr: True}
 
-    all_sym = ensembl_dataset.get_bulk_query(params)
+    all_sym = ensembl_dataset.get_bulk_query(params).dropna()
 
     feature_anno = pd.DataFrame(data={"Name": gct_data.index,
                                       "FeatureIndex": range(0, gct_data.shape[0])},
                                 index=gct_data.index)
+
+    # Pandas tries to convert columns to floats when possible,
+    # but sometimes the expression files contais errors / mixed types and leave columns unconverted
+    # In order to make joining possible for any edge case (look at rnaseq-example-readCounts.gct),
+    # we have "normalize" the types, i.e. make them all 'str'
+    feature_anno.Name = feature_anno.Name.apply(lambda x: str(x).rstrip('0').rstrip('.'))
+    all_sym[symbol_type] = all_sym[symbol_type].apply(lambda x: str(x).rstrip('0').rstrip('.'))
+
     feature_anno = feature_anno.join(all_sym.set_index(symbol_type))
 
-    # TODO We should not "drop" multiple genes that map to the same chip id ...
+    # TODO Find a better heuristic to drop multiple Ensembl ID association
     feature_anno = feature_anno[~feature_anno.index.duplicated(keep='first')]
     feature_anno = feature_anno.set_index("ensembl_gene_id")
 
     # TODO include origin tax id and origin roger gene index
-    query = session.query(GeneAnnotation.RogerGeneIndex, GeneAnnotation.EnsemblGeneID).filter_by(TaxID=tax_id)
+    query = session.query(GeneAnnotation.RogerGeneIndex,
+                          GeneAnnotation.RogerGeneIndex.label("OriRogerGeneIndex"),
+                          literal(human_tax_id).label("OriTaxID"),
+                          GeneAnnotation.EnsemblGeneID) \
+        .filter_by(TaxID=tax_id)
     if tax_id != human_tax_id:
-        query = session\
-            .query(Ortholog.HumanRogerGeneIndex.label("RogerGeneIndex"), GeneAnnotation.EnsemblGeneID)\
-            .filter(GeneAnnotation.RogerGeneIndex == Ortholog.RogerGeneIndex)\
+        query = session \
+            .query(Ortholog.HumanRogerGeneIndex.label("RogerGeneIndex"),
+                   Ortholog.RogerGeneIndex.label("OriRogerGeneIndex"),
+                   literal(tax_id).label("OriTaxID"),
+                   GeneAnnotation.EnsemblGeneID) \
+            .filter(GeneAnnotation.RogerGeneIndex == Ortholog.RogerGeneIndex) \
             .filter(GeneAnnotation.TaxID == tax_id)
     roger_gene_indices = roger.util.as_data_frame(query)
-    feature_anno = feature_anno.join(roger_gene_indices.set_index("EnsemblGeneID"))\
-        .drop_duplicates("FeatureIndex").\
-        sort_values('FeatureIndex').\
+    # TODO Find a better heuristic to drop multiple Ensembl ID association
+    feature_anno = feature_anno.join(roger_gene_indices.set_index("EnsemblGeneID")) \
+        .drop_duplicates("FeatureIndex"). \
+        sort_values('FeatureIndex'). \
         reset_index().drop(columns="index")
     return feature_anno, ensembl_dataset.display_name

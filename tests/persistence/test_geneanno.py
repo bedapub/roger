@@ -1,13 +1,10 @@
 import pytest
 
-from tests import app
+from tests import app, rat_dataset, rat_tax_id
 from tests import db
 from roger.exception import ROGERUsageError
 import roger.logic.mart
 import roger.persistence.geneanno
-
-rat_dataset = "rnorvegicus_gene_ensembl"
-rat_tax_id = 10116
 
 
 class TestGeneAnnotationPersistence(object):
