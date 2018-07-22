@@ -14,7 +14,7 @@ setup(
         "gseapy",
         "rpy2",
         "numpy",
-        "cmapPy",
+        # "cmapPy", TODO no support for python 3 for now
         "flask_sqlalchemy"
     ],
     setup_requires=["pytest-runner"],

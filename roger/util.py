@@ -2,7 +2,6 @@ import getpass
 import datetime
 import os
 import errno
-from cmapPy.pandasGEXpress.parse import parse as cmap_parse
 import numpy as np
 import pandas as pd
 from sqlalchemy import Table, func
@@ -73,9 +72,9 @@ def get_current_user_name():
     return getpass.getuser()
 
 
-# TODO replace dependency to ribiosIO in the future
 def parse_gct(file_path):
-    return cmap_parse(file_path).data_df
+    df = pd.read_csv(file_path, sep="\t", skiprows=2, index_col=0)
+    return df.drop(columns=df.columns[0])
 
 
 def silent_remove(filename):
