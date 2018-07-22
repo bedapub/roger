@@ -2,6 +2,8 @@ import click
 import flask
 
 from roger.cli import cli
+from roger.persistence.schema import MicroArrayType
+from roger.util import get_enum_names
 
 # ---------------
 # DGE methods
@@ -87,34 +89,49 @@ def show_symbol_types(tax_id):
     print(probe_attributes.to_string(index=False))
 
 
-@cli.command(name="add-ds",
-             short_help='Adds a new data set to ROGER')
-@click.argument('dataset_file', metavar='<dataset_file>', type=click.Path(exists=True))
-@click.argument('design_file', metavar='<groups_file>', type=click.Path(exists=True))
+@cli.command(name="add-ma-ds",
+             short_help='Adds a new microarray data set to ROGER')
+@click.argument('norm_exprs_file', metavar='<normalized_expression_data_file>', type=click.Path(exists=True))
 @click.argument('tax_id', metavar='<tax_id>', type=int)
 @click.argument('symbol_type', metavar='<symbol_type>')
-@click.option('--exprs-type',
-              type=click.Choice(["RMA", "MAS5"]),
-              default="RMA",
-              help='Type of expression data: Can be "RMA" or "MAS5"')
-@click.option('--name', help='A unique identifier for the data set (will use file name as default)')
+@click.option('--exprs_file',
+              help='Path to file containing raw expresion data',
+              type=click.Path(exists=True))
+@click.option('--pheno_file',
+              help='Path to file containing pheno data / sample annotations',
+              type=click.Path(exists=True))
+@click.option('--name', help='A unique identifier for the data set '
+                             '(will use the normalized expression data file name as default)')
+@click.option('--normalization',
+              type=click.Choice(get_enum_names(MicroArrayType)),
+              default=MicroArrayType.RMA.name,
+              help='Used method method for normalization')
 @click.option('--description', help='Dataset descriptioon')
 @click.option('--xref', help='External (GEO) reference')
-def add_ds(dataset_file, design_file, tax_id, symbol_type, exprs_type, name, description, xref):
-    print('Adding data set %s ...' % name)
+def add_ma_data(norm_exprs_file,
+                tax_id,
+                symbol_type,
+                exprs_file,
+                pheno_file,
+                name,
+                normalization,
+                description,
+                xref):
+    print("Adding microarray data set '%s' ..." % name)
     from roger.persistence import db
     import roger.logic.dge
 
-    roger.logic.dge.add_ds(db.session(),
-                           flask.current_app.config['ROGER_DATA_FOLDER'],
-                           dataset_file,
-                           design_file,
-                           tax_id,
-                           symbol_type,
-                           exprs_type,
-                           name,
-                           description,
-                           xref)
+    roger.logic.dge.add_ma_ds(db.session(),
+                              flask.current_app.config['ROGER_DATA_FOLDER'],
+                              norm_exprs_file,
+                              tax_id,
+                              symbol_type,
+                              exprs_file,
+                              pheno_file,
+                              name,
+                              normalization,
+                              description,
+                              xref)
     print("Done")
 
 
@@ -131,9 +148,9 @@ def remove_ds(name):
     print("Done")
 
 
-# ---------------
+# -----------------
 # DGE & executions
-# ---------------
+# -----------------
 
 
 @cli.command(name="run-dge",

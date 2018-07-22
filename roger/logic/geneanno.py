@@ -2,7 +2,7 @@ from enum import Enum
 import pandas as pd
 
 import roger.persistence.geneanno
-from roger.logic.mart import get_annotation_service
+from roger.logic.mart.provider import get_annotation_service
 from roger.exception import ROGERUsageError
 from roger.persistence.geneanno import GeneAnnotation, Ortholog, human_tax_id
 import roger.util
@@ -42,9 +42,8 @@ def annotate(session, gct_data, tax_id, symbol_type):
 
     all_sym = ensembl_dataset.get_bulk_query(params)
 
-    # TODO FeatureIndex starts at 1, but should be fixed later on
     feature_anno = pd.DataFrame(data={"Name": gct_data.index,
-                                      "FeatureIndex": range(1, gct_data.shape[0] + 1)},
+                                      "FeatureIndex": range(0, gct_data.shape[0])},
                                 index=gct_data.index)
     feature_anno = feature_anno.join(all_sym.set_index(symbol_type))
 
@@ -64,5 +63,4 @@ def annotate(session, gct_data, tax_id, symbol_type):
         .drop_duplicates("FeatureIndex").\
         sort_values('FeatureIndex').\
         reset_index().drop(columns="index")
-    # TODO just return version of dataset
     return feature_anno, ensembl_dataset.display_name

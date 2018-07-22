@@ -1,12 +1,19 @@
 import getpass
 import datetime
 import os
+import re
 import errno
 from cmapPy.pandasGEXpress.parse import parse as cmap_parse
 import numpy as np
 import pandas as pd
 from sqlalchemy import Table, func
 from sqlalchemy.orm import Session
+
+from enum import EnumMeta
+
+
+def get_enum_names(enum: EnumMeta):
+    return [e.name for e in list(enum)]
 
 
 def get_next_free_db_id(session: Session, id_col):
@@ -26,24 +33,6 @@ def insert_data(frame: pd.DataFrame):
 
     data_list = [np.array(frame[col_name].get_values(), dtype=object) for col_name in frame.columns]
     return column_names, data_list
-
-    #ncols = len(column_names)
-    #data_list = [None] * ncols
-    #blocks = temp._data.blocks
-    #for i in range(len(blocks)):
-    #    b = blocks[i]
-    #    if b.is_datetime:
-    #        # convert to microsecond resolution so this yields
-    #        # datetime.datetime
-    #        d = b.values.astype('M8[us]').astype(object)
-    #    else:
-    #        d = np.array(b.get_values(), dtype=object)
-    #
-    #    for col_loc, col in zip(b.mgr_locs, d):
-    #        data_list[col_loc] = col
-
-    #print(data_list)
-    #return column_names, data_list
 
 
 def insert_data_frame(session: Session, frame: pd.DataFrame, table: Table, chunk_size=None):

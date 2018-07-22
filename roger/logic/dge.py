@@ -6,7 +6,7 @@ import numpy as np
 import os.path
 import shutil
 
-from roger.persistence.schema import DataSet, Design, DGEmethod, Contrast, FeatureMapping, DGEtable, DGEmodel
+from roger.persistence.schema import MicroArrayDataSet, Design, DGEmethod, Contrast, FeatureMapping, DGEtable, DGEmodel
 import roger.logic.geneanno
 import roger.util
 import roger.persistence.geneanno
@@ -39,63 +39,67 @@ def parse_pheno_data(design_file, gct_data):
     return pheno_data
 
 
-def add_ds(session,
-           roger_wd_dir,
-           dataset_file,
-           design_file,
-           tax_id,
-           symbol_type,
-           exprs_type,
-           ds_name,
-           description,
-           xref):
+# TODO: Separate between logging and actual persistence
+def add_ma_ds(session,
+              roger_wd_dir,
+              norm_exprs_file,
+              tax_id,
+              symbol_type,
+              exprs_file=None,
+              pheno_file=None,
+              name=None,
+              normalization_method=None,
+              description=None,
+              xref=None):
     # Input checking
     species_list = roger.persistence.geneanno.list_species(session)
     if species_list[species_list.TaxID == tax_id].empty:
         raise ROGERUsageError('Unknown taxon id: %s' % tax_id)
 
-    if ds_name is None:
-        ds_name = os.path.splitext(os.path.basename(dataset_file))[0]
+    if name is None:
+        name = os.path.splitext(os.path.basename(norm_exprs_file))[0]
 
     # Read and annotate data
-    gct_data = roger.util.parse_gct(file_path=dataset_file)
-    pheno_data = parse_pheno_data(design_file, gct_data)
+    gct_data = roger.util.parse_gct(file_path=norm_exprs_file)
+    pheno_data = parse_pheno_data(pheno_file, gct_data)
     print("Annotating features")
     (feature_data, annotation_version) = roger.logic.geneanno.annotate(session, gct_data, tax_id, symbol_type)
 
     print("Persisting data set")
     # Persist data
     datasets_path = os.path.join(roger_wd_dir, DATASET_SUB_FOLDER)
-    dataset_path = os.path.join(datasets_path, ds_name)
+    dataset_path = os.path.join(datasets_path, name)
     if not os.path.exists(dataset_path):
         os.makedirs(dataset_path)
 
-    exprs_file = os.path.abspath(os.path.join(dataset_path, "exprs.gct"))
-    shutil.copy(dataset_file, exprs_file)
+    wc_norm_exprs_file = os.path.abspath(os.path.join(dataset_path, "norm_exprs.gct"))
+    shutil.copy(wc_norm_exprs_file, norm_exprs_file)
 
-    pheno_file = os.path.abspath(os.path.join(dataset_path, "pheno.tsv"))
-    pheno_data.to_csv(pheno_file, sep="\t", index=False)
+    wc_exprs_file = None
+    if exprs_file is not None:
+        wc_exprs_file = os.path.abspath(os.path.join(dataset_path, "exprs.gct"))
+        shutil.copy(wc_exprs_file, exprs_file)
 
-    dataset_entry = DataSet(Name=ds_name,
-                            GeneAnnotationVersion=annotation_version,
-                            Description=description,
-                            FeatureCount=feature_data.shape[0],
-                            SampleCount=gct_data.shape[1],
-                            ExprsWC=exprs_file,
-                            ExprsSrc=exprs_file,
-                            NormalizedExprsWC=exprs_file,
-                            NormalizedExprsSrc=exprs_file,
-                            ExprsType=exprs_type,
-                            PhenoWC=pheno_file,
-                            PhenoSrc=pheno_file,
-                            # TODO
-                            FeatureType="transcriptome",
-                            TaxID=tax_id,
-                            Xref=xref,
-                            # TODO
-                            URL="",
-                            CreatedBy=roger.util.get_current_user_name(),
-                            CreationTime=roger.util.get_current_datetime())
+    wc_pheno_file = os.path.abspath(os.path.join(dataset_path, "pheno.tsv"))
+    pheno_data.to_csv(wc_pheno_file, sep="\t", index=False)
+
+    dataset_entry = MicroArrayDataSet(Name=name,
+                                      GeneAnnotationVersion=annotation_version,
+                                      Description=description,
+                                      FeatureCount=gct_data.shape[0],
+                                      SampleCount=gct_data.shape[1],
+                                      ExprsWC=wc_exprs_file,
+                                      ExprsSrc=exprs_file,
+                                      NormalizedExprsWC=qc_norm_exprs_file,
+                                      NormalizedExprsSrc=norm_exprs_file,
+                                      NormalizationMethod=normalization_method,
+                                      PhenoWC=wc_pheno_file,
+                                      PhenoSrc=pheno_file,
+                                      FeatureType="transcriptome",
+                                      TaxID=tax_id,
+                                      Xref=xref,
+                                      CreatedBy=roger.util.get_current_user_name(),
+                                      CreationTime=roger.util.get_current_datetime())
     session.add(dataset_entry)
     session.flush()
     feature_data["DataSetID"] = dataset_entry.ID
@@ -108,12 +112,6 @@ def perform_limma(exprs_data, fdf, design_data, contrast_data, use_weighted=Fals
     # conts_names_backup < - colnames(contrast_data)
     # colnames(contrast_data) < - make.names(colnames(contrast_data))
     eset = methods.new("ExpressionSet", exprs=exprs_data)
-
-    # fData(x) <- y
-    # x$fData <- y ; return x
-    # feature
-    # fData(eset) <- feature
-    # names(x) <- 1:10
 
     # Yep, this is how you call replacement functions from python
     eset = biobase.__dict__["fData<-"](eset, fdf)
@@ -172,7 +170,6 @@ def run_dge(session, roger_wd_dir, algorithm, dataset, design, contrast, design_
                           VariableCount=sample_subset[sample_subset.IsUsed].shape[0],
                           Name=design_name,
                           Description="limma script default design",
-                          # TODO cannot store as R blob
                           FeatureSubset=r_blob(pandas2ri.py2ri(feature_subset)),
                           SampleSubset=r_blob(pandas2ri.py2ri(sample_subset)),
                           DesignMatrix=r_blob(ribios_epression.designMatrix(eset_fit)),
