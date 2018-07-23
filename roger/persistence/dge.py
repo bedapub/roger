@@ -1,7 +1,7 @@
 import os.path
 from pandas import DataFrame, read_table
 
-from roger.persistence.schema import DGEmethod, DataSet, Design, SampleSubset, Contrast
+from roger.persistence.schema import DGEmethod, DataSet, Design, SampleSubset, Contrast, ContrastColumn
 from roger.exception import ROGERUsageError
 import roger.util
 
@@ -172,7 +172,7 @@ def list_contrast(session, design_name=None, ds_name=None):
     return roger.util.as_data_frame(q)
 
 
-def remove_design(session, design_name, ds_name):
+def remove_contrast(session, design_name, ds_name):
     design = get_design(session, design_name, ds_name)
     session.query(Design).filter(Design.ID == design.ID).delete()
     session.commit()
@@ -186,17 +186,19 @@ def add_contrast(session, contrast_file, design_name, dataset_name, name, descri
                         Description=description,
                         CreatedBy=roger.util.get_current_user_name(),
                         CreationTime=roger.util.get_current_datetime())
+    session.add(contrast)
+    session.flush()
+
+    contrast_data = read_table(contrast_file, sep='\t', index_col=0)
 
     print("Persisting contrast information")
-    contrast_matrix_r = ribios_epression.contrastMatrix(eset_fit)
-    contrast_cols = robjects.conversion.ri2py(base.colnames(contrast_matrix_r))
-    contrast_table = DataFrame({"DesignID": design_entry.ID,
-                                   "Name": contrast_cols,
-                                   "Description": contrast_cols,
-                                   "Contrast": [x for x in ribios_roger.serializeMatrixByCol(contrast_matrix_r)],
-                                   "CreatedBy": roger.util.get_current_user_name(),
-                                   "CreationTime": roger.util.get_current_datetime()})
-    roger.util.insert_data_frame(session, contrast_table, Contrast.__table__)
-    contrast_table = roger.util.as_data_frame(session.query(Contrast).filter(Contrast.DesignID == design_entry.ID))
+    contrast_cols = contrast_data.columns
+    contrast_table = DataFrame({"ContrastID": contrast.ID,
+                                "Name": contrast_cols,
+                                "Description": contrast_cols,
+                                "ColumnData": [contrast_data[col_name].values for col_name in contrast_cols]})
+    roger.util.insert_data_frame(session, contrast_table, ContrastColumn.__table__)
+
+    raise KeyError("AAAA")
 
     session.commit()

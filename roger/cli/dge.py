@@ -204,6 +204,58 @@ def remove_design(design_name, dataset_name):
     roger.persistence.dge.remove_design(db.session(), design_name, dataset_name)
     print("Done")
 
+# -----------------
+# Contrast Matrix
+# -----------------
+
+
+@cli.command(name="list-design",
+             short_help='Lists available designs')
+@click.option('--dataset', help='Show only designs for the given data set')
+def list_contrast(dataset):
+    print('Querying available data sets ...')
+    from roger.persistence import db
+    import roger.persistence.dge
+
+    print(roger.persistence.dge.list_design(db.session()), dataset)
+
+
+@cli.command(name="add-design",
+             short_help='Adds a new experiment design to a data set')
+@click.argument('dataset', metavar='<dataset>')
+@click.argument('design_matrix', metavar='<design_matrix>', type=click.Path(exists=True))
+@click.option('--name', help='A unique identifier for the design '
+                             '(will use the normalized expression data file name as default)')
+@click.option('--description', help='General design description')
+def add_design(dataset,
+               design_matrix,
+               name,
+               description):
+    name = get_or_guess_name(name, design_matrix)
+
+    print("Adding design '%s' to data set '%s' ..." % (name, dataset))
+    from roger.persistence import db
+    import roger.persistence.dge
+
+    roger.persistence.dge.add_design(db.session(),
+                                     dataset,
+                                     design_matrix,
+                                     name,
+                                     description)
+    print("Done")
+
+
+@cli.command(name="remove-design",
+             short_help='Removes the given design')
+@click.argument('design_name', metavar='<design_name>')
+@click.argument('dataset_name', metavar='<dataset_name>')
+def remove_design(design_name, dataset_name):
+    print("Deleting design '%s' from data set '%s' ..." % (dataset_name, design_name))
+    from roger.persistence import db
+    import roger.persistence.dge
+
+    roger.persistence.dge.remove_design(db.session(), design_name, dataset_name)
+    print("Done")
 
 # -----------------
 # DGE & executions

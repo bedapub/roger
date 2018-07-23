@@ -15,7 +15,8 @@ setup(
         "rpy2",
         "numpy",
         # "cmapPy", TODO no support for python 3 for now
-        "flask_sqlalchemy"
+        "flask_sqlalchemy",
+        "Flask-Caching"
     ],
     setup_requires=["pytest-runner"],
     tests_require=["pytest"],
