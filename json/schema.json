@@ -20,7 +20,7 @@
         }
       },
       "required": [
-        "isCovariant",
+        "isCovariate",
         "values"
       ],
       "additionalProperties": false

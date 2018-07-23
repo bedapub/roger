@@ -1,27 +1,27 @@
 {
     "Saline": {
-      "isCovariant": false,
+      "isCovariate": false,
       "values": [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
     },
     "LNA_R_13537": {
-      "isCovariant": false,
+      "isCovariate": false,
       "values": [1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     },
     "LNA_R_13539": {
-      "isCovariant": false,
+      "isCovariate": false,
       "values": [0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     },
     "LNA_R_13541": {
-      "isCovariant": false,
+      "isCovariate": false,
       "values": [0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0]
     },
     "LNA_R_13549": {
-      "isCovariant": false,
+      "isCovariate": false,
       "values": [0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0]
     },
     "LNA_R_13551": {
-      "isCovariant": false,
+      "isCovariate": false,
       "values": [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0]
-    },
+    }
   }
   
