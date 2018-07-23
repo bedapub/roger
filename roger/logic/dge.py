@@ -1,18 +1,19 @@
 from rpy2.robjects.packages import importr
 from rpy2.robjects import pandas2ri
 from rpy2 import robjects
+from collections import OrderedDict
 import pandas as pd
-import numpy as np
 import os.path
 import shutil
 
-from roger.persistence.schema import MicroArrayDataSet, Design, DGEmethod, Contrast, \
+from roger.persistence.dge import get_ds
+from roger.persistence.schema import MicroArrayDataSet, DGEmethod, Contrast, \
     FeatureMapping, DGEtable, DGEmodel, MicroArrayType, DataSet
 import roger.logic.geneanno
-import roger.util
 import roger.persistence.geneanno
 import roger.persistence.dge
 from roger.exception import ROGERUsageError
+from roger.util import get_or_guess_name, parse_gct
 
 DATASET_SUB_FOLDER = "dataset"
 DGE_MODEL_SUB_FOLDER = "dge_model"
@@ -36,7 +37,34 @@ def annotate_ds_pheno_data(gct_data, pheno_file):
     return pheno_data
 
 
-# TODO: Separate between logging and actual persistence
+def perform_limma(exprs_data, fdf, design_data, contrast_data, use_weighted=False):
+    methods = importr("methods")
+    biobase = importr("Biobase")
+    limma = importr("limma")
+
+    # conts_names_backup < - colnames(contrast_data)
+    # colnames(contrast_data) < - make.names(colnames(contrast_data))
+    eset = methods.new("ExpressionSet", exprs=exprs_data)
+
+    # Yep, this is how you call replacement functions from python
+    eset = biobase.__dict__["fData<-"](eset, fdf)
+
+    weights = robjects.vectors.IntVector([1] * base.ncol(exprs_data)[0])
+    if use_weighted:
+        # doLog("Estimating weights by linear model", level=1L)
+        weights = limma.arrayWeights(eset, design=design_data)
+
+    eset_fit = limma.lmFit(object=eset, design=design_data, weights=weights)
+    eset_fit = limma.contrasts_fit(eset_fit, contrast_data)
+    eset_fit = limma.eBayes(eset_fit)
+    return eset, eset_fit
+
+# ---------------
+# Datasets
+# ---------------
+
+
+# TODO: Separate between annotation and actual persistence
 def add_ma_ds(session,
               roger_wd_dir,
               norm_exprs_file,
@@ -48,19 +76,19 @@ def add_ma_ds(session,
               normalization_method: MicroArrayType = None,
               description=None,
               xref=None):
+
+    name = get_or_guess_name(name, norm_exprs_file)
+
     # Input checking
     species_list = roger.persistence.geneanno.list_species(session)
     if species_list[species_list.TaxID == tax_id].empty:
         raise ROGERUsageError('Unknown taxon id: %s' % tax_id)
 
-    if name is None:
-        name = os.path.splitext(os.path.basename(norm_exprs_file))[0]
-
     if session.query(DataSet).filter(DataSet.Name == name).one_or_none() is not None:
         raise ROGERUsageError("Data set with name '%s' already exists" % name)
 
     # Read and annotate data
-    gct_data = roger.util.parse_gct(file_path=norm_exprs_file)
+    gct_data = parse_gct(file_path=norm_exprs_file)
     print("Annotating features")
     (feature_data, annotation_version) = roger.logic.geneanno.annotate(session, gct_data, tax_id, symbol_type)
 
@@ -106,36 +134,12 @@ def add_ma_ds(session,
     session.commit()
     return dataset_entry
 
-
-def perform_limma(exprs_data, fdf, design_data, contrast_data, use_weighted=False):
-    methods = importr("methods")
-    biobase = importr("Biobase")
-    limma = importr("limma")
-
-    # conts_names_backup < - colnames(contrast_data)
-    # colnames(contrast_data) < - make.names(colnames(contrast_data))
-    eset = methods.new("ExpressionSet", exprs=exprs_data)
-
-    # Yep, this is how you call replacement functions from python
-    eset = biobase.__dict__["fData<-"](eset, fdf)
-
-    weights = robjects.vectors.IntVector([1] * base.ncol(exprs_data)[0])
-    if use_weighted:
-        # doLog("Estimating weights by linear model", level=1L)
-        weights = limma.arrayWeights(eset, design=design_data)
-
-    eset_fit = limma.lmFit(object=eset, design=design_data, weights=weights)
-    eset_fit = limma.contrasts_fit(eset_fit, contrast_data)
-    eset_fit = limma.eBayes(eset_fit)
-    return eset, eset_fit
+# -----------------
+# DGE & executions
+# -----------------
 
 
-def r_blob(data):
-    ribios_roger = importr("ribiosROGER")
-    return memoryview(np.array([x for x in ribios_roger.blobs(data)[0]]))
-
-
-def run_dge(session, roger_wd_dir, algorithm, dataset, design, contrast, design_name):
+def run_dge(session, roger_wd_dir, algorithm, contrast):
     ribios_io = importr("ribiosIO")
     ribios_roger = importr("ribiosROGER")
     ribios_epression = importr("ribiosExpression")
@@ -149,7 +153,6 @@ def run_dge(session, roger_wd_dir, algorithm, dataset, design, contrast, design_
     contrast_data = pd.read_table(contrast, sep='\t', index_col=0)
 
     feature_data = ds.feature_data
-    from collections import OrderedDict
     fdf = pd.DataFrame(OrderedDict([("Feature", feature_data["Name"]),
                                     ("GeneID", feature_data["RogerGeneIndex"]),
                                     ("index", feature_data["Name"])])).set_index("index")
@@ -157,47 +160,6 @@ def run_dge(session, roger_wd_dir, algorithm, dataset, design, contrast, design_
     # limma
     print("Performing differential gene expression analysis using limma")
     (eset, eset_fit) = perform_limma(exprs_data, fdf, design_data, contrast_data)
-
-    print("Persisting design information")
-    feature_names = robjects.conversion.ri2py(base.rownames(eset_fit.rx2("genes")))
-    feature_subset = fdf[fdf['Feature'].isin(feature_names)]
-    feature_subset = feature_data.set_index("Name").join(feature_subset)
-    is_used = feature_subset["Feature"].apply(lambda x: True if type(x).__name__ == "str" else False)
-
-    feature_subset = pd.DataFrame({"DatasetFeatureIndex": feature_subset["FeatureIndex"],
-                                   "IsUsed": is_used,
-                                   "Description": "Default filtering by limma"})
-
-    sample_subset = pd.DataFrame({"DatasetSampleIndex": range(1, robjects.conversion.ri2py(base.ncol(exprs_data))[0]),
-                                  "IsUsed": True,
-                                  "Description": "ROGER currently only support designs where all samples are used."})
-    if design_name is None:
-        design_name = os.path.splitext(os.path.basename(design))[0]
-
-    design_entry = Design(DataSetID=ds.ID,
-                          VariableCount=sample_subset[sample_subset.IsUsed].shape[0],
-                          Name=design_name,
-                          Description="limma script default design",
-                          FeatureSubset=r_blob(pandas2ri.py2ri(feature_subset)),
-                          SampleSubset=r_blob(pandas2ri.py2ri(sample_subset)),
-                          DesignMatrix=r_blob(ribios_epression.designMatrix(eset_fit)),
-                          CreatedBy=roger.util.get_current_user_name(),
-                          CreationTime=roger.util.get_current_datetime())
-    session.add(design_entry)
-    session.flush()
-    session.commit()
-
-    print("Persisting contrast information")
-    contrast_matrix_r = ribios_epression.contrastMatrix(eset_fit)
-    contrast_cols = robjects.conversion.ri2py(base.colnames(contrast_matrix_r))
-    contrast_table = pd.DataFrame({"DesignID": design_entry.ID,
-                                   "Name": contrast_cols,
-                                   "Description": contrast_cols,
-                                   "Contrast": [x for x in ribios_roger.serializeMatrixByCol(contrast_matrix_r)],
-                                   "CreatedBy": roger.util.get_current_user_name(),
-                                   "CreationTime": roger.util.get_current_datetime()})
-    roger.util.insert_data_frame(session, contrast_table, Contrast.__tablename__)
-    contrast_table = roger.util.as_data_frame(session.query(Contrast).filter(Contrast.DesignID == design_entry.ID))
 
     print("Persisting model information")
     method = session.query(DGEmethod).filter(DGEmethod.Name == "limma").all()[0]
@@ -224,6 +186,16 @@ def run_dge(session, roger_wd_dir, algorithm, dataset, design, contrast, design_
     session.flush()
     session.commit()
 
+    print("Persisting feature subsets")
+    feature_names = robjects.conversion.ri2py(base.rownames(eset_fit.rx2("genes")))
+    feature_subset = fdf[fdf['Feature'].isin(feature_names)]
+    feature_subset = feature_data.set_index("Name").join(feature_subset)
+    is_used = feature_subset["Feature"].apply(lambda x: True if type(x).__name__ == "str" else False)
+
+    feature_subset = pd.DataFrame({"DatasetFeatureIndex": feature_subset["FeatureIndex"],
+                                   "IsUsed": is_used,
+                                   "Description": "Default filtering by limma"})
+
     print("Persisting DGE results")
     dge_tbl = pandas2ri.ri2py(ribios_roger.limmaDgeTable(eset_fit))
     dge_tbl = dge_tbl.join(contrast_table.set_index("Name"), on="Contrast", rsuffix="_C") \
@@ -236,4 +208,4 @@ def run_dge(session, roger_wd_dir, algorithm, dataset, design, contrast, design_
                              'LogFC': dge_tbl["logFC"],
                              'PValue': dge_tbl["PValue"],
                              'FDR': dge_tbl["FDR"]})
-    roger.util.insert_data_frame(session, dgetable, DGEtable.__tablename__)
+    roger.util.insert_data_frame(session, dgetable, DGEtable.__table__)

@@ -1,10 +1,11 @@
-from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, LargeBinary, Enum
+from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, Enum
 from sqlalchemy import ForeignKey, UniqueConstraint, ForeignKeyConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 from pandas import read_table
 import enum
 
+from roger.persistence.json_backport import RogerJSON
 from roger.persistence import db
 import roger.util
 
@@ -210,11 +211,11 @@ class RNASeqDataSet(DataSet):
 class FeatureMapping(db.Model):
     __tablename__ = 'FeatureMapping'
 
+    FeatureIndex = Column(Integer, nullable=False, primary_key=True)
+    DataSetID = Column(Integer, ForeignKey(DataSet.ID, ondelete="CASCADE"), nullable=False, primary_key=True)
     RogerGeneIndex = Column(Integer, ForeignKey(GeneAnnotation.RogerGeneIndex))
     OriRogerGeneIndex = Column(Integer, ForeignKey(GeneAnnotation.RogerGeneIndex))
     OriTaxID = Column(Integer)
-    FeatureIndex = Column(Integer, nullable=False, primary_key=True)
-    DataSetID = Column(Integer, ForeignKey(DataSet.ID, ondelete="CASCADE"), nullable=False, primary_key=True)
     Name = Column(String(DEFAULT_STR_SIZE), nullable=False)
     Description = Column(String(DEFAULT_STR_SIZE))
 
@@ -242,13 +243,8 @@ class Design(db.Model):
     VariableCount = Column(Integer, nullable=False)
     Name = Column(String(DEFAULT_STR_SIZE), nullable=False)
     Description = Column(String(DEFAULT_STR_SIZE))
-    # TODO: Check real BLOB sizes & also consider JSON
-    # R logic vector
-    SampleSubset = Column(LargeBinary, nullable=False)
-    # R logic vector
-    FeatureSubset = Column(LargeBinary, nullable=False)
-    # R Matrix
-    DesignMatrix = Column(LargeBinary, nullable=False)
+    # Matrix (array of array) + derived-flag
+    DesignMatrix = Column(RogerJSON, nullable=False)
     CreatedBy = Column(String(DEFAULT_STR_SIZE), nullable=False)
     # A flag that tells the user that no human entity has locked into the design
     # if NULL, the design was not reviewed by a user
@@ -263,8 +259,24 @@ class Design(db.Model):
     )
 
     def __repr__(self):
-        return "<GeneSetCategory(ID='%s', DataSetID='%s', Name='%s')>" \
-               % (self.ID, self.DataSetID, self.Name)
+        return "<Design(ID='%s', DataSetID='%s', Name='%s')>" % (self.ID, self.DataSetID, self.Name)
+
+
+class SampleSubset(db.Model):
+    __tablename__ = 'SampleSubset'
+
+    SampleIndex = Column(Integer, nullable=False, primary_key=True)
+    DesignID = Column(Integer, ForeignKey(Design.ID, ondelete="CASCADE"), primary_key=True)
+    IsUsed = Column(Boolean, nullable=False)
+    Description = Column(String(DEFAULT_STR_SIZE))
+
+    Design = relationship("Design", foreign_keys=[DesignID])
+
+    __table_args__ = {'mysql_engine': 'InnoDB'}
+
+    def __repr__(self):
+        return "<SampleSubset(SampleIndex='%s', DesignID='%s', IsUsed='%s', Description='%s')>" \
+               % (self.SampleIndex, self.DesignID, self.IsUsed, self.Description)
 
 
 # TODO: Don't model it as explicit python type
@@ -291,8 +303,6 @@ class Contrast(db.Model):
     DesignID = Column(Integer, ForeignKey(Design.ID), nullable=False)
     Name = Column(String(DEFAULT_STR_SIZE), nullable=False)
     Description = Column(String(DEFAULT_STR_SIZE))
-    #  R numeric vector - numerical combination of variables in design matrix
-    Contrast = Column(String(DEFAULT_STR_SIZE), nullable=False)
     CreatedBy = Column(String(DEFAULT_STR_SIZE), nullable=False)
     CreationTime = Column(DateTime, nullable=False)
 
@@ -304,8 +314,30 @@ class Contrast(db.Model):
     )
 
     def __repr__(self):
-        return "<Contrast(ID='%s', DesignID='%s', Name='%s')>" \
-               % (self.ID, self.DesignID, self.Name)
+        return "<ContrastColumn(ID='%s', DesignID='%s', Name='%s', ColumnData='%s')>" \
+               % (self.ID, self.DesignID, self.Name, self.ColumnData)
+
+
+class ContrastColumn(db.Model):
+    __tablename__ = 'ContrastColumn'
+
+    ID = Column(Integer, primary_key=True)
+    ContrastID = Column(Integer, ForeignKey(Contrast.ID), nullable=False)
+    Name = Column(String(DEFAULT_STR_SIZE), nullable=False)
+    Description = Column(String(DEFAULT_STR_SIZE))
+    #  Numeric array - numerical combination of variables in design matrix
+    ColumnData = Column(RogerJSON, nullable=False)
+
+    Contrast = relationship("Contrast", foreign_keys=[ContrastID])
+
+    __table_args__ = (
+        UniqueConstraint(ContrastID, Name, name='ContrastColumnName'),
+        {'mysql_engine': 'InnoDB'}
+    )
+
+    def __repr__(self):
+        return "<ContrastColumn(ID='%s', DesignID='%s', Name='%s', ColumnData='%s')>" \
+               % (self.ID, self.DesignID, self.Name, self.ColumnData)
 
 
 class DGEmethod(db.Model):
@@ -326,7 +358,7 @@ class DGEmethod(db.Model):
 class DGEmodel(db.Model):
     __tablename__ = 'DGEmodel'
 
-    DesignID = Column(Integer, ForeignKey(Design.ID), primary_key=True)
+    ContrastID = Column(Integer, ForeignKey(Contrast.ID), primary_key=True)
     DGEmethodID = Column(Integer, ForeignKey(DGEmethod.ID), primary_key=True)
     # Link to external files in study-centric working directory
     # Untrained model
@@ -334,22 +366,52 @@ class DGEmodel(db.Model):
     # Evaluated model
     FitObjFile = Column(String(DEFAULT_STR_SIZE), nullable=False)
 
-    Design = relationship("Design", foreign_keys=[DesignID])
+    # R logic vector
+    FeatureSubset = Column(Boolean, nullable=False)
+
+    Contrast = relationship("Contrast", foreign_keys=[ContrastID])
     Method = relationship("DGEmethod", foreign_keys=[DGEmethodID])
 
     __table_args__ = {'mysql_engine': 'InnoDB'}
 
     def __repr__(self):
-        return "<DGEmodel(DesignID='%s', DGEmethodID='%s')>" \
-               % (self.DesignID, self.DGEmethodID)
+        return "<DGEmodel(ContrastID='%s', DGEmethodID='%s')>" \
+               % (self.ContrastID, self.DGEmethodID)
+
+
+class FeatureSubset(db.Model):
+    __tablename__ = 'FeatureSubset'
+
+    FeatureIndex = Column(Integer, nullable=False, primary_key=True)
+    DataSetID = Column(Integer, nullable=False, primary_key=True)
+    ContrastID = Column(Integer, nullable=False, primary_key=True)
+    DGEmethodID = Column(Integer, nullable=False, primary_key=True)
+    IsUsed = Column(Boolean, nullable=False)
+    Description = Column(String(DEFAULT_STR_SIZE))
+
+    __table_args__ = (
+        ForeignKeyConstraint((FeatureIndex, DataSetID), [FeatureMapping.FeatureIndex, FeatureMapping.DataSetID]),
+        ForeignKeyConstraint((ContrastID, DGEmethodID), [DGEmodel.ContrastID, DGEmodel.DGEmethodID],
+                             ondelete="CASCADE"),
+        {'mysql_engine': 'InnoDB'}
+    )
+
+    FeatureMapping = relationship("FeatureMapping", foreign_keys=[FeatureIndex, DataSetID])
+    Model = relationship("DGEmodel", foreign_keys=[ContrastID, DGEmethodID])
+
+    def __repr__(self):
+        return "<FeatureSubset(FeatureIndex='%s', DGEmodelID='%s', IsUsed='%s', Description='%s')>" \
+               % (self.FeatureIndex, self.DGEmodelID, self.IsUsed, self.Description)
 
 
 class DGEtable(db.Model):
     __tablename__ = 'DGEtable'
 
-    ContrastID = Column(Integer, ForeignKey(Contrast.ID, ondelete="CASCADE"), primary_key=True)
+    ContrastColumnID = Column(Integer, ForeignKey(ContrastColumn.ID), primary_key=True)
     FeatureIndex = Column(Integer, nullable=False, primary_key=True)
     DataSetID = Column(Integer, nullable=False, primary_key=True)
+    ContrastID = Column(Integer, nullable=False, primary_key=True)
+    DGEmethodID = Column(Integer, nullable=False, primary_key=True)
     AveExprs = Column(Float, nullable=False)
     Statistic = Column(Float, nullable=False)
     LogFC = Column(Float, nullable=False)
@@ -358,16 +420,20 @@ class DGEtable(db.Model):
 
     __table_args__ = (
         ForeignKeyConstraint((FeatureIndex, DataSetID), [FeatureMapping.FeatureIndex, FeatureMapping.DataSetID]),
+        ForeignKeyConstraint((ContrastID, DGEmethodID), [DGEmodel.ContrastID, DGEmodel.DGEmethodID],
+                             ondelete="CASCADE"),
         {'mysql_engine': 'InnoDB'}
     )
 
-    Contrast = relationship("Contrast", foreign_keys=[ContrastID])
+    ContrastColumn = relationship("ContrastColumn", foreign_keys=[ContrastColumnID])
     FeatureMapping = relationship("FeatureMapping", foreign_keys=[FeatureIndex, DataSetID])
+    Model = relationship("DGEmodel", foreign_keys=[ContrastID, DGEmethodID])
 
     def __repr__(self):
-        return "<DGEtable(ContrastID='%s', FeatureIndex='%s', AveExprs='%s', Statistic='%s'," \
+        return "<DGEtable(ContrastColumnID='%s', FeatureIndex='%s', AveExprs='%s', Statistic='%s'," \
                "LogFC='%s', PValue='%s', FDR='%s')>" \
-               % (self.ContrastID, self.FeatureIndex, self.AveExprs, self.Statistic, self.LogFC, self.PValue, self.FDR)
+               % (self.ContrastColumnID, self.FeatureIndex, self.AveExprs,
+                  self.Statistic, self.LogFC, self.PValue, self.FDR)
 
 
 class GSEmethod(db.Model):
@@ -388,7 +454,7 @@ class GSEmethod(db.Model):
 class GSEtable(db.Model):
     __tablename__ = 'GSEtable'
 
-    ContrastID = Column(Integer, ForeignKey(Contrast.ID), primary_key=True)
+    ContrastColumnID = Column(Integer, ForeignKey(ContrastColumn.ID), primary_key=True)
     GSEmethodID = Column(Integer, ForeignKey(GSEmethod.ID), primary_key=True)
     GeneSetID = Column(Integer, ForeignKey(GeneSet.ID), primary_key=True)
     Correlation = Column(Float)
@@ -398,14 +464,14 @@ class GSEtable(db.Model):
     EnrichmentScore = Column(Float, nullable=False)
     EffGeneCount = Column(Integer, nullable=False)
 
-    Contrast = relationship("Contrast", foreign_keys=[ContrastID])
+    ContrastColumn = relationship("ContrastColumn", foreign_keys=[ContrastColumnID])
     Method = relationship("GSEmethod", foreign_keys=[GSEmethodID])
     GeneSet = relationship("GeneSet", foreign_keys=[GeneSetID])
 
     __table_args__ = {'mysql_engine': 'InnoDB'}
 
     def __repr__(self):
-        return "<GSEtable(ContrastID='%s', GSEmethodID='%s', GeneSetID='%s', Correlation='%s'," \
+        return "<GSEtable(ContrastColumnID='%s', GSEmethodID='%s', GeneSetID='%s', Correlation='%s'," \
                "Direction='%s', PValue='%s', FDR='%s', EnrichmentScore='%s', EffGeneCount='%s')>" \
-               % (self.ContrastID, self.GSEmethodID, self.GeneSetID, self.Correlation, self.Direction, self.PValue,
-                  self.FDR, self.EnrichmentScore, self.EffGeneCount)
+               % (self.ContrastColumnID, self.GSEmethodID, self.GeneSetID, self.Correlation, self.Direction,
+                  self.PValue, self.FDR, self.EnrichmentScore, self.EffGeneCount)

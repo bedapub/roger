@@ -4,7 +4,7 @@ import os.path
 
 from roger.cli import cli
 from roger.persistence.schema import MicroArrayType
-from roger.util import get_enum_names
+from roger.util import get_enum_names, get_or_guess_name
 
 
 # ---------------
@@ -108,7 +108,7 @@ def show_symbol_types(tax_id):
               type=click.Choice(get_enum_names(MicroArrayType)),
               default=MicroArrayType.RMA.name,
               help='Used method method for normalization')
-@click.option('--description', help='Dataset descriptioon')
+@click.option('--description', help='General data set description')
 @click.option('--xref', help='External (GEO) reference')
 def add_ma_ds(norm_exprs_file,
               tax_id,
@@ -152,6 +152,60 @@ def remove_ds(name):
 
 
 # -----------------
+# Design Matrix
+# -----------------
+
+
+@cli.command(name="list-design",
+             short_help='Lists available designs')
+@click.option('--dataset', help='Show only designs for the given data set')
+def list_design(dataset):
+    print('Querying available data sets ...')
+    from roger.persistence import db
+    import roger.persistence.dge
+
+    print(roger.persistence.dge.list_design(db.session()), dataset)
+
+
+@cli.command(name="add-design",
+             short_help='Adds a new experiment design to a data set')
+@click.argument('dataset', metavar='<dataset>')
+@click.argument('design_matrix', metavar='<design_matrix>', type=click.Path(exists=True))
+@click.option('--name', help='A unique identifier for the design '
+                             '(will use the normalized expression data file name as default)')
+@click.option('--description', help='General design description')
+def add_design(dataset,
+               design_matrix,
+               name,
+               description):
+    name = get_or_guess_name(name, design_matrix)
+
+    print("Adding design '%s' to data set '%s' ..." % (name, dataset))
+    from roger.persistence import db
+    import roger.persistence.dge
+
+    roger.persistence.dge.add_design(db.session(),
+                                     dataset,
+                                     design_matrix,
+                                     name,
+                                     description)
+    print("Done")
+
+
+@cli.command(name="remove-design",
+             short_help='Removes the given design')
+@click.argument('design_name', metavar='<design_name>')
+@click.argument('dataset_name', metavar='<dataset_name>')
+def remove_design(design_name, dataset_name):
+    print("Deleting design '%s' from data set '%s' ..." % (dataset_name, design_name))
+    from roger.persistence import db
+    import roger.persistence.dge
+
+    roger.persistence.dge.remove_design(db.session(), design_name, dataset_name)
+    print("Done")
+
+
+# -----------------
 # DGE & executions
 # -----------------
 
@@ -160,10 +214,9 @@ def remove_ds(name):
              short_help='Executes differential gene expression analysis for the given algorithm')
 @click.argument('algorithm', metavar='(limma|edgeR)', type=click.Choice(['limma', 'edgeR']))
 @click.argument('dataset', metavar='<dataset_name>')
-@click.argument('design', metavar='<design_file>', type=click.Path(exists=True))
 @click.argument('contrast', metavar='<contrast>', type=click.Path(exists=True))
-@click.option('--design_name', help='Name of the design (must be unique within each data set / study)')
-def run_dge(algorithm, dataset, design, contrast, design_name):
+@click.option('--name', help='Name of the design (must be unique within each data set / study)')
+def run_dge(algorithm, contrast):
     print("Performing DGE algorithm '%s' ..." % algorithm)
     from roger.persistence import db
     import roger.logic.dge
@@ -171,8 +224,5 @@ def run_dge(algorithm, dataset, design, contrast, design_name):
     roger.logic.dge.run_dge(db.session(),
                             flask.current_app.config['ROGER_DATA_FOLDER'],
                             algorithm,
-                            dataset,
-                            design,
-                            contrast,
-                            design_name)
+                            dataset)
     print("Done")

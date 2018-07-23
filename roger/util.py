@@ -10,6 +10,10 @@ from sqlalchemy.orm import Session
 from enum import EnumMeta
 
 
+def get_or_guess_name(name, source_file):
+    return os.path.splitext(os.path.basename(source_file))[0] if name is None else name
+
+
 def get_enum_names(enum: EnumMeta):
     return [e.name for e in list(enum)]
 
