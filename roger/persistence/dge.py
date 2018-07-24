@@ -67,7 +67,7 @@ def delete_ds(session, name):
 # Design Matrix
 # -----------------
 
-def query_design(session, ds_name, design_name) -> Design:
+def query_design(session, design_name, ds_name) -> Design:
     return session.query(Design) \
         .filter(Design.DataSetID == DataSet.ID) \
         .filter(Design.Name == design_name and DataSet.Name == ds_name)
@@ -103,7 +103,7 @@ def remove_design(session, design_name, ds_name):
 # 2 pass TSV and apply SVA for covariance detection
 # 3 pass TSV matrix + covariance information from R session (by using model.matrix methods and friends)
 # (4 pass matrix and covariance information as JSON file [NOT recommended])
-def add_design(session, dataset_name, design_file, name, description):
+def add_design(session, design_file, dataset_name, name, description):
     ds = get_ds(session, dataset_name)
 
     design = query_design(session, name, dataset_name).one_or_none()
@@ -119,10 +119,10 @@ def add_design(session, dataset_name, design_file, name, description):
                                "Description": "ROGER currently only support designs where all samples are used."})
 
     # TODO make this customizable by user
-    json_obj = {col_name: {
-        "isCovariate": False,
-        "values": design_data[col_name].values.tolist()}
-        for col_name in design_data.columns}
+    json_obj = [{"columnName": col_name,
+                 "isCovariate": False,
+                 "values": design_data[col_name].values.tolist()}
+                for col_name in design_data.columns]
 
     design_entry = Design(DataSetID=ds.ID,
                           VariableCount=sample_subset[sample_subset.IsUsed].shape[0],
@@ -139,6 +139,7 @@ def add_design(session, dataset_name, design_file, name, description):
 
     session.commit()
     return name
+
 
 # -----------------
 # Contrast Matrix

@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, Enum
 from sqlalchemy import ForeignKey, UniqueConstraint, ForeignKeyConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property
-from pandas import read_table
+from pandas import read_table, DataFrame
 import enum
 
 from roger.persistence.json_backport import RogerJSON
@@ -261,6 +261,13 @@ class Design(db.Model):
     def __repr__(self):
         return "<Design(ID='%s', DataSetID='%s', Name='%s')>" % (self.ID, self.DataSetID, self.Name)
 
+    @hybrid_property
+    def design_matrix(self):
+        df = DataFrame()
+        for row in self.DesignMatrix:
+            df[row["columnName"]] = row["values"]
+        return df
+
 
 class SampleSubset(db.Model):
     __tablename__ = 'SampleSubset'
@@ -317,6 +324,18 @@ class Contrast(db.Model):
         return "<ContrastColumn(ID='%s', DesignID='%s', Name='%s', ColumnData='%s')>" \
                % (self.ID, self.DesignID, self.Name, self.ColumnData)
 
+    @hybrid_property
+    def contrast_columns(self):
+        return roger.util.as_data_frame(ContrastColumn.query.filter(ContrastColumn.ContrastID == self.ID))
+
+    @hybrid_property
+    def contrast_matrix(self):
+        df = DataFrame()
+        for index, row in self.contrast_columns.iterrows():
+            df[row.Name] = row.ColumnData
+        df.index = self.Design.design_matrix.columns
+        return df
+
 
 class ContrastColumn(db.Model):
     __tablename__ = 'ContrastColumn'
@@ -365,9 +384,6 @@ class DGEmodel(db.Model):
     InputObjFile = Column(String(DEFAULT_STR_SIZE), nullable=False)
     # Evaluated model
     FitObjFile = Column(String(DEFAULT_STR_SIZE), nullable=False)
-
-    # R logic vector
-    FeatureSubset = Column(Boolean, nullable=False)
 
     Contrast = relationship("Contrast", foreign_keys=[ContrastID])
     Method = relationship("DGEmethod", foreign_keys=[DGEmethodID])

@@ -171,8 +171,8 @@ def list_design(dataset):
 @click.argument('design_matrix', metavar='<design_matrix>', type=click.Path(exists=True))
 @click.option('--name', help='A unique identifier for the design (default: file name)')
 @click.option('--description', help='General design description')
-def add_design(dataset,
-               design_matrix,
+def add_design(design_matrix,
+               dataset,
                name,
                description):
     name = get_or_guess_name(name, design_matrix)
@@ -182,8 +182,8 @@ def add_design(dataset,
     import roger.persistence.dge
 
     name = roger.persistence.dge.add_design(db.session(),
-                                            dataset,
                                             design_matrix,
+                                            dataset,
                                             name,
                                             description)
     print("Done - added design with name '%s'" % name)
@@ -265,21 +265,22 @@ def remove_contrast(contrast_name, design_name, dataset_name):
 # -----------------
 
 
-@cli.command(name="run-dge",
-             short_help='Executes differential gene expression analysis for the given algorithm')
-@click.argument('algorithm', metavar='(limma|edgeR)', type=click.Choice(['limma', 'edgeR']))
-@click.argument('contrast', metavar='<contrast>', type=click.Path(exists=True))
+@cli.command(name="run-ma-dge",
+             short_help='Run differential gene expression analysis on microarray data')
+@click.argument('contrast', metavar='<contrast>')
 @click.argument('design', metavar='<design_name>')
 @click.argument('dataset', metavar='<dataset_name>')
-def run_dge(algorithm, contrast, design, dataset):
+# TODO limma support only for now ...
+# @click.option('--algorithm', default="limma", help='Used method method for normalization')
+def run_ma_dge(contrast, design, dataset, algorithm="limma"):
     print("Performing DGE algorithm '%s' ..." % algorithm)
     from roger.persistence import db
     import roger.logic.dge
 
-    roger.logic.dge.run_dge(db.session(),
-                            flask.current_app.config['ROGER_DATA_FOLDER'],
-                            algorithm,
-                            contrast,
-                            design,
-                            dataset)
+    roger.logic.dge.run_ma_dge(db.session(),
+                               flask.current_app.config['ROGER_DATA_FOLDER'],
+                               contrast,
+                               design,
+                               dataset,
+                               algorithm)
     print("Done")

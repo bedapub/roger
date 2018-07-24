@@ -8,7 +8,7 @@ import shutil
 
 from roger.persistence.dge import get_ds
 from roger.persistence.schema import MicroArrayDataSet, DGEmethod, Contrast, \
-    FeatureMapping, DGEtable, DGEmodel, MicroArrayType, DataSet
+    FeatureMapping, DGEtable, DGEmodel, MicroArrayType, DataSet, FeatureSubset
 import roger.logic.geneanno
 import roger.persistence.geneanno
 import roger.persistence.dge
@@ -37,10 +37,19 @@ def annotate_ds_pheno_data(gct_data, pheno_file):
     return pheno_data
 
 
-def perform_limma(exprs_data, fdf, design_data, contrast_data, use_weighted=False):
+def perform_limma(ds_data: MicroArrayDataSet,
+                  fdf: pd.DataFrame,
+                  design_data: pd.DataFrame,
+                  contrast_matrix: pd.DataFrame,
+                  use_weighted: bool = False):
     methods = importr("methods")
     biobase = importr("Biobase")
     limma = importr("limma")
+    ribios_io = importr("ribiosIO")
+    ribios_roger = importr("ribiosROGER")
+
+    # TODO check of this is actually present or not
+    exprs_data = ribios_io.read_exprs_matrix(ds_data.NormalizedExprsWC)
 
     # conts_names_backup < - colnames(contrast_data)
     # colnames(contrast_data) < - make.names(colnames(contrast_data))
@@ -55,9 +64,12 @@ def perform_limma(exprs_data, fdf, design_data, contrast_data, use_weighted=Fals
         weights = limma.arrayWeights(eset, design=design_data)
 
     eset_fit = limma.lmFit(object=eset, design=design_data, weights=weights)
-    eset_fit = limma.contrasts_fit(eset_fit, contrast_data)
+    eset_fit = limma.contrasts_fit(eset_fit, contrast_matrix)
     eset_fit = limma.eBayes(eset_fit)
-    return eset, eset_fit
+    dge_tbl = pandas2ri.ri2py(ribios_roger.limmaDgeTable(eset_fit))
+    # TODO: return result type instead of a tuple
+    return eset, eset_fit, dge_tbl
+
 
 # ---------------
 # Datasets
@@ -76,7 +88,6 @@ def add_ma_ds(session,
               normalization_method: MicroArrayType = None,
               description=None,
               xref=None):
-
     name = get_or_guess_name(name, norm_exprs_file)
 
     # Input checking
@@ -134,37 +145,42 @@ def add_ma_ds(session,
     session.commit()
     return name
 
+
 # -----------------
 # DGE & executions
 # -----------------
 
 
-def run_dge(session, roger_wd_dir, algorithm, contrast):
-    ribios_io = importr("ribiosIO")
-    ribios_roger = importr("ribiosROGER")
-    ribios_epression = importr("ribiosExpression")
-
-    print("Parsing data")
+def run_ma_dge(session,
+               roger_wd_dir,
+               contrast,
+               design,
+               dataset,
+               algorithm="limma"):
+    print("Retrieving data from database")
     if algorithm != "limma":
         raise ROGERUsageError("Only limma is supported for now")
 
-    ds = roger.persistence.dge.get_ds(session, dataset)
-    design_data = pd.read_table(design, sep='\t', index_col=0)
-    contrast_data = pd.read_table(contrast, sep='\t', index_col=0)
+    contrast_data = roger.persistence.dge.get_contrast(session, contrast, design, dataset)
+    design_data = contrast_data.Design
+    ds_data = design_data.DataSet
 
-    feature_data = ds.feature_data
+    feature_data = ds_data.feature_data
     fdf = pd.DataFrame(OrderedDict([("Feature", feature_data["Name"]),
                                     ("GeneID", feature_data["RogerGeneIndex"]),
                                     ("index", feature_data["Name"])])).set_index("index")
-    exprs_data = ribios_io.read_exprs_matrix(ds.ExprsWC)
+
     # limma
     print("Performing differential gene expression analysis using limma")
-    (eset, eset_fit) = perform_limma(exprs_data, fdf, design_data, contrast_data)
+    contrast_matrix = contrast_data.contrast_matrix
+    design_matrix = design_data.design_matrix
+    (eset, eset_fit, dge_tbl) = perform_limma(ds_data, fdf, design_matrix, contrast_matrix)
 
     print("Persisting model information")
-    method = session.query(DGEmethod).filter(DGEmethod.Name == "limma").all()[0]
+    # TODO why are methods stored in table anyway?
+    method = session.query(DGEmethod).filter(DGEmethod.Name == "limma").one()
 
-    dge_method_sub_dir = "%d_%d" % (design_entry.ID, method.ID)
+    dge_method_sub_dir = "%d_%d" % (contrast_data.ID, method.ID)
 
     dge_models_path = os.path.join(roger_wd_dir, DGE_MODEL_SUB_FOLDER)
     dge_model_path = os.path.join(dge_models_path, dge_method_sub_dir)
@@ -177,14 +193,13 @@ def run_dge(session, roger_wd_dir, algorithm, contrast):
     fit_obj_file = os.path.abspath(os.path.join(dge_model_path, "fit_obj.rds"))
     base.saveRDS(eset_fit, file=fit_obj_file)
 
-    dge_model = DGEmodel(DesignID=design_entry.ID,
+    dge_model = DGEmodel(ContrastID=contrast_data.ID,
                          DGEmethodID=method.ID,
                          InputObjFile=input_obj_file,
                          FitObjFile=fit_obj_file)
 
     session.add(dge_model)
     session.flush()
-    session.commit()
 
     print("Persisting feature subsets")
     feature_names = robjects.conversion.ri2py(base.rownames(eset_fit.rx2("genes")))
@@ -192,16 +207,21 @@ def run_dge(session, roger_wd_dir, algorithm, contrast):
     feature_subset = feature_data.set_index("Name").join(feature_subset)
     is_used = feature_subset["Feature"].apply(lambda x: True if type(x).__name__ == "str" else False)
 
-    feature_subset = pd.DataFrame({"DatasetFeatureIndex": feature_subset["FeatureIndex"],
+    feature_subset = pd.DataFrame({"FeatureIndex": feature_subset["FeatureIndex"],
+                                   "DataSetID": ds_data.ID,
+                                   "ContrastID": contrast_data.ID,
+                                   "DGEmethodID": method.ID,
                                    "IsUsed": is_used,
-                                   "Description": "Default filtering by limma"})
+                                   "Description": "Default filtering by '%s'" % algorithm})
+    roger.util.insert_data_frame(session, feature_subset, FeatureSubset.__table__)
 
-    print("Persisting DGE results")
-    dge_tbl = pandas2ri.ri2py(ribios_roger.limmaDgeTable(eset_fit))
-    dge_tbl = dge_tbl.join(contrast_table.set_index("Name"), on="Contrast", rsuffix="_C") \
+    print("Persisting DGE table")
+    dge_tbl = dge_tbl.join(contrast_data.contrast_columns.set_index("Name"), on="Contrast", rsuffix="_C") \
         .join(feature_data.set_index("Name"), on="Feature", rsuffix="_F")
-    dgetable = pd.DataFrame({'ContrastID': dge_tbl["ID"],
+    dgetable = pd.DataFrame({'ContrastColumnID': dge_tbl["ID"],
                              'FeatureIndex': dge_tbl["FeatureIndex"],
+                             "ContrastID": contrast_data.ID,
+                             "DGEmethodID": method.ID,
                              'DataSetID': dge_tbl["DataSetID"],
                              'AveExprs': dge_tbl["AveExpr"],
                              'Statistic': dge_tbl["t"],
@@ -209,3 +229,4 @@ def run_dge(session, roger_wd_dir, algorithm, contrast):
                              'PValue': dge_tbl["PValue"],
                              'FDR': dge_tbl["FDR"]})
     roger.util.insert_data_frame(session, dgetable, DGEtable.__table__)
+    session.commit()
