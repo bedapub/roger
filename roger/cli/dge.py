@@ -209,35 +209,38 @@ def remove_design(design_name, dataset_name):
 # -----------------
 
 
-@cli.command(name="list-design",
-             short_help='Lists available designs')
-@click.option('--dataset', help='Show only designs for the given data set')
-def list_contrast(dataset):
-    print('Querying available data sets ...')
+@cli.command(name="list-contrast",
+             short_help='Lists available contrasts')
+@click.option('--design', help='Show only contrasts for the given design')
+@click.option('--dataset', help='Show only contrasts for the given data set')
+def list_contrast(design, dataset):
+    print('Querying available contrasts ...')
     from roger.persistence import db
     import roger.persistence.dge
 
-    print(roger.persistence.dge.list_design(db.session()), dataset)
+    print(roger.persistence.dge.list_contrast(db.session()), design, dataset)
 
 
-@cli.command(name="add-design",
+@cli.command(name="add-contrast",
              short_help='Adds a new experiment design to a data set')
+@click.argument('contrast_matrix', metavar='<contrast_matrix>', type=click.Path(exists=True))
 @click.argument('dataset', metavar='<dataset>')
-@click.argument('design_matrix', metavar='<design_matrix>', type=click.Path(exists=True))
+@click.argument('design', metavar='<design>')
 @click.option('--name', help='A unique identifier for the design '
                              '(will use the normalized expression data file name as default)')
 @click.option('--description', help='General design description')
-def add_design(dataset,
-               design_matrix,
-               name,
-               description):
-    name = get_or_guess_name(name, design_matrix)
+def add_contrast(contrast_matrix,
+                 dataset,
+                 design,
+                 name,
+                 description):
+    name = get_or_guess_name(name, contrast_matrix)
 
-    print("Adding design '%s' to data set '%s' ..." % (name, dataset))
+    print("Adding contrast '%s' to data set '%s' ..." % (name, dataset))
     from roger.persistence import db
     import roger.persistence.dge
 
-    roger.persistence.dge.add_design(db.session(),
+    roger.persistence.dge.add_contrast(db.session(),
                                      dataset,
                                      design_matrix,
                                      name,
