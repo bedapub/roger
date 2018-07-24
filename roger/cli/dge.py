@@ -2,7 +2,7 @@ import click
 import flask
 
 from roger.cli import cli
-from roger.persistence.schema import MicroArrayType
+from roger.persistence.schema import MicroArrayType, RNASeqDataSet, RNASeqType, MicroArrayDataSet
 from roger.util import get_enum_names, get_or_guess_name
 
 
@@ -104,7 +104,6 @@ def show_symbol_types(tax_id):
 @click.option('--name', help='A unique identifier for the data set (default: file name)')
 @click.option('--normalization',
               type=click.Choice(get_enum_names(MicroArrayType)),
-              default=MicroArrayType.RMA.name,
               help='Used method method for normalization')
 @click.option('--description', help='General data set description')
 @click.option('--xref', help='External (GEO) reference')
@@ -123,17 +122,65 @@ def add_ma_ds(norm_exprs_file,
     from roger.persistence import db
     import roger.logic.dge
 
-    name = roger.logic.dge.add_ma_ds(db.session(),
-                                     flask.current_app.config['ROGER_DATA_FOLDER'],
-                                     norm_exprs_file,
-                                     tax_id,
-                                     symbol_type,
-                                     exprs_file,
-                                     pheno_file,
-                                     name,
-                                     normalization,
-                                     description,
-                                     xref)
+    name = roger.logic.dge.add_ds(db.session(),
+                                  flask.current_app.config['ROGER_DATA_FOLDER'],
+                                  MicroArrayDataSet,
+                                  norm_exprs_file,
+                                  tax_id,
+                                  symbol_type,
+                                  exprs_file,
+                                  pheno_file,
+                                  name,
+                                  normalization,
+                                  description,
+                                  xref)
+    print("Done - added data set with name '%s'" % name)
+
+
+@cli.command(name="add-rnaseq-ds",
+             short_help='Adds a new microarray data set to ROGER')
+@click.argument('exprs_file', metavar='<expression_data_file>', type=click.Path(exists=True))
+@click.argument('tax_id', metavar='<tax_id>', type=int)
+@click.argument('symbol_type', metavar='<symbol_type>')
+@click.option('--norm_exprs_file',
+              help='Path to file containing normalized expression data',
+              type=click.Path(exists=True))
+@click.option('--pheno_file',
+              help='Path to file containing pheno data / sample annotations',
+              type=click.Path(exists=True))
+@click.option('--name', help='A unique identifier for the data set (default: file name)')
+@click.option('--normalization',
+              type=click.Choice(get_enum_names(RNASeqType)),
+              help='Used method method for normalization')
+@click.option('--description', help='General data set description')
+@click.option('--xref', help='External (GEO) reference')
+def add_rnaseq_ds(exprs_file,
+                  tax_id,
+                  symbol_type,
+                  norm_exprs_file,
+                  pheno_file,
+                  name,
+                  normalization,
+                  description,
+                  xref):
+    name = get_or_guess_name(get_or_guess_name(name, exprs_file), norm_exprs_file)
+
+    print("Adding RNAseq data set '%s' ..." % name)
+    from roger.persistence import db
+    import roger.logic.dge
+
+    name = roger.logic.dge.add_ds(db.session(),
+                                  flask.current_app.config['ROGER_DATA_FOLDER'],
+                                  RNASeqDataSet,
+                                  norm_exprs_file,
+                                  tax_id,
+                                  symbol_type,
+                                  exprs_file,
+                                  pheno_file,
+                                  name,
+                                  normalization,
+                                  description,
+                                  xref)
     print("Done - added data set with name '%s'" % name)
 
 

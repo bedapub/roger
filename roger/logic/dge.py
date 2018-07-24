@@ -1,3 +1,5 @@
+from typing import Type
+
 from rpy2.robjects.packages import importr
 from rpy2.robjects import pandas2ri
 from rpy2 import robjects
@@ -7,8 +9,8 @@ import os.path
 import shutil
 
 from roger.persistence.dge import get_ds
-from roger.persistence.schema import MicroArrayDataSet, DGEmethod, Contrast, \
-    FeatureMapping, DGEtable, DGEmodel, MicroArrayType, DataSet, FeatureSubset
+from roger.persistence.schema import MicroArrayDataSet, DGEmethod, FeatureMapping, DGEtable, DGEmodel, \
+    DataSet, FeatureSubset
 import roger.logic.geneanno
 import roger.persistence.geneanno
 import roger.persistence.dge
@@ -70,25 +72,25 @@ def perform_limma(ds_data: MicroArrayDataSet,
     # TODO: return result type instead of a tuple
     return eset, eset_fit, dge_tbl
 
-
 # ---------------
 # Datasets
 # ---------------
 
 
 # TODO: Separate between annotation and actual persistence
-def add_ma_ds(session,
-              roger_wd_dir,
-              norm_exprs_file,
-              tax_id,
-              symbol_type,
-              exprs_file=None,
-              pheno_file=None,
-              name=None,
-              normalization_method: MicroArrayType = None,
-              description=None,
-              xref=None):
-    name = get_or_guess_name(name, norm_exprs_file)
+def add_ds(session,
+           roger_wd_dir,
+           ds_type: Type[DataSet],
+           norm_exprs_file,
+           tax_id,
+           symbol_type,
+           exprs_file=None,
+           pheno_file=None,
+           name=None,
+           normalization_method=None,
+           description=None,
+           xref=None):
+    name = get_or_guess_name(get_or_guess_name(name, exprs_file), norm_exprs_file)
 
     # Input checking
     species_list = roger.persistence.geneanno.list_species(session)
@@ -99,9 +101,15 @@ def add_ma_ds(session,
         raise ROGERUsageError("Data set with name '%s' already exists" % name)
 
     # Read and annotate data
-    gct_data = parse_gct(file_path=norm_exprs_file)
+    target_for_annotation = exprs_file
+    if exprs_file is None:
+        target_for_annotation = norm_exprs_file
+
+    gct_data = parse_gct(file_path=target_for_annotation)
     print("Annotating features")
     (feature_data, annotation_version) = roger.logic.geneanno.annotate(session, gct_data, tax_id, symbol_type)
+
+    feature_data.to_csv("test.gct")
 
     print("Persisting data set")
     # Persist data
@@ -110,34 +118,36 @@ def add_ma_ds(session,
     if not os.path.exists(dataset_path):
         os.makedirs(dataset_path)
 
-    wc_norm_exprs_file = os.path.abspath(os.path.join(dataset_path, "norm_exprs.gct"))
-    shutil.copy(norm_exprs_file, wc_norm_exprs_file)
-
-    wc_pheno_file = os.path.abspath(os.path.join(dataset_path, "pheno.tsv"))
-    pheno_data = annotate_ds_pheno_data(gct_data, pheno_file)
-    pheno_data.to_csv(wc_pheno_file, sep="\t")
-
     wc_exprs_file = None
     if exprs_file is not None:
         wc_exprs_file = os.path.abspath(os.path.join(dataset_path, "exprs.gct"))
         shutil.copy(exprs_file, wc_exprs_file)
 
-    dataset_entry = MicroArrayDataSet(Name=name,
-                                      GeneAnnotationVersion=annotation_version,
-                                      Description=description,
-                                      FeatureCount=gct_data.shape[0],
-                                      SampleCount=gct_data.shape[1],
-                                      ExprsWC=wc_exprs_file,
-                                      ExprsSrc=exprs_file,
-                                      NormalizedExprsWC=wc_norm_exprs_file,
-                                      NormalizedExprsSrc=norm_exprs_file,
-                                      NormalizationMethod=normalization_method,
-                                      PhenoWC=wc_pheno_file,
-                                      PhenoSrc=pheno_file,
-                                      TaxID=tax_id,
-                                      Xref=xref,
-                                      CreatedBy=roger.util.get_current_user_name(),
-                                      CreationTime=roger.util.get_current_datetime())
+    wc_norm_exprs_file = None
+    if norm_exprs_file is not None:
+        wc_norm_exprs_file = os.path.abspath(os.path.join(dataset_path, "norm_exprs.gct"))
+        shutil.copy(norm_exprs_file, wc_norm_exprs_file)
+
+    wc_pheno_file = os.path.abspath(os.path.join(dataset_path, "pheno.tsv"))
+    pheno_data = annotate_ds_pheno_data(gct_data, pheno_file)
+    pheno_data.to_csv(wc_pheno_file, sep="\t")
+
+    dataset_entry = ds_type(Name=name,
+                            GeneAnnotationVersion=annotation_version,
+                            Description=description,
+                            FeatureCount=gct_data.shape[0],
+                            SampleCount=gct_data.shape[1],
+                            ExprsWC=wc_exprs_file,
+                            ExprsSrc=exprs_file,
+                            NormalizedExprsWC=wc_norm_exprs_file,
+                            NormalizedExprsSrc=norm_exprs_file,
+                            NormalizationMethod=normalization_method,
+                            PhenoWC=wc_pheno_file,
+                            PhenoSrc=pheno_file,
+                            TaxID=tax_id,
+                            Xref=xref,
+                            CreatedBy=roger.util.get_current_user_name(),
+                            CreationTime=roger.util.get_current_datetime())
     session.add(dataset_entry)
     session.flush()
     feature_data["DataSetID"] = dataset_entry.ID

@@ -142,12 +142,13 @@ class DataSet(db.Model):
     Description = Column(String(DEFAULT_STR_SIZE))
     FeatureCount = Column(Integer, nullable=False)
     SampleCount = Column(Integer, nullable=False)
+    # TODO: exprs and norm_exprs ar optional, but there should be at least one set
     # Path to working copy of GCT file
     ExprsWC = Column(String(DEFAULT_STR_SIZE))
     # Path to external / save copy of GCT file
     ExprsSrc = Column(String(DEFAULT_STR_SIZE))
     # Path to working copy of R Matrix from GCT file
-    NormalizedExprsWC = Column(String(DEFAULT_STR_SIZE), nullable=False)
+    NormalizedExprsWC = Column(String(DEFAULT_STR_SIZE))
     # Path to external / save copy of R Matrix from GCT file
     NormalizedExprsSrc = Column(String(DEFAULT_STR_SIZE))
     # Path to working copy of TDF file

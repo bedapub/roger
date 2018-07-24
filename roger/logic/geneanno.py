@@ -50,8 +50,8 @@ def annotate(session, gct_data, tax_id, symbol_type):
     # but sometimes the expression files contais errors / mixed types and leave columns unconverted
     # In order to make joining possible for any edge case (look at rnaseq-example-readCounts.gct),
     # we have "normalize" the types, i.e. make them all 'str'
-    feature_anno.Name = feature_anno.Name.apply(lambda x: str(x).rstrip('0').rstrip('.'))
-    all_sym[symbol_type] = all_sym[symbol_type].apply(lambda x: str(x).rstrip('0').rstrip('.'))
+    feature_anno.Name = feature_anno.Name.apply(lambda x: "%d" % x if type(x) != str else x)
+    all_sym[symbol_type] = all_sym[symbol_type].apply(lambda x: "%d" % x if type(x) != str else x)
 
     feature_anno = feature_anno.join(all_sym.set_index(symbol_type))
 
