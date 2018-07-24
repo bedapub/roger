@@ -1,15 +1,15 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "minProperties": 1,
-  "patternProperties": {
-    "^.*$": {
+  "type": "array",
+  "minItems": 1,
+  "items": [
+    {
       "type": "object",
       "properties": {
         "columnName": {
           "type": "string"
         },
-        "isCovariant": {
+        "isCovariate": {
           "type": "boolean"
         },
         "values": {
@@ -20,10 +20,11 @@
         }
       },
       "required": [
+        "columnName",
         "isCovariate",
         "values"
       ],
       "additionalProperties": false
     }
-  }
+  ]
 }
