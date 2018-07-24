@@ -322,7 +322,7 @@ class ContrastColumn(db.Model):
     __tablename__ = 'ContrastColumn'
 
     ID = Column(Integer, primary_key=True)
-    ContrastID = Column(Integer, ForeignKey(Contrast.ID), nullable=False)
+    ContrastID = Column(Integer, ForeignKey(Contrast.ID, ondelete="CASCADE"), nullable=False)
     Name = Column(String(DEFAULT_STR_SIZE), nullable=False)
     Description = Column(String(DEFAULT_STR_SIZE))
     #  Numeric array - numerical combination of variables in design matrix

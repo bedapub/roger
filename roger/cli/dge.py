@@ -1,6 +1,5 @@
 import click
 import flask
-import os.path
 
 from roger.cli import cli
 from roger.persistence.schema import MicroArrayType
@@ -102,8 +101,7 @@ def show_symbol_types(tax_id):
 @click.option('--pheno_file',
               help='Path to file containing pheno data / sample annotations',
               type=click.Path(exists=True))
-@click.option('--name', help='A unique identifier for the data set '
-                             '(will use the normalized expression data file name as default)')
+@click.option('--name', help='A unique identifier for the data set (default: file name)')
 @click.option('--normalization',
               type=click.Choice(get_enum_names(MicroArrayType)),
               default=MicroArrayType.RMA.name,
@@ -119,24 +117,24 @@ def add_ma_ds(norm_exprs_file,
               normalization,
               description,
               xref):
-    name = os.path.splitext(os.path.basename(norm_exprs_file))[0] if name is None else name
+    name = get_or_guess_name(name, norm_exprs_file)
 
     print("Adding microarray data set '%s' ..." % name)
     from roger.persistence import db
     import roger.logic.dge
 
-    roger.logic.dge.add_ma_ds(db.session(),
-                              flask.current_app.config['ROGER_DATA_FOLDER'],
-                              norm_exprs_file,
-                              tax_id,
-                              symbol_type,
-                              exprs_file,
-                              pheno_file,
-                              name,
-                              normalization,
-                              description,
-                              xref)
-    print("Done")
+    name = roger.logic.dge.add_ma_ds(db.session(),
+                                     flask.current_app.config['ROGER_DATA_FOLDER'],
+                                     norm_exprs_file,
+                                     tax_id,
+                                     symbol_type,
+                                     exprs_file,
+                                     pheno_file,
+                                     name,
+                                     normalization,
+                                     description,
+                                     xref)
+    print("Done - added data set with name '%s'" % name)
 
 
 @cli.command(name="remove-ds",
@@ -171,8 +169,7 @@ def list_design(dataset):
              short_help='Adds a new experiment design to a data set')
 @click.argument('dataset', metavar='<dataset>')
 @click.argument('design_matrix', metavar='<design_matrix>', type=click.Path(exists=True))
-@click.option('--name', help='A unique identifier for the design '
-                             '(will use the normalized expression data file name as default)')
+@click.option('--name', help='A unique identifier for the design (default: file name)')
 @click.option('--description', help='General design description')
 def add_design(dataset,
                design_matrix,
@@ -184,12 +181,12 @@ def add_design(dataset,
     from roger.persistence import db
     import roger.persistence.dge
 
-    roger.persistence.dge.add_design(db.session(),
-                                     dataset,
-                                     design_matrix,
-                                     name,
-                                     description)
-    print("Done")
+    name = roger.persistence.dge.add_design(db.session(),
+                                            dataset,
+                                            design_matrix,
+                                            name,
+                                            description)
+    print("Done - added design with name '%s'" % name)
 
 
 @cli.command(name="remove-design",
@@ -203,6 +200,7 @@ def remove_design(design_name, dataset_name):
 
     roger.persistence.dge.remove_design(db.session(), design_name, dataset_name)
     print("Done")
+
 
 # -----------------
 # Contrast Matrix
@@ -218,20 +216,19 @@ def list_contrast(design, dataset):
     from roger.persistence import db
     import roger.persistence.dge
 
-    print(roger.persistence.dge.list_contrast(db.session()), design, dataset)
+    print(roger.persistence.dge.list_contrast(db.session(), design, dataset))
 
 
 @cli.command(name="add-contrast",
-             short_help='Adds a new experiment design to a data set')
+             short_help='Adds a new experiment contrast to a design')
 @click.argument('contrast_matrix', metavar='<contrast_matrix>', type=click.Path(exists=True))
-@click.argument('dataset', metavar='<dataset>')
 @click.argument('design', metavar='<design>')
-@click.option('--name', help='A unique identifier for the design '
-                             '(will use the normalized expression data file name as default)')
+@click.argument('dataset', metavar='<dataset>')
+@click.option('--name', help='A unique identifier for the design (default: file name)')
 @click.option('--description', help='General design description')
 def add_contrast(contrast_matrix,
-                 dataset,
                  design,
+                 dataset,
                  name,
                  description):
     name = get_or_guess_name(name, contrast_matrix)
@@ -240,25 +237,28 @@ def add_contrast(contrast_matrix,
     from roger.persistence import db
     import roger.persistence.dge
 
-    roger.persistence.dge.add_contrast(db.session(),
-                                     dataset,
-                                     design_matrix,
-                                     name,
-                                     description)
-    print("Done")
+    name = roger.persistence.dge.add_contrast(db.session(),
+                                              contrast_matrix,
+                                              design,
+                                              dataset,
+                                              name,
+                                              description)
+    print("Done - added contrast with name '%s'" % name)
 
 
-@cli.command(name="remove-design",
-             short_help='Removes the given design')
+@cli.command(name="remove-contrast",
+             short_help='Removes the given contrast')
+@click.argument('contrast_name', metavar='<contrast_name>')
 @click.argument('design_name', metavar='<design_name>')
 @click.argument('dataset_name', metavar='<dataset_name>')
-def remove_design(design_name, dataset_name):
-    print("Deleting design '%s' from data set '%s' ..." % (dataset_name, design_name))
+def remove_contrast(contrast_name, design_name, dataset_name):
+    print("Deleting contrast '%s' of design '%s' ..." % (contrast_name, design_name))
     from roger.persistence import db
     import roger.persistence.dge
 
-    roger.persistence.dge.remove_design(db.session(), design_name, dataset_name)
+    roger.persistence.dge.remove_contrast(db.session(), contrast_name, design_name, dataset_name)
     print("Done")
+
 
 # -----------------
 # DGE & executions
@@ -268,10 +268,10 @@ def remove_design(design_name, dataset_name):
 @cli.command(name="run-dge",
              short_help='Executes differential gene expression analysis for the given algorithm')
 @click.argument('algorithm', metavar='(limma|edgeR)', type=click.Choice(['limma', 'edgeR']))
-@click.argument('dataset', metavar='<dataset_name>')
 @click.argument('contrast', metavar='<contrast>', type=click.Path(exists=True))
-@click.option('--name', help='Name of the design (must be unique within each data set / study)')
-def run_dge(algorithm, contrast):
+@click.argument('design', metavar='<design_name>')
+@click.argument('dataset', metavar='<dataset_name>')
+def run_dge(algorithm, contrast, design, dataset):
     print("Performing DGE algorithm '%s' ..." % algorithm)
     from roger.persistence import db
     import roger.logic.dge
@@ -279,5 +279,7 @@ def run_dge(algorithm, contrast):
     roger.logic.dge.run_dge(db.session(),
                             flask.current_app.config['ROGER_DATA_FOLDER'],
                             algorithm,
+                            contrast,
+                            design,
                             dataset)
     print("Done")

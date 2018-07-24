@@ -132,7 +132,7 @@ def add_ma_ds(session,
     feature_data["DataSetID"] = dataset_entry.ID
     roger.util.insert_data_frame(session, feature_data, FeatureMapping.__table__)
     session.commit()
-    return dataset_entry
+    return name
 
 # -----------------
 # DGE & executions

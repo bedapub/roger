@@ -138,6 +138,7 @@ def add_design(session, dataset_name, design_file, name, description):
     roger.util.insert_data_frame(session, sample_subset, SampleSubset.__table__)
 
     session.commit()
+    return name
 
 # -----------------
 # Contrast Matrix
@@ -154,16 +155,17 @@ def query_contrast(session, contrast_name, design_name, ds_name) -> Contrast:
 def get_contrast(session, contrast_name, design_name, ds_name) -> Contrast:
     design = query_contrast(session, contrast_name, design_name, ds_name).one_or_none()
     if design is None:
-        raise ROGERUsageError("Design of data set '%s' with name '%s' does not exist" % (ds_name, design_name))
+        raise ROGERUsageError("Contrast of design '%s' with name '%s' does not exist" % (ds_name, contrast_name))
     return design
 
 
 def list_contrast(session, design_name=None, ds_name=None):
     q = session.query(Contrast.Name,
-                      Design.Description,
+                      Contrast.Description,
+                      Design.Name.label("Design"),
                       DataSet.Name.label("DataSet"),
-                      Design.VariableCount,
-                      Design.CreatedBy) \
+                      Contrast.CreatedBy) \
+        .filter(Contrast.DesignID == Design.ID) \
         .filter(Design.DataSetID == DataSet.ID)
     if design_name is not None:
         q = q.filter(Design.Name == design_name)
@@ -172,14 +174,17 @@ def list_contrast(session, design_name=None, ds_name=None):
     return roger.util.as_data_frame(q)
 
 
-def remove_contrast(session, design_name, ds_name):
-    design = get_design(session, design_name, ds_name)
-    session.query(Design).filter(Design.ID == design.ID).delete()
+def remove_contrast(session, contrast_name, design_name, ds_name):
+    contrast = get_contrast(session, contrast_name, design_name, ds_name)
+    session.query(Contrast).filter(Contrast.ID == contrast.ID).delete()
     session.commit()
 
 
 def add_contrast(session, contrast_file, design_name, dataset_name, name, description):
     design = get_design(session, design_name, dataset_name)
+
+    if query_contrast(session, name, design_name, dataset_name).one_or_none() is not None:
+        raise ROGERUsageError("Contrast '%s' already exist in '%s'" % (name, design_name))
 
     contrast = Contrast(DesignID=design.ID,
                         Name=name,
@@ -196,9 +201,9 @@ def add_contrast(session, contrast_file, design_name, dataset_name, name, descri
     contrast_table = DataFrame({"ContrastID": contrast.ID,
                                 "Name": contrast_cols,
                                 "Description": contrast_cols,
-                                "ColumnData": [contrast_data[col_name].values for col_name in contrast_cols]})
+                                "ColumnData": [contrast_data[col_name].values.tolist() for col_name in contrast_cols]})
+
     roger.util.insert_data_frame(session, contrast_table, ContrastColumn.__table__)
 
-    raise KeyError("AAAA")
-
     session.commit()
+    return name
