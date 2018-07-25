@@ -1,3 +1,4 @@
+import tempfile
 from typing import Type
 
 from rpy2.robjects.packages import importr
@@ -10,7 +11,7 @@ import shutil
 
 from roger.persistence.dge import get_ds
 from roger.persistence.schema import MicroArrayDataSet, DGEmethod, FeatureMapping, DGEtable, DGEmodel, \
-    DataSet, FeatureSubset
+    DataSet, FeatureSubset, RNASeqDataSet
 import roger.logic.geneanno
 import roger.persistence.geneanno
 import roger.persistence.dge
@@ -23,6 +24,7 @@ DGE_MODEL_SUB_FOLDER = "dge_model"
 pandas2ri.activate()
 
 base = importr("base")
+biobase = importr("Biobase")
 
 
 def annotate_ds_pheno_data(gct_data, pheno_file):
@@ -45,7 +47,6 @@ def perform_limma(ds_data: MicroArrayDataSet,
                   contrast_matrix: pd.DataFrame,
                   use_weighted: bool = False):
     methods = importr("methods")
-    biobase = importr("Biobase")
     limma = importr("limma")
     ribios_io = importr("ribiosIO")
     ribios_roger = importr("ribiosROGER")
@@ -68,9 +69,50 @@ def perform_limma(ds_data: MicroArrayDataSet,
     eset_fit = limma.lmFit(object=eset, design=design_data, weights=weights)
     eset_fit = limma.contrasts_fit(eset_fit, contrast_matrix)
     eset_fit = limma.eBayes(eset_fit)
+
     dge_tbl = pandas2ri.ri2py(ribios_roger.limmaDgeTable(eset_fit))
+
+    used_feature_names = robjects.conversion.ri2py(base.rownames(eset_fit.rx2("genes")))
+
     # TODO: return result type instead of a tuple
-    return eset, eset_fit, dge_tbl
+    return eset, eset_fit, dge_tbl, used_feature_names
+
+
+def perform_edger(ds_data: RNASeqDataSet,
+                  fdf: pd.DataFrame,
+                  design_data: pd.DataFrame,
+                  contrast_matrix: pd.DataFrame):
+    ribios_io = importr("ribiosIO")
+    ribios_expression = importr("ribiosExpression")
+    ribios_ngs = importr("ribiosNGS")
+
+    design_file, design_file_path = tempfile.mkstemp()
+    contrast_file, contrast_file_path = tempfile.mkstemp()
+
+    design_data.to_csv(design_file_path, sep="\t")
+    contrast_matrix.to_csv(contrast_file_path, sep="\t")
+
+    # TODO check of this is actually present or not
+    exprs_data = ribios_io.read_exprs_matrix(ds_data.ExprsWC)
+
+    descon = ribios_expression.parseDesignContrast(designFile=design_file_path, contrastFile=contrast_file_path)
+    edger_input = ribios_ngs.EdgeObject(exprs_data, descon)
+
+    # Yep, this is how you call replacement functions from python
+    edger_input = biobase.__dict__["fData<-"](edger_input, fdf)
+
+    edger_result = ribios_ngs.dgeWithEdgeR(edger_input)
+
+    dge_tbl = pandas2ri.ri2py(ribios_ngs.dgeTable(edger_result))
+
+    dge_tbl = dge_tbl.rename(index=str, columns={"logCPM": "AveExpr",
+                                                 "LR": "t"})
+
+    used_feature_names = robjects.conversion.ri2py(biobase.featureNames(edger_result))
+
+    # TODO: return result type instead of a tuple
+    return edger_result.do_slot("dgeList"), edger_result.do_slot("dgeGLM"), dge_tbl, used_feature_names
+
 
 # ---------------
 # Datasets
@@ -108,8 +150,6 @@ def add_ds(session,
     gct_data = parse_gct(file_path=target_for_annotation)
     print("Annotating features")
     (feature_data, annotation_version) = roger.logic.geneanno.annotate(session, gct_data, tax_id, symbol_type)
-
-    feature_data.to_csv("test.gct")
 
     print("Persisting data set")
     # Persist data
@@ -161,15 +201,14 @@ def add_ds(session,
 # -----------------
 
 
-def run_ma_dge(session,
-               roger_wd_dir,
-               contrast,
-               design,
-               dataset,
-               algorithm="limma"):
+def run_dge(session,
+            roger_wd_dir,
+            contrast,
+            design,
+            dataset,
+            algorithm,
+            algorithm_name="limma"):
     print("Retrieving data from database")
-    if algorithm != "limma":
-        raise ROGERUsageError("Only limma is supported for now")
 
     contrast_data = roger.persistence.dge.get_contrast(session, contrast, design, dataset)
     design_data = contrast_data.Design
@@ -181,14 +220,14 @@ def run_ma_dge(session,
                                     ("index", feature_data["Name"])])).set_index("index")
 
     # limma
-    print("Performing differential gene expression analysis using limma")
+    print("Performing differential gene expression analysis using %s" % algorithm_name)
     contrast_matrix = contrast_data.contrast_matrix
     design_matrix = design_data.design_matrix
-    (eset, eset_fit, dge_tbl) = perform_limma(ds_data, fdf, design_matrix, contrast_matrix)
+    eset, eset_fit, dge_tbl, used_feature_names = algorithm(ds_data, fdf, design_matrix, contrast_matrix)
 
     print("Persisting model information")
     # TODO why are methods stored in table anyway?
-    method = session.query(DGEmethod).filter(DGEmethod.Name == "limma").one()
+    method = session.query(DGEmethod).filter(DGEmethod.Name == algorithm_name).one()
 
     dge_method_sub_dir = "%d_%d" % (contrast_data.ID, method.ID)
 
@@ -212,8 +251,7 @@ def run_ma_dge(session,
     session.flush()
 
     print("Persisting feature subsets")
-    feature_names = robjects.conversion.ri2py(base.rownames(eset_fit.rx2("genes")))
-    feature_subset = fdf[fdf['Feature'].isin(feature_names)]
+    feature_subset = fdf[fdf['Feature'].isin(used_feature_names)]
     feature_subset = feature_data.set_index("Name").join(feature_subset)
     is_used = feature_subset["Feature"].apply(lambda x: True if type(x).__name__ == "str" else False)
 
@@ -222,7 +260,7 @@ def run_ma_dge(session,
                                    "ContrastID": contrast_data.ID,
                                    "DGEmethodID": method.ID,
                                    "IsUsed": is_used,
-                                   "Description": "Default filtering by '%s'" % algorithm})
+                                   "Description": "Default filtering by '%s'" % algorithm_name})
     roger.util.insert_data_frame(session, feature_subset, FeatureSubset.__table__)
 
     print("Persisting DGE table")

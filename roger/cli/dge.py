@@ -90,7 +90,7 @@ def show_symbol_types(tax_id):
     print(probe_attributes.to_string(index=False))
 
 
-@cli.command(name="add-ma-ds",
+@cli.command(name="add-ds-ma",
              short_help='Adds a new microarray data set to ROGER')
 @click.argument('norm_exprs_file', metavar='<normalized_expression_data_file>', type=click.Path(exists=True))
 @click.argument('tax_id', metavar='<tax_id>', type=int)
@@ -107,7 +107,7 @@ def show_symbol_types(tax_id):
               help='Used method method for normalization')
 @click.option('--description', help='General data set description')
 @click.option('--xref', help='External (GEO) reference')
-def add_ma_ds(norm_exprs_file,
+def add_ds_ma(norm_exprs_file,
               tax_id,
               symbol_type,
               exprs_file,
@@ -137,7 +137,7 @@ def add_ma_ds(norm_exprs_file,
     print("Done - added data set with name '%s'" % name)
 
 
-@cli.command(name="add-rnaseq-ds",
+@cli.command(name="add-ds-rnaseq",
              short_help='Adds a new microarray data set to ROGER')
 @click.argument('exprs_file', metavar='<expression_data_file>', type=click.Path(exists=True))
 @click.argument('tax_id', metavar='<tax_id>', type=int)
@@ -154,7 +154,7 @@ def add_ma_ds(norm_exprs_file,
               help='Used method method for normalization')
 @click.option('--description', help='General data set description')
 @click.option('--xref', help='External (GEO) reference')
-def add_rnaseq_ds(exprs_file,
+def add_ds_rnaseq(exprs_file,
                   tax_id,
                   symbol_type,
                   norm_exprs_file,
@@ -214,8 +214,8 @@ def list_design(dataset):
 
 @cli.command(name="add-design",
              short_help='Adds a new experiment design to a data set')
-@click.argument('dataset', metavar='<dataset>')
 @click.argument('design_matrix', metavar='<design_matrix>', type=click.Path(exists=True))
+@click.argument('dataset', metavar='<dataset>')
 @click.option('--name', help='A unique identifier for the design (default: file name)')
 @click.option('--description', help='General design description')
 def add_design(design_matrix,
@@ -312,22 +312,45 @@ def remove_contrast(contrast_name, design_name, dataset_name):
 # -----------------
 
 
-@cli.command(name="run-ma-dge",
+@cli.command(name="run-dge-ma",
              short_help='Run differential gene expression analysis on microarray data')
 @click.argument('contrast', metavar='<contrast>')
 @click.argument('design', metavar='<design_name>')
 @click.argument('dataset', metavar='<dataset_name>')
 # TODO limma support only for now ...
 # @click.option('--algorithm', default="limma", help='Used method method for normalization')
-def run_ma_dge(contrast, design, dataset, algorithm="limma"):
+def run_dge_ma(contrast, design, dataset, algorithm="limma"):
     print("Performing DGE algorithm '%s' ..." % algorithm)
     from roger.persistence import db
     import roger.logic.dge
 
-    roger.logic.dge.run_ma_dge(db.session(),
-                               flask.current_app.config['ROGER_DATA_FOLDER'],
-                               contrast,
-                               design,
-                               dataset,
-                               algorithm)
+    roger.logic.dge.run_dge(db.session(),
+                            flask.current_app.config['ROGER_DATA_FOLDER'],
+                            contrast,
+                            design,
+                            dataset,
+                            roger.logic.dge.perform_limma,
+                            algorithm)
+    print("Done")
+
+
+@cli.command(name="run-dge-rnaseq",
+             short_help='Run differential gene expression analysis on RNAseq data')
+@click.argument('contrast', metavar='<contrast>')
+@click.argument('design', metavar='<design_name>')
+@click.argument('dataset', metavar='<dataset_name>')
+# TODO edgeR support only for now ...
+# @click.option('--algorithm', default="edgeR", help='Used method method for normalization')
+def run_dge_rnaseq(contrast, design, dataset, algorithm="edgeR"):
+    print("Performing DGE algorithm '%s' ..." % algorithm)
+    from roger.persistence import db
+    import roger.logic.dge
+
+    roger.logic.dge.run_dge(db.session(),
+                            flask.current_app.config['ROGER_DATA_FOLDER'],
+                            contrast,
+                            design,
+                            dataset,
+                            roger.logic.dge.perform_edger,
+                            algorithm)
     print("Done")

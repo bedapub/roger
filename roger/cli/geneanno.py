@@ -62,7 +62,7 @@ def init_database():
 
     print("Adding standard DGE and GSE methods ...")
     roger.persistence.dge.add_method(db.session(), "limma", "limma", "3.30.6")
-    #roger.persistence.dge.add_method(db.session(), "edgeR", "edgeR", "3.16.4")
+    roger.persistence.dge.add_method(db.session(), "edgeR", "edgeR", "3.16.4")
     #roger.persistence.dge.add_method(db.session(), "DESeq2", "DESeq2", "1.14.1")
     #roger.persistence.dge.add_method(db.session(), "voom+limma", "limma::voom+limma", "3.30.6")
 

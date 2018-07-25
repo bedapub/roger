@@ -156,7 +156,7 @@ def query_contrast(session, contrast_name, design_name, ds_name) -> Contrast:
 def get_contrast(session, contrast_name, design_name, ds_name) -> Contrast:
     design = query_contrast(session, contrast_name, design_name, ds_name).one_or_none()
     if design is None:
-        raise ROGERUsageError("Contrast of design '%s' with name '%s' does not exist" % (ds_name, contrast_name))
+        raise ROGERUsageError("Contrast of design '%s' with name '%s' does not exist" % (design_name, contrast_name))
     return design
 
 
@@ -208,3 +208,4 @@ def add_contrast(session, contrast_file, design_name, dataset_name, name, descri
 
     session.commit()
     return name
+
