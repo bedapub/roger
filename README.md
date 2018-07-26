@@ -29,40 +29,62 @@ roger init
 7. Install additional R packages:
     1. ribiosROGER, ribiosIO and ribiosExpression from [RIBIOS](https://github.com/Accio/ribios)
     2. [Bioconductor](https://www.bioconductor.org/) and the [limma](https://bioconductor.org/packages/release/bioc/html/limma.html) package.
-    
-# Example DGE analysis
+   
+# Adding annotation support for other species
 
-You can find an example data set in the folder [test_data](test_data).
-1. Import data set from GCT files to ROGER
+After instalation, ROGER can only consume expression data from human. You can use the `add-species` command add support for other
+species in ROGER. For example, the following commands:
+
 ```bash
-roger add-ds ./test_data/gct/GSE93720.RMA.collapsed.gct ./test_data/dge/GSE93720_design.txt 9606 external_gene_name
-```
-2. Run DGE analysis of inserted data set
-```bash
-roger run-dge limma GSE93720.RMA.collapsed ./test_data/dge/GSE93720_design.txt ./test_data/dge/GSE93720_contrast.txt
-```
-
-
-
-roger init
-
 roger add-species "rnorvegicus_gene_ensembl" 10116
 roger add-species "mmusculus_gene_ensembl" 10090
+```
 
+Would enable ROGER to consume data from rat and mouse as well. 
+Internaly, ROGER will downlaod gene identifiers from the Ensembl BioMart service and assign them with internal identifiers
+to allow efficient indexing.
+   
+# Example DGE analysis
 
+Every data set used for the following examples can be found in [test_data](test_data).
 
-roger add-ds-ma "test_data/ds/ma-example-signals.gct" 10090 affy_mouse430_2
-roger add-design "test_data/ds/ma-example-design.txt" ma-example-signals
-roger add-contrast test_data/ds/ma-example-contrast.txt ma-example-design ma-example-signals
-roger run-dge-ma ma-example-contrast ma-example-design ma-example-signals
+## DGE Analysis with microarray data / limma:
 
+1. Create a new microarray dataset:
+    ```bash
+    roger add-ds-ma test_data/ds/ma-example-signals.gct 10090 affy_mouse430_2
+    ```
+    This will add the normalized expression matrix "ma-example-signals.gct" to the database.
+ROGER will automatically annotate the feature names inside the expression matrix based on the given
+taxon id (here mouse) and feature symbol type (here AFFY Mouse430A 2 prope set). 
+Additionally, ROGER will use the GCT file name as study name if nothing else is specified by parameter `--name`.
+You can use `roger show-symbol-types 10090`  to see a list of supported feature types / probe sets
 
-roger remove-design "ma-example-design"  "ma-example-signals"
-roger remove-contrast ma-example-contrast ma-example-design ma-example-signals
+2. Add a design matrix
+    ```bash
+    roger add-design "test_data/ds/ma-example-design.txt" ma-example-signals
+    ```
 
+3. Add a design matrix
+    ```bash
+    roger remove-contrast ma-example-contrast ma-example-design ma-example-signals
+    ```
+    Use `roger remove-design ma-example-design ma-example-signals` to remove the design matrix from `ma-example-signals`
 
+4. Execute limma on added data set:
+    ```bash
+    roger run-dge-ma ma-example-contrast ma-example-design ma-example-signals
+    ```
 
+## DGE Analysis with RNAseq data / edgeR:
+
+The DGE analysis for RNAseq data works similar compared to the DGE analysis for microarray data.
+Only the commands for importing data sets and running the DGE analysis are different, 
+because these commands provide slightly different optional parameters
+
+```bash
 roger add-ds-rnaseq test_data/ds/rnaseq-example-readCounts.gct 9606 entrezgene
 roger add-design test_data/ds/rnaseq-example-DesignMatrix rnaseq-example-readCounts
 roger add-contrast test_data/ds/rnaseq-example-ContrastMatrix.txt rnaseq-example-DesignMatrix rnaseq-example-readCounts
- roger run-dge-rnaseq rnaseq-example-ContrastMatrix rnaseq-example-DesignMatrix rnaseq-example-readCounts
+roger run-dge-rnaseq rnaseq-example-ContrastMatrix rnaseq-example-DesignMatrix rnaseq-example-readCounts
+```
