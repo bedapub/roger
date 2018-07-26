@@ -15,7 +15,8 @@ Important:
 
 Backlog:
 * Add GSE analysis for limam and edgeR
-* Command
+* Add DEseq2 as DGE algorithm
+* Add support for microarray CEL files (for now, only normalized data is supported)
 * Better format for object identification, e.g.: StudyName:DesigName:ContrastName
   roger add-contrast my/file.tsv StudyName:MyDesign   # creates new contrast for design MyDesign in StudyName
   roger add-contrast my/file.tsv StudyName:MyDesign:MyNewContrast # also add name for the contrast file
