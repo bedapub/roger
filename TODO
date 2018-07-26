@@ -16,6 +16,8 @@ Important:
 Backlog:
 * Add GSE analysis for limam and edgeR
 * Add DEseq2 as DGE algorithm
+* Provide REST interface alongside to the CLI commands
+* Move DGE table processing code from ribiosROGER into this package, make ribiosROGER a pure client-API (e.g. provides wrappers for the REST calls)
 * Add support for microarray CEL files (for now, only normalized data is supported)
 * Better format for object identification, e.g.: StudyName:DesigName:ContrastName
   roger add-contrast my/file.tsv StudyName:MyDesign   # creates new contrast for design MyDesign in StudyName
