@@ -138,7 +138,7 @@ def add_ds_ma(norm_exprs_file,
 
 
 @cli.command(name="add-ds-rnaseq",
-             short_help='Adds a new microarray data set to ROGER')
+             short_help='Adds a new RNAseq data set to ROGER')
 @click.argument('exprs_file', metavar='<expression_data_file>', type=click.Path(exists=True))
 @click.argument('tax_id', metavar='<tax_id>', type=int)
 @click.argument('symbol_type', metavar='<symbol_type>')
