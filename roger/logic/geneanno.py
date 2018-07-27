@@ -74,6 +74,7 @@ def annotate(session, gct_data, tax_id, symbol_type):
             .filter(GeneAnnotation.TaxID == tax_id)
     roger_gene_indices = roger.util.as_data_frame(query)
     # TODO Find a better heuristic to drop multiple Ensembl ID association
+    # feature_anno.join(roger_gene_indices.set_index("EnsemblGeneID")).to_csv("test.txt", sep="\t")
     feature_anno = feature_anno.join(roger_gene_indices.set_index("EnsemblGeneID")). \
         drop_duplicates("FeatureIndex"). \
         sort_values('FeatureIndex'). \
