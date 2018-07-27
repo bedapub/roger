@@ -2,7 +2,6 @@ from sqlalchemy.sql.expression import literal
 from enum import Enum
 import pandas as pd
 
-import roger.persistence.geneanno
 from roger.logic.mart.provider import get_annotation_service
 from roger.exception import ROGERUsageError
 from roger.persistence.geneanno import GeneAnnotation, Ortholog, human_tax_id
@@ -75,8 +74,8 @@ def annotate(session, gct_data, tax_id, symbol_type):
             .filter(GeneAnnotation.TaxID == tax_id)
     roger_gene_indices = roger.util.as_data_frame(query)
     # TODO Find a better heuristic to drop multiple Ensembl ID association
-    feature_anno = feature_anno.join(roger_gene_indices.set_index("EnsemblGeneID")) \
-        .drop_duplicates("FeatureIndex"). \
+    feature_anno = feature_anno.join(roger_gene_indices.set_index("EnsemblGeneID")). \
+        drop_duplicates("FeatureIndex"). \
         sort_values('FeatureIndex'). \
         reset_index().drop(columns="index")
     return feature_anno, ensembl_dataset.display_name
