@@ -85,12 +85,17 @@ def perform_edger(ds_data: RNASeqDataSet,
     ribios_io = importr("ribiosIO")
     ribios_expression = importr("ribiosExpression")
     ribios_ngs = importr("ribiosNGS")
+    utils = importr("utils")
+
+    print("Prep")
 
     design_file, design_file_path = tempfile.mkstemp()
+    fdf_file, fdf_file_path = tempfile.mkstemp()
     contrast_file, contrast_file_path = tempfile.mkstemp()
 
     design_data.to_csv(design_file_path, sep="\t")
     contrast_matrix.to_csv(contrast_file_path, sep="\t")
+    fdf.to_csv(fdf_file_path, sep="\t", index=False)
 
     # TODO check of this is actually present or not
     exprs_data = ribios_io.read_exprs_matrix(ds_data.ExprsWC)
@@ -98,12 +103,25 @@ def perform_edger(ds_data: RNASeqDataSet,
     descon = ribios_expression.parseDesignContrast(designFile=design_file_path, contrastFile=contrast_file_path)
     edger_input = ribios_ngs.EdgeObject(exprs_data, descon)
 
+    print("WTF")
     # Yep, this is how you call replacement functions from python
-    edger_input = biobase.__dict__["fData<-"](edger_input, fdf)
+    print("A")
+    print(pd.read_table(fdf_file_path))
+    slot = edger_input.slots["dgeList"]
+    slot.rx2["genes"] = utils.read_table(fdf_file_path, sep="\t", header=True)
+    slot.rx2["annotation"] = "GeneID"
+    edger_input.slots["dgeList"] = slot
+    print(edger_input.slots["dgeList"].rx2("annotation"))
+    #edger_input = biobase.__dict__["fData<-"](edger_input, utils.read_table(fdf_file_path, sep="\t"))
+    print("C")
 
     edger_result = ribios_ngs.dgeWithEdgeR(edger_input)
 
-    dge_tbl = pandas2ri.ri2py(ribios_ngs.dgeTable(edger_result))
+    print("D")
+    utils.write_table(ribios_ngs.dgeTable(edger_result), "___output.txt", sep="\t")
+    print("E")
+    dge_tbl = pd.read_table("___output.txt")
+    print("E")
 
     dge_tbl = dge_tbl.rename(index=str, columns={"logCPM": "AveExpr",
                                                  "LR": "t"})
