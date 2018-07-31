@@ -3,7 +3,7 @@ from pandas import read_csv
 
 from tests import mouse_tax_id, mouse_dataset
 
-from roger.util import parse_gct
+from roger.util import parse_gct, read_df
 import roger.logic
 import roger.logic.mart
 import roger.logic.geneanno
@@ -43,5 +43,5 @@ class TestAnnotate(object):
                                                                            "entrezgene")
 
         assert "Human genes" in annotation_version
-        assert_frame_equal(read_csv("test_data/ds/rnaseq-example-rogerFeatureAnno.txt", sep="\t", index_col=0),
+        assert_frame_equal(read_df("test_data/ds/rnaseq-example-rogerFeatureAnno.txt"),
                            feature_data)
