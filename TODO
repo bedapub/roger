@@ -40,3 +40,4 @@ Backlog:
 * Auxilary:
   * Add ability to specify explicit version or gene annotation datasets (e.g. use Ensembl 92)
   * Add more sophisticated query function for local BioMart annotation queries
+  * Add more information to feature annotation when generating model objects (i.e. add GeneSymbol, EntrezGeneID and Gene description)
