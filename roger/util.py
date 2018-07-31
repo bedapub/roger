@@ -10,6 +10,14 @@ from sqlalchemy.orm import Session
 from enum import EnumMeta
 
 
+def read_df(file_path):
+    return pd.read_table(file_path, sep="\t")
+
+
+def write_df(df : pd.DataFrame, file_path):
+    df.to_csv(file_path, sep="\t", index=False)
+
+
 def get_or_guess_name(name, source_file=None):
     if name is None and source_file is not None:
         return os.path.splitext(os.path.basename(source_file))[0]

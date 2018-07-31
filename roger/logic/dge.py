@@ -10,8 +10,8 @@ import os.path
 import shutil
 
 from roger.persistence.dge import get_ds
-from roger.persistence.schema import MicroArrayDataSet, DGEmethod, FeatureMapping, DGEtable, DGEmodel, \
-    DataSet, FeatureSubset, RNASeqDataSet
+from roger.persistence.schema import DGEmethod, FeatureMapping, DGEtable, DGEmodel, \
+    DataSet, FeatureSubset
 import roger.logic.geneanno
 import roger.persistence.geneanno
 import roger.persistence.dge
@@ -41,8 +41,8 @@ def annotate_ds_pheno_data(gct_data, pheno_file):
     return pheno_data
 
 
-def perform_limma(ds_data: MicroArrayDataSet,
-                  fdf: pd.DataFrame,
+def perform_limma(exprs_file: str,
+                  feature_anno: pd.DataFrame,
                   design_data: pd.DataFrame,
                   contrast_matrix: pd.DataFrame,
                   use_weighted: bool = False):
@@ -52,14 +52,14 @@ def perform_limma(ds_data: MicroArrayDataSet,
     ribios_roger = importr("ribiosROGER")
 
     # TODO check of this is actually present or not
-    exprs_data = ribios_io.read_exprs_matrix(ds_data.NormalizedExprsWC)
+    exprs_data = ribios_io.read_exprs_matrix(exprs_file)
 
     # conts_names_backup < - colnames(contrast_data)
     # colnames(contrast_data) < - make.names(colnames(contrast_data))
     eset = methods.new("ExpressionSet", exprs=exprs_data)
 
     # Yep, this is how you call replacement functions from python
-    eset = biobase.__dict__["fData<-"](eset, fdf)
+    eset = biobase.__dict__["fData<-"](eset, feature_anno)
 
     weights = robjects.vectors.IntVector([1] * base.ncol(exprs_data)[0])
     if use_weighted:
@@ -78,8 +78,8 @@ def perform_limma(ds_data: MicroArrayDataSet,
     return eset, eset_fit, dge_tbl, used_feature_names
 
 
-def perform_edger(ds_data: RNASeqDataSet,
-                  fdf: pd.DataFrame,
+def perform_edger(exprs_file: str,
+                  feature_anno: pd.DataFrame,
                   design_data: pd.DataFrame,
                   contrast_matrix: pd.DataFrame):
     ribios_io = importr("ribiosIO")
@@ -87,42 +87,31 @@ def perform_edger(ds_data: RNASeqDataSet,
     ribios_ngs = importr("ribiosNGS")
     utils = importr("utils")
 
-    print("Prep")
-
     design_file, design_file_path = tempfile.mkstemp()
     fdf_file, fdf_file_path = tempfile.mkstemp()
     contrast_file, contrast_file_path = tempfile.mkstemp()
 
     design_data.to_csv(design_file_path, sep="\t")
     contrast_matrix.to_csv(contrast_file_path, sep="\t")
-    fdf.to_csv(fdf_file_path, sep="\t", index=False)
+    feature_anno.to_csv(fdf_file_path, sep="\t")
 
     # TODO check of this is actually present or not
-    exprs_data = ribios_io.read_exprs_matrix(ds_data.ExprsWC)
+    exprs_data = ribios_io.read_exprs_matrix(exprs_file)
 
     descon = ribios_expression.parseDesignContrast(designFile=design_file_path, contrastFile=contrast_file_path)
+
     edger_input = ribios_ngs.EdgeObject(exprs_data, descon)
 
-    print("WTF")
-    # Yep, this is how you call replacement functions from python
-    print("A")
-    print(pd.read_table(fdf_file_path))
     slot = edger_input.slots["dgeList"]
-    slot.rx2["genes"] = utils.read_table(fdf_file_path, sep="\t", header=True)
+    slot.rx2["genes"] = ribios_io.readTable(fdf_file_path)
     slot.rx2["annotation"] = "GeneID"
     edger_input.slots["dgeList"] = slot
-    print(edger_input.slots["dgeList"].rx2("annotation"))
-    #edger_input = biobase.__dict__["fData<-"](edger_input, utils.read_table(fdf_file_path, sep="\t"))
-    print("C")
 
     edger_result = ribios_ngs.dgeWithEdgeR(edger_input)
 
-    print("D")
-    utils.write_table(ribios_ngs.dgeTable(edger_result), "___output.txt", sep="\t")
-    print("E")
-    dge_tbl = pd.read_table("___output.txt")
-    print("E")
-
+    dge_file, dge_file_path = tempfile.mkstemp()
+    utils.write_table(ribios_ngs.dgeTable(edger_result), dge_file_path, sep="\t")
+    dge_tbl = pd.read_table(dge_file_path)
     dge_tbl = dge_tbl.rename(index=str, columns={"logCPM": "AveExpr",
                                                  "LR": "t"})
 
@@ -141,16 +130,15 @@ def perform_edger(ds_data: RNASeqDataSet,
 def add_ds(session,
            roger_wd_dir,
            ds_type: Type[DataSet],
-           norm_exprs_file,
+           exprs_file,
            tax_id,
            symbol_type,
-           exprs_file=None,
            pheno_file=None,
            name=None,
            normalization_method=None,
            description=None,
            xref=None):
-    name = get_or_guess_name(get_or_guess_name(name, exprs_file), norm_exprs_file)
+    name = get_or_guess_name(name, exprs_file)
 
     # Input checking
     species_list = roger.persistence.geneanno.list_species(session)
@@ -162,8 +150,6 @@ def add_ds(session,
 
     # Read and annotate data
     target_for_annotation = exprs_file
-    if exprs_file is None:
-        target_for_annotation = norm_exprs_file
 
     gct_data = parse_gct(file_path=target_for_annotation)
     print("Annotating features")
@@ -181,11 +167,6 @@ def add_ds(session,
         wc_exprs_file = os.path.abspath(os.path.join(dataset_path, "exprs.gct"))
         shutil.copy(exprs_file, wc_exprs_file)
 
-    wc_norm_exprs_file = None
-    if norm_exprs_file is not None:
-        wc_norm_exprs_file = os.path.abspath(os.path.join(dataset_path, "norm_exprs.gct"))
-        shutil.copy(norm_exprs_file, wc_norm_exprs_file)
-
     wc_pheno_file = os.path.abspath(os.path.join(dataset_path, "pheno.tsv"))
     pheno_data = annotate_ds_pheno_data(gct_data, pheno_file)
     pheno_data.to_csv(wc_pheno_file, sep="\t")
@@ -197,8 +178,6 @@ def add_ds(session,
                             SampleCount=gct_data.shape[1],
                             ExprsWC=wc_exprs_file,
                             ExprsSrc=exprs_file,
-                            NormalizedExprsWC=wc_norm_exprs_file,
-                            NormalizedExprsSrc=norm_exprs_file,
                             NormalizationMethod=normalization_method,
                             PhenoWC=wc_pheno_file,
                             PhenoSrc=pheno_file,
@@ -233,15 +212,14 @@ def run_dge(session,
     ds_data = design_data.DataSet
 
     feature_data = ds_data.feature_data
-    fdf = pd.DataFrame(OrderedDict([("Feature", feature_data["Name"]),
-                                    ("GeneID", feature_data["RogerGeneIndex"]),
-                                    ("index", feature_data["Name"])])).set_index("index")
 
-    # limma
     print("Performing differential gene expression analysis using %s" % algorithm_name)
     contrast_matrix = contrast_data.contrast_matrix
     design_matrix = design_data.design_matrix
-    eset, eset_fit, dge_tbl, used_feature_names = algorithm(ds_data, fdf, design_matrix, contrast_matrix)
+    eset, eset_fit, dge_tbl, used_feature_names = algorithm(ds_data.ExprsWC,
+                                                            feature_data,
+                                                            design_matrix,
+                                                            contrast_matrix)
 
     print("Persisting model information")
     # TODO why are methods stored in table anyway?
@@ -269,7 +247,7 @@ def run_dge(session,
     session.flush()
 
     print("Persisting feature subsets")
-    feature_subset = fdf[fdf['Feature'].isin(used_feature_names)]
+    feature_subset = feature_data[feature_data['Feature'].isin(used_feature_names)]
     feature_subset = feature_data.set_index("Name").join(feature_subset)
     is_used = feature_subset["Feature"].apply(lambda x: True if type(x).__name__ == "str" else False)
 

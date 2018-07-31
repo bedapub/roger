@@ -95,9 +95,6 @@ def show_symbol_types(tax_id):
 @click.argument('norm_exprs_file', metavar='<normalized_expression_data_file>', type=click.Path(exists=True))
 @click.argument('tax_id', metavar='<tax_id>', type=int)
 @click.argument('symbol_type', metavar='<symbol_type>')
-@click.option('--exprs_file',
-              help='Path to file containing raw expresion data',
-              type=click.Path(exists=True))
 @click.option('--pheno_file',
               help='Path to file containing pheno data / sample annotations',
               type=click.Path(exists=True))
@@ -110,7 +107,6 @@ def show_symbol_types(tax_id):
 def add_ds_ma(norm_exprs_file,
               tax_id,
               symbol_type,
-              exprs_file,
               pheno_file,
               name,
               normalization,
@@ -128,7 +124,6 @@ def add_ds_ma(norm_exprs_file,
                                   norm_exprs_file,
                                   tax_id,
                                   symbol_type,
-                                  exprs_file,
                                   pheno_file,
                                   name,
                                   normalization,
@@ -142,9 +137,6 @@ def add_ds_ma(norm_exprs_file,
 @click.argument('exprs_file', metavar='<expression_data_file>', type=click.Path(exists=True))
 @click.argument('tax_id', metavar='<tax_id>', type=int)
 @click.argument('symbol_type', metavar='<symbol_type>')
-@click.option('--norm_exprs_file',
-              help='Path to file containing normalized expression data',
-              type=click.Path(exists=True))
 @click.option('--pheno_file',
               help='Path to file containing pheno data / sample annotations',
               type=click.Path(exists=True))
@@ -157,13 +149,12 @@ def add_ds_ma(norm_exprs_file,
 def add_ds_rnaseq(exprs_file,
                   tax_id,
                   symbol_type,
-                  norm_exprs_file,
                   pheno_file,
                   name,
                   normalization,
                   description,
                   xref):
-    name = get_or_guess_name(get_or_guess_name(name, exprs_file), norm_exprs_file)
+    name = get_or_guess_name(name, exprs_file)
 
     print("Adding RNAseq data set '%s' ..." % name)
     from roger.persistence import db
@@ -172,10 +163,9 @@ def add_ds_rnaseq(exprs_file,
     name = roger.logic.dge.add_ds(db.session(),
                                   flask.current_app.config['ROGER_DATA_FOLDER'],
                                   RNASeqDataSet,
-                                  norm_exprs_file,
+                                  exprs_file,
                                   tax_id,
                                   symbol_type,
-                                  exprs_file,
                                   pheno_file,
                                   name,
                                   normalization,

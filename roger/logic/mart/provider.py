@@ -1,8 +1,9 @@
 from roger.logic.mart import AnnotationService
 
+# TODO make use of current_app instead (http://flask.pocoo.org/docs/1.0/appcontext)
+
 # This is needed to do lazy loading / boost startup time
 __initialized = False
-# TODO move this to the global flask application context (http://flask.pocoo.org/docs/1.0/appcontext)
 __annotation_service = None
 __app = None
 

@@ -144,13 +144,9 @@ class DataSet(db.Model):
     SampleCount = Column(Integer, nullable=False)
     # TODO: exprs and norm_exprs ar optional, but there should be at least one set
     # Path to working copy of GCT file
-    ExprsWC = Column(String(DEFAULT_STR_SIZE))
+    ExprsWC = Column(String(DEFAULT_STR_SIZE), nullable=False)
     # Path to external / save copy of GCT file
-    ExprsSrc = Column(String(DEFAULT_STR_SIZE))
-    # Path to working copy of R Matrix from GCT file
-    NormalizedExprsWC = Column(String(DEFAULT_STR_SIZE))
-    # Path to external / save copy of R Matrix from GCT file
-    NormalizedExprsSrc = Column(String(DEFAULT_STR_SIZE))
+    ExprsSrc = Column(String(DEFAULT_STR_SIZE), nullable=False)
     # Path to working copy of TDF file
     PhenoWC = Column(String(DEFAULT_STR_SIZE), nullable=False)
     # Path to external / save copy of TDF file
@@ -177,16 +173,14 @@ class DataSet(db.Model):
         return roger.util.parse_gct(self.ExprsWC)
 
     @hybrid_property
-    def norm_exprs_data(self):
-        return roger.util.parse_gct(self.NormalizedExprsWC)
-
-    @hybrid_property
     def pheno_data(self):
         return read_table(self.PhenoWC, sep='\t')
 
     @hybrid_property
     def feature_data(self):
-        return roger.util.as_data_frame(FeatureMapping.query.filter(FeatureMapping.DataSetID == self.ID))
+        return roger.util.as_data_frame(FeatureMapping.query
+                                        .filter(FeatureMapping.DataSetID == self.ID)
+                                        .order_by(FeatureMapping.FeatureIndex))
 
 
 class MicroArrayDataSet(DataSet):
@@ -327,7 +321,9 @@ class Contrast(db.Model):
 
     @hybrid_property
     def contrast_columns(self):
-        return roger.util.as_data_frame(ContrastColumn.query.filter(ContrastColumn.ContrastID == self.ID))
+        return roger.util.as_data_frame(ContrastColumn.query
+                                        .filter(ContrastColumn.ContrastID == self.ID)
+                                        .order_by(ContrastColumn.ID))
 
     @hybrid_property
     def contrast_matrix(self):

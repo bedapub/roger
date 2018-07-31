@@ -1,60 +1,70 @@
-from pandas.util.testing import assert_frame_equal
-from pandas import read_csv
+import pytest
+from flask_sqlalchemy import SQLAlchemy
+from roger.logic.dge import perform_edger, perform_limma
 
-from mock import patch
-from roger.logic.dge import perform_edger
-from tests import app, mouse_tax_id, mouse_dataset
-from tests import db
-
-from roger.util import parse_gct
 import roger.logic
 import roger.logic.mart
 import roger.logic.geneanno
 import roger.persistence.geneanno
+import roger.persistence.dge
+from roger.util import read_df
+from tests import has_equal_elements
 
-from rpy2.robjects.packages import importr
-from rpy2.robjects import pandas2ri
-from rpy2 import robjects
+
+class TestDataSet(object):
+    def test_feature_data(self, sqlite_datasets: SQLAlchemy):
+        session = sqlite_datasets.session()
+
+        contrast_data = roger.persistence.dge.get_contrast(session,
+                                                           "rnaseq-example-ContrastMatrix",
+                                                           "rnaseq-example-DesignMatrix",
+                                                           "rnaseq-example-readCounts")
+        design_data = contrast_data.Design
+        ds_data = design_data.DataSet
+
+        assert has_equal_elements(ds_data.exprs_data.index, ds_data.feature_data.Name)
 
 
 class TestDGEAnalysis(object):
+    @pytest.mark.parametrize("algorithm, contrast_name, design_name, ds_name, expected_dge_file", [
+        (perform_limma,
+         "ma-example-contrast",
+         "ma-example-design",
+         "ma-example-signals",
+         "test_data/ds/ma-example-dgeTable.txt"),
+        (perform_edger,
+         "rnaseq-example-ContrastMatrix",
+         "rnaseq-example-DesignMatrix",
+         "rnaseq-example-readCounts",
+         "test_data/ds/rnaseq-example-dgeTable.txt")
+    ])
+    def test_edger(self, algorithm, contrast_name, design_name, ds_name, expected_dge_file,
+                   sqlite_datasets: SQLAlchemy):
+        session = sqlite_datasets.session()
 
-    # def test_limma(self):
-    #     with app.app_context():
-    #         db.create_all()
-    #
-    #         session = db.session()
-    #         roger.persistence.geneanno.add_species(session,
-    #                                                roger.persistence.geneanno.human_dataset,
-    #                                                roger.persistence.geneanno.human_tax_id)
-    #         roger.persistence.geneanno.add_species(session,
-    #                                                mouse_dataset,
-    #                                                mouse_tax_id)
-    #
-    #         gct_data = parse_gct(file_path="test_data/ds/ma-example-signals.gct")
-    #         (feature_data, annotation_version) = roger.logic.geneanno.annotate(session,
-    #                                                                            gct_data,
-    #                                                                            mouse_tax_id,
-    #                                                                            "affy_mouse430_2")
-    #         assert "Mouse genes" in annotation_version
-    #         assert_frame_equal(read_csv("test_data/ds/ma-example-rogerFeatureAnno.txt", sep="\t", index_col=0),
-    #                            feature_data)
-    #         db.drop_all()
+        contrast_data = roger.persistence.dge.get_contrast(session,
+                                                           contrast_name,
+                                                           design_name,
+                                                           ds_name)
 
-    @patch("roger.persistence.schema.RNASeqDataSet")
-    def test_edger(self, ds_data):
-        with app.app_context():
-            #db.create_all()
+        design_data = contrast_data.Design
+        ds_data = design_data.DataSet
 
-            exprs_data_file = "test_data/ds/rnaseq-example-readCounts.gct"
-            design_matrix = read_csv("test_data/ds/rnaseq-example-DesignMatrix.txt", sep="\t", index_col=0)
-            contrast_matrix = read_csv("test_data/ds/rnaseq-example-ContrastMatrix.txt", sep="\t", index_col=0)
-            fdf = read_csv("feature_anno.txt", sep="\t")
+        eset, eset_fit, dge_tbl, used_feature_names = algorithm(ds_data.ExprsWC,
+                                                                ds_data.feature_data,
+                                                                design_data.design_matrix,
+                                                                contrast_data.contrast_matrix)
 
-            ds_data.ExprsWC = exprs_data_file
+        expected_dge = read_df(expected_dge_file)
 
-            eset, eset_fit, dge_tbl, used_feature_names = perform_edger(ds_data, fdf, design_matrix, contrast_matrix)
-
-            print(dge_tbl)
-
-            #db.drop_all()
+        # TODO: We cannot simply compare the entire frame, since gene annotation comes from
+        # a external Ensembl installation and that can change over time
+        # Alternative: Use Mocked instance of annotation service
+        assert has_equal_elements(dge_tbl["Contrast"], expected_dge["Contrast"])
+        assert has_equal_elements(dge_tbl["FeatureIndex"], expected_dge["FeatureIndex"])
+        assert has_equal_elements(dge_tbl["Name"], expected_dge["Name"])
+        assert has_equal_elements(dge_tbl["logFC"], expected_dge["logFC"], epsilon=0.0001)
+        assert has_equal_elements(dge_tbl["AveExpr"], expected_dge["AveExpr"], epsilon=0.0001)
+        assert has_equal_elements(dge_tbl["t"], expected_dge["t"], epsilon=0.0001)
+        assert has_equal_elements(dge_tbl["PValue"], expected_dge["PValue"], epsilon=0.0001)
+        assert has_equal_elements(dge_tbl["FDR"], expected_dge["FDR"], epsilon=0.0001)

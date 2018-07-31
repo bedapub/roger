@@ -3,7 +3,8 @@ from pandas import DataFrame, read_table
 
 from roger.persistence.schema import DGEmethod, DataSet, Design, SampleSubset, Contrast, ContrastColumn
 from roger.exception import ROGERUsageError
-import roger.util
+from roger.util import as_data_frame, silent_remove, silent_rmdir, get_or_guess_name, get_current_user_name, \
+    get_current_datetime, insert_data_frame
 
 
 # --------------------------
@@ -12,7 +13,7 @@ import roger.util
 
 
 def list_methods(session):
-    return roger.util.as_data_frame(session.query(DGEmethod.Name, DGEmethod.Description, DGEmethod.Version))
+    return as_data_frame(session.query(DGEmethod.Name, DGEmethod.Description, DGEmethod.Version))
 
 
 def add_method(session, name, description, version):
@@ -44,20 +45,20 @@ def get_ds(session, name) -> DataSet:
 
 
 def list_ds(session):
-    return roger.util.as_data_frame(session.query(DataSet.Name,
-                                                  DataSet.Type,
-                                                  DataSet.FeatureCount,
-                                                  DataSet.SampleCount,
-                                                  DataSet.CreatedBy,
-                                                  DataSet.Xref))
+    return as_data_frame(session.query(DataSet.Name,
+                                       DataSet.Type,
+                                       DataSet.FeatureCount,
+                                       DataSet.SampleCount,
+                                       DataSet.CreatedBy,
+                                       DataSet.Xref))
 
 
 def delete_ds(session, name):
     ds_entiry = get_ds(session, name)
-    roger.util.silent_remove(ds_entiry.PhenoWC)
-    roger.util.silent_remove(ds_entiry.ExprsWC)
-    roger.util.silent_remove(ds_entiry.NormalizedExprsWC)
-    roger.util.silent_rmdir(os.path.dirname(ds_entiry.NormalizedExprsWC))
+    silent_remove(ds_entiry.PhenoWC)
+    silent_remove(ds_entiry.ExprsWC)
+    silent_remove(ds_entiry.NormalizedExprsWC)
+    silent_rmdir(os.path.dirname(ds_entiry.NormalizedExprsWC))
 
     session.query(DataSet).filter(DataSet.Name == name).delete()
     session.commit()
@@ -89,7 +90,7 @@ def list_design(session, ds_name=None):
         .filter(Design.DataSetID == DataSet.ID)
     if ds_name is not None:
         q = q.filter(DataSet.Name == ds_name)
-    return roger.util.as_data_frame(q)
+    return as_data_frame(q)
 
 
 def remove_design(session, design_name, ds_name):
@@ -103,8 +104,10 @@ def remove_design(session, design_name, ds_name):
 # 2 pass TSV and apply SVA for covariance detection
 # 3 pass TSV matrix + covariance information from R session (by using model.matrix methods and friends)
 # (4 pass matrix and covariance information as JSON file [NOT recommended])
-def add_design(session, design_file, dataset_name, name, description):
+def add_design(session, design_file, dataset_name, name=None, description=None):
     ds = get_ds(session, dataset_name)
+
+    name = get_or_guess_name(name, design_file)
 
     design = query_design(session, name, dataset_name).one_or_none()
     if design is not None:
@@ -129,13 +132,13 @@ def add_design(session, design_file, dataset_name, name, description):
                           Name=name,
                           Description=description,
                           DesignMatrix=json_obj,
-                          CreatedBy=roger.util.get_current_user_name(),
-                          CreationTime=roger.util.get_current_datetime())
+                          CreatedBy=get_current_user_name(),
+                          CreationTime=get_current_datetime())
     session.add(design_entry)
     session.flush()
 
     sample_subset["DesignID"] = design_entry.ID
-    roger.util.insert_data_frame(session, sample_subset, SampleSubset.__table__)
+    insert_data_frame(session, sample_subset, SampleSubset.__table__)
 
     session.commit()
     return name
@@ -172,7 +175,7 @@ def list_contrast(session, design_name=None, ds_name=None):
         q = q.filter(Design.Name == design_name)
     if ds_name is not None:
         q = q.filter(DataSet.Name == ds_name)
-    return roger.util.as_data_frame(q)
+    return as_data_frame(q)
 
 
 def remove_contrast(session, contrast_name, design_name, ds_name):
@@ -181,8 +184,10 @@ def remove_contrast(session, contrast_name, design_name, ds_name):
     session.commit()
 
 
-def add_contrast(session, contrast_file, design_name, dataset_name, name, description):
+def add_contrast(session, contrast_file, design_name, dataset_name, name=None, description=None):
     design = get_design(session, design_name, dataset_name)
+
+    name = get_or_guess_name(name, contrast_file)
 
     if query_contrast(session, name, design_name, dataset_name).one_or_none() is not None:
         raise ROGERUsageError("Contrast '%s' already exist in '%s'" % (name, design_name))
@@ -190,8 +195,8 @@ def add_contrast(session, contrast_file, design_name, dataset_name, name, descri
     contrast = Contrast(DesignID=design.ID,
                         Name=name,
                         Description=description,
-                        CreatedBy=roger.util.get_current_user_name(),
-                        CreationTime=roger.util.get_current_datetime())
+                        CreatedBy=get_current_user_name(),
+                        CreationTime=get_current_datetime())
     session.add(contrast)
     session.flush()
 
@@ -204,8 +209,7 @@ def add_contrast(session, contrast_file, design_name, dataset_name, name, descri
                                 "Description": contrast_cols,
                                 "ColumnData": [contrast_data[col_name].values.tolist() for col_name in contrast_cols]})
 
-    roger.util.insert_data_frame(session, contrast_table, ContrastColumn.__table__)
+    insert_data_frame(session, contrast_table, ContrastColumn.__table__)
 
     session.commit()
     return name
-
