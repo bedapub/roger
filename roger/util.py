@@ -14,7 +14,7 @@ def read_df(file_path):
     return pd.read_table(file_path, sep="\t")
 
 
-def write_df(df : pd.DataFrame, file_path):
+def write_df(df: pd.DataFrame, file_path):
     df.to_csv(file_path, sep="\t", index=False)
 
 
@@ -29,14 +29,8 @@ def get_enum_names(enum: EnumMeta):
 
 
 def get_next_free_db_id(session: Session, id_col):
-    return session.query(func.coalesce(func.max(id_col), -1)).scalar() + 1
-
-
-def nan_to_none(val):
-    import math
-    if math.isnan(val):
-        return None
-    return val
+    # VERY IMPORTANT: Never start indexing from 0 when having auto increment
+    return session.query(func.coalesce(func.max(id_col), 0)).scalar() + 1
 
 
 def insert_data(frame: pd.DataFrame):
@@ -48,9 +42,10 @@ def insert_data(frame: pd.DataFrame):
 
 
 def insert_data_frame(session: Session, frame: pd.DataFrame, table: Table, chunk_size=None):
-    keys, data_list = insert_data(frame)
+    frame_without_nans = frame.where((pd.notnull(frame)), None)
+    keys, data_list = insert_data(frame_without_nans)
 
-    nrows = len(frame)
+    nrows = len(frame_without_nans)
 
     if nrows == 0:
         return

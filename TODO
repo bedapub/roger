@@ -1,24 +1,23 @@
 Important:
-1. Import speedup for gene annotation initialization on MySQL Databases
-2. Export TSV tables for pheno, feature, expression, DGE tables
+* Export TSV tables for pheno, feature, expression, DGE tables
   roger get-expression-matrix GEO1234 --outfile /my/out/file
   roger get-dge-result used_contrast used_design GEO1234
   roger show-pheno-matrix    # prints (except) to display
-3. Convenience methods for defining / importing design & contrast matrices:
-  roger add-design --use-pheno-column "SAMPLE_GROUP" --group-levels # or --group-levels-file
+* Convenience methods for defining / importing design & contrast matrices:
+  roger add-design --use-ph eno-column "SAMPLE_GROUP" --group-levels # or --group-levels-file
   roger add-contrast --make-contrasts='["CmpDX": "Threat23", "Bla": "Blub"]'
-4. Add update utility for matrix data, e.g.:
+* Add update utility for matrix data, e.g.:
   roger update-pheno         # Reload pheno data from PhenoSrc field
   roger update-pheno --file /new/pheno/data.tsv
-5. Quality checking for gene annotation import:
+* Quality checking for gene annotation import:
    When importing genes, try to filter out potential "junk genes", e.g. Don't include ensembl identifiers that point to unmapped chromosome region
-6 Choosing web front end stack
+* Choosing web front end stack
   * d3.js + Flask,
   * plotly + Flask + Dash, <- My preference for now, since good compromise between quality & development time. But not a full-blown conclusion yet
   * PlainR + shiny
-7 Visualization of gene distributions
+* Visualization of gene distributions
   Plain Web site where one select study and then the gene to visualize etc
-8 Visualization of DGE results
+* Visualization of DGE results
   Select Study -> visualize dge + render plots
 
 Backlog:

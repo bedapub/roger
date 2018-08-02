@@ -12,7 +12,7 @@ def test_insert_data_frame(sqlite_in_memory):
     genes = pd.DataFrame({'Version': "tests",
                           'TaxID': 1234,
                           'EnsemblGeneID': df["ensembl_gene_id"],
-                          'EntrezGeneID': df["entrezgene"].apply(roger.util.nan_to_none),
+                          'EntrezGeneID': df["entrezgene"],
                           'GeneType': df["gene_biotype"],
                           'GeneSymbol': df["external_gene_name"],
                           'IsObsolete': False})

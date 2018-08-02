@@ -395,10 +395,11 @@ class DGEmodel(db.Model):
 class FeatureSubset(db.Model):
     __tablename__ = 'FeatureSubset'
 
-    FeatureIndex = Column(Integer, nullable=False, primary_key=True)
-    DataSetID = Column(Integer, nullable=False, primary_key=True)
-    ContrastID = Column(Integer, nullable=False, primary_key=True)
-    DGEmethodID = Column(Integer, nullable=False, primary_key=True)
+    ID = Column(Integer, primary_key=True)
+    FeatureIndex = Column(Integer, nullable=False)
+    DataSetID = Column(Integer, nullable=False)
+    ContrastID = Column(Integer, nullable=False)
+    DGEmethodID = Column(Integer, nullable=False)
     IsUsed = Column(Boolean, nullable=False)
     Description = Column(String(DEFAULT_STR_SIZE))
 

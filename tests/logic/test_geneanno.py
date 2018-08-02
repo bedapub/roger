@@ -1,5 +1,4 @@
 from pandas.util.testing import assert_frame_equal
-from pandas import read_csv
 
 from tests import mouse_tax_id, mouse_dataset
 
@@ -27,7 +26,8 @@ class TestAnnotate(object):
                                                                            mouse_tax_id,
                                                                            "affy_mouse430_2")
         assert "Mouse genes" in annotation_version
-        assert_frame_equal(read_csv("test_data/ds/ma-example-rogerFeatureAnno.txt", sep="\t", index_col=0),
+
+        assert_frame_equal(read_df("test_data/ds/ma-example-rogerFeatureAnno.txt"),
                            feature_data)
 
     def test_annotate_entrezgene(self, sqlite_in_memory):

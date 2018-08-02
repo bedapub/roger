@@ -3,9 +3,8 @@ from pandas import DataFrame
 
 from roger.persistence.schema import GeneAnnotation, Ortholog
 from roger.exception import ROGERUsageError
-from roger.util import as_data_frame, nan_to_none, insert_data_frame, get_next_free_db_id
+from roger.util import as_data_frame, insert_data_frame, get_next_free_db_id
 import roger.logic.mart.provider
-
 
 human_dataset = "hsapiens_gene_ensembl"
 human_tax_id = 9606
@@ -63,7 +62,7 @@ def add_species(session, dataset_name, tax_id):
                        'Version': version,
                        'TaxID': tax_id,
                        'EnsemblGeneID': gene_anno["ensembl_gene_id"],
-                       'EntrezGeneID': gene_anno["entrezgene"].apply(nan_to_none),
+                       'EntrezGeneID': gene_anno["entrezgene"],
                        'GeneType': gene_anno["gene_biotype"],
                        'GeneSymbol': gene_anno["external_gene_name"],
                        'IsObsolete': False})
