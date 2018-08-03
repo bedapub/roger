@@ -25,7 +25,7 @@ def test_insert_data_frame(sqlite_in_memory):
     assert len(session.query(GeneAnnotation).all()) > 1
 
 
-def test_parse_gct_file():
+def test_parse_signal_file():
     parsed = roger.util.parse_gct("test_data/ds/ma-example-signals.gct")
 
     exp_cols = ['DS_10210_LNA_invivo_R13537_1', 'DS_10210_LNA_invivo_R13537_2',
@@ -43,6 +43,17 @@ def test_parse_gct_file():
 
     assert parsed.shape == (45101, 24)
     assert "1415670_at" in parsed.index
+    assert has_equal_elements(parsed.columns, exp_cols)
+
+
+def test_parse_counts_file():
+    parsed = roger.util.parse_gct("test_data/ds/rnaseq-example-readCounts.gct")
+
+    exp_cols = ['31_L24', '32_L68', '33_L13', '34_L2', '37_L46', '38_L8', '41_L43', '42_L55', '43_L58',
+                '44_L12', '47_L17', '48_L87', '51_L27', '52_L6', '53_L63', '54_L34', '57_L38', '58_L20']
+
+    assert parsed.shape == (24902, 18)
+    assert "102724598" in parsed.index
     assert has_equal_elements(parsed.columns, exp_cols)
 
 

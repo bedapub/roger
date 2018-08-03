@@ -4,7 +4,6 @@ import os
 import errno
 import numpy as np
 import pandas as pd
-from numpy import float64
 from sqlalchemy import Table, func
 from sqlalchemy.orm import Session
 
@@ -130,8 +129,9 @@ def parse_gct(file_path):
         raise ROGERUsageError("Unable to parse GCT file '%s': Number of expected samples don't match (%d vs %d)" %
                               (file_path, dims[1], df.shape[1]))
 
-    if not all([col_type == float64 for col_type in df.dtypes]):
-        raise ROGERUsageError("Unable to parse GCT file '%s': parses columns have unexpected type" % file_path)
+    if any([col_type.name == "object" for col_type in df.dtypes]):
+        raise ROGERUsageError("Uable to parse GCT file '%s': counts / signal columns have non-numeric values" %
+                              file_path)
 
     gene_duplicates = df.index.duplicated()
     if any(gene_duplicates):
