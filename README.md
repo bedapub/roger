@@ -32,7 +32,7 @@ roger init
    
 # Adding annotation support for other species
 
-After instalation, ROGER can only consume expression data from human. You can use the `add-species` command add support for other
+After installation, ROGER can only consume expression data from human. You can use the `add-species` command add support for other
 species in ROGER. For example, the following commands:
 
 ```bash
@@ -64,12 +64,12 @@ You can use `roger show-symbol-types 10090`  to see a list of supported feature 
     ```bash
     roger add-design "test_data/ds/ma-example-design.txt" ma-example-signals
     ```
-
-3. Add a design matrix
-    ```bash
-    roger remove-contrast ma-example-contrast ma-example-design ma-example-signals
-    ```
     Use `roger remove-design ma-example-design ma-example-signals` to remove the design matrix from `ma-example-signals`
+
+3. Add a contrast matrix
+    ```bash
+    roger add-contrast test_data/ds/ma-example-contrast.txt ma-example-design ma-example-signals
+    ```
 
 4. Execute limma on added data set:
     ```bash
