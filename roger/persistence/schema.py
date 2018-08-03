@@ -5,8 +5,8 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from pandas import read_table, DataFrame
 import enum
 
-from roger.persistence.json_backport import RogerJSON
 from roger.persistence import db
+from roger.persistence.json_backport import RogerJSON
 import roger.util
 
 DEFAULT_STR_SIZE = 64
@@ -316,8 +316,8 @@ class Contrast(db.Model):
     )
 
     def __repr__(self):
-        return "<ContrastColumn(ID='%s', DesignID='%s', Name='%s', ColumnData='%s')>" \
-               % (self.ID, self.DesignID, self.Name, self.ColumnData)
+        return "<ContrastColumn(ID='%s', DesignID='%s', Name='%s', Description='%s')>" \
+               % (self.ID, self.DesignID, self.Name, self.Description)
 
     @hybrid_property
     def contrast_columns(self):
@@ -352,8 +352,8 @@ class ContrastColumn(db.Model):
     )
 
     def __repr__(self):
-        return "<ContrastColumn(ID='%s', DesignID='%s', Name='%s', ColumnData='%s')>" \
-               % (self.ID, self.DesignID, self.Name, self.ColumnData)
+        return "<ContrastColumn(ID='%s', ContrastID='%s', Name='%s', ColumnData='%s')>" \
+               % (self.ID, self.ContrastID, self.Name, self.ColumnData)
 
 
 class DGEmethod(db.Model):
@@ -414,8 +414,8 @@ class FeatureSubset(db.Model):
     Model = relationship("DGEmodel", foreign_keys=[ContrastID, DGEmethodID])
 
     def __repr__(self):
-        return "<FeatureSubset(FeatureIndex='%s', DGEmodelID='%s', IsUsed='%s', Description='%s')>" \
-               % (self.FeatureIndex, self.DGEmodelID, self.IsUsed, self.Description)
+        return "<FeatureSubset(FeatureIndex='%s', DGEmethodID='%s', IsUsed='%s', Description='%s')>" \
+               % (self.FeatureIndex, self.DGEmethodID, self.IsUsed, self.Description)
 
 
 class DGEtable(db.Model):
