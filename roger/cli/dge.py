@@ -1,6 +1,8 @@
 import click
 import flask
 
+import roger.logic.dge
+import roger.persistence.dge
 from roger.cli import cli
 from roger.persistence.schema import MicroArrayType, RNASeqDataSet, RNASeqType, MicroArrayDataSet
 from roger.util import get_enum_names, get_or_guess_name
@@ -118,17 +120,24 @@ def add_ds_ma(norm_exprs_file,
     from roger.persistence import db
     import roger.logic.dge
 
-    name = roger.logic.dge.add_ds(db.session(),
-                                  flask.current_app.config['ROGER_DATA_FOLDER'],
-                                  MicroArrayDataSet,
-                                  norm_exprs_file,
-                                  tax_id,
-                                  symbol_type,
-                                  pheno_file,
-                                  name,
-                                  normalization,
-                                  description,
-                                  xref)
+    session = db.session()
+
+    print("Parsing and annotating data")
+    ds_prop = roger.logic.dge.create_ds(session,
+                                        MicroArrayDataSet,
+                                        norm_exprs_file,
+                                        tax_id,
+                                        symbol_type,
+                                        pheno_file,
+                                        name,
+                                        normalization,
+                                        description,
+                                        xref)
+
+    print("Parsing data set")
+    roger.persistence.dge.add_ds(session,
+                                 flask.current_app.config['ROGER_DATA_FOLDER'],
+                                 ds_prop)
     print("Done - added data set with name '%s'" % name)
 
 
@@ -160,17 +169,24 @@ def add_ds_rnaseq(exprs_file,
     from roger.persistence import db
     import roger.logic.dge
 
-    name = roger.logic.dge.add_ds(db.session(),
-                                  flask.current_app.config['ROGER_DATA_FOLDER'],
-                                  RNASeqDataSet,
-                                  exprs_file,
-                                  tax_id,
-                                  symbol_type,
-                                  pheno_file,
-                                  name,
-                                  normalization,
-                                  description,
-                                  xref)
+    session = db.session()
+
+    print("Parsing and annotating data")
+    ds_prop = roger.logic.dge.create_ds(session,
+                                        RNASeqDataSet,
+                                        exprs_file,
+                                        tax_id,
+                                        symbol_type,
+                                        pheno_file,
+                                        name,
+                                        normalization,
+                                        description,
+                                        xref)
+
+    print("Parsing data set")
+    roger.persistence.dge.add_ds(session,
+                                 flask.current_app.config['ROGER_DATA_FOLDER'],
+                                 ds_prop)
     print("Done - added data set with name '%s'" % name)
 
 

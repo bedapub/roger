@@ -206,12 +206,12 @@ class RNASeqDataSet(DataSet):
 class FeatureMapping(db.Model):
     __tablename__ = 'FeatureMapping'
 
+    Name = Column(String(DEFAULT_STR_SIZE), nullable=False)
     FeatureIndex = Column(Integer, nullable=False, primary_key=True)
     DataSetID = Column(Integer, ForeignKey(DataSet.ID, ondelete="CASCADE"), nullable=False, primary_key=True)
     RogerGeneIndex = Column(Integer, ForeignKey(GeneAnnotation.RogerGeneIndex))
     OriRogerGeneIndex = Column(Integer, ForeignKey(GeneAnnotation.RogerGeneIndex))
     OriTaxID = Column(Integer)
-    Name = Column(String(DEFAULT_STR_SIZE), nullable=False)
     Description = Column(String(DEFAULT_STR_SIZE))
 
     DataSet = relationship("DataSet", foreign_keys=[DataSetID])

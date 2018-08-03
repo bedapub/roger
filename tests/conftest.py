@@ -49,12 +49,14 @@ def __init_db_with_datasets():
                                                    roger.persistence.geneanno.human_dataset,
                                                    roger.persistence.geneanno.human_tax_id)
             roger.persistence.geneanno.add_species(session, mouse_dataset, mouse_tax_id)
-            roger.logic.dge.add_ds(session,
-                                   app.config['ROGER_DATA_FOLDER'],
-                                   MicroArrayDataSet,
-                                   "test_data/ds/ma-example-signals.gct",
-                                   mouse_tax_id,
-                                   "affy_mouse430_2")
+
+            roger.persistence.dge.add_ds(session,
+                                         app.config['ROGER_DATA_FOLDER'],
+                                         roger.logic.dge.create_ds(session,
+                                                                   MicroArrayDataSet,
+                                                                   "test_data/ds/ma-example-signals.gct",
+                                                                   mouse_tax_id,
+                                                                   "affy_mouse430_2"))
 
             roger.persistence.dge.add_design(session,
                                              "test_data/ds/ma-example-design.txt",
@@ -65,12 +67,13 @@ def __init_db_with_datasets():
                                                "ma-example-design",
                                                "ma-example-signals")
 
-            roger.logic.dge.add_ds(session,
-                                   app.config['ROGER_DATA_FOLDER'],
-                                   RNASeqDataSet,
-                                   "test_data/ds/rnaseq-example-readCounts.gct",
-                                   roger.persistence.geneanno.human_tax_id,
-                                   "entrezgene")
+            roger.persistence.dge.add_ds(session,
+                                         app.config['ROGER_DATA_FOLDER'],
+                                         roger.logic.dge.create_ds(session,
+                                                                   RNASeqDataSet,
+                                                                   "test_data/ds/rnaseq-example-readCounts.gct",
+                                                                   roger.persistence.geneanno.human_tax_id,
+                                                                   "entrezgene"))
 
             roger.persistence.dge.add_design(session,
                                              "test_data/ds/rnaseq-example-DesignMatrix.txt",

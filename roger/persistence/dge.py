@@ -1,10 +1,47 @@
 import os.path
+import shutil
+from typing import Type
+
 from pandas import DataFrame, read_table
 
-from roger.persistence.schema import DGEmethod, DataSet, Design, SampleSubset, Contrast, ContrastColumn
+import roger.util
+
+from roger.persistence.schema import DGEmethod, DataSet, Design, SampleSubset, Contrast, ContrastColumn, FeatureMapping
 from roger.exception import ROGERUsageError
 from roger.util import as_data_frame, silent_remove, silent_rmdir, get_or_guess_name, get_current_user_name, \
     get_current_datetime, insert_data_frame
+
+DATASET_SUB_FOLDER = "dataset"
+
+
+class DataSetProperties(object):
+    """This class is used as encapsulate parameters / properties into one class"""
+
+    def __init__(self,
+                 ds_type: Type[DataSet],
+                 tax_id,
+                 exprs_file,
+                 pheno_file,
+                 exprs_data,
+                 annotated_pheno_data,
+                 annotation_data,
+                 annotation_version,
+                 name,
+                 normalization_method,
+                 description,
+                 xref):
+        self.ds_type = ds_type
+        self.tax_id = tax_id
+        self.exprs_file = exprs_file
+        self.pheno_file = pheno_file
+        self.exprs_data = exprs_data
+        self.annotated_pheno_data = annotated_pheno_data
+        self.annotation_data = annotation_data
+        self.annotation_version = annotation_version
+        self.name = name
+        self.normalization_method = normalization_method
+        self.description = description
+        self.xref = xref
 
 
 # --------------------------
@@ -51,6 +88,43 @@ def list_ds(session):
                                        DataSet.SampleCount,
                                        DataSet.CreatedBy,
                                        DataSet.Xref))
+
+
+def add_ds(session,
+           roger_wd_dir,
+           ds_prop: DataSetProperties):
+    # Persist data
+    datasets_path = os.path.join(roger_wd_dir, DATASET_SUB_FOLDER)
+    dataset_path = os.path.join(datasets_path, ds_prop.name)
+    if not os.path.exists(dataset_path):
+        os.makedirs(dataset_path)
+
+    wc_exprs_file = os.path.abspath(os.path.join(dataset_path, "exprs.gct"))
+    shutil.copy(ds_prop.exprs_file, wc_exprs_file)
+
+    wc_pheno_file = os.path.abspath(os.path.join(dataset_path, "pheno.tsv"))
+    ds_prop.annotated_pheno_data.to_csv(wc_pheno_file, sep="\t")
+
+    dataset_entry = ds_prop.ds_type(Name=ds_prop.name,
+                                    GeneAnnotationVersion=ds_prop.annotation_version,
+                                    Description=ds_prop.description,
+                                    FeatureCount=ds_prop.exprs_data.shape[0],
+                                    SampleCount=ds_prop.exprs_data.shape[1],
+                                    ExprsWC=wc_exprs_file,
+                                    ExprsSrc=ds_prop.exprs_file,
+                                    NormalizationMethod=ds_prop.normalization_method,
+                                    PhenoWC=wc_pheno_file,
+                                    PhenoSrc=ds_prop.pheno_file,
+                                    TaxID=ds_prop.tax_id,
+                                    Xref=ds_prop.xref,
+                                    CreatedBy=roger.util.get_current_user_name(),
+                                    CreationTime=roger.util.get_current_datetime())
+    session.add(dataset_entry)
+    session.flush()
+    ds_prop.annotation_data["DataSetID"] = dataset_entry.ID
+    roger.util.insert_data_frame(session, ds_prop.annotation_data, FeatureMapping.__table__)
+    session.commit()
+    return dataset_entry
 
 
 def delete_ds(session, name):
@@ -202,7 +276,6 @@ def add_contrast(session, contrast_file, design_name, dataset_name, name=None, d
 
     contrast_data = read_table(contrast_file, sep='\t', index_col=0)
 
-    print("Persisting contrast information")
     contrast_cols = contrast_data.columns
     contrast_table = DataFrame({"ContrastID": contrast.ID,
                                 "Name": contrast_cols,

@@ -4,21 +4,21 @@ from typing import Type
 from rpy2.robjects.packages import importr
 from rpy2.robjects import pandas2ri
 from rpy2 import robjects
-from collections import OrderedDict
 import pandas as pd
 import os.path
-import shutil
+
+import roger.logic
+import roger.persistence
+from roger.exception import ROGERUsageError
 
 from roger.persistence.dge import get_ds
-from roger.persistence.schema import DGEmethod, FeatureMapping, DGEtable, DGEmodel, \
+from roger.persistence.schema import DGEmethod, DGEtable, DGEmodel, \
     DataSet, FeatureSubset
 import roger.logic.geneanno
 import roger.persistence.geneanno
 import roger.persistence.dge
-from roger.exception import ROGERUsageError
 from roger.util import get_or_guess_name, parse_gct
 
-DATASET_SUB_FOLDER = "dataset"
 DGE_MODEL_SUB_FOLDER = "dge_model"
 
 pandas2ri.activate()
@@ -95,7 +95,6 @@ def perform_edger(exprs_file: str,
     contrast_matrix.to_csv(contrast_file_path, sep="\t")
     feature_anno.to_csv(fdf_file_path, sep="\t")
 
-    # TODO check of this is actually present or not
     exprs_data = ribios_io.read_exprs_matrix(exprs_file)
 
     descon = ribios_expression.parseDesignContrast(designFile=design_file_path, contrastFile=contrast_file_path)
@@ -126,18 +125,16 @@ def perform_edger(exprs_file: str,
 # ---------------
 
 
-# TODO: Separate between annotation and actual persistence
-def add_ds(session,
-           roger_wd_dir,
-           ds_type: Type[DataSet],
-           exprs_file,
-           tax_id,
-           symbol_type,
-           pheno_file=None,
-           name=None,
-           normalization_method=None,
-           description=None,
-           xref=None):
+def create_ds(session,
+              ds_type: Type[DataSet],
+              exprs_file,
+              tax_id,
+              symbol_type,
+              pheno_file=None,
+              name=None,
+              normalization_method=None,
+              description=None,
+              xref=None):
     name = get_or_guess_name(name, exprs_file)
 
     # Input checking
@@ -148,49 +145,24 @@ def add_ds(session,
     if session.query(DataSet).filter(DataSet.Name == name).one_or_none() is not None:
         raise ROGERUsageError("Data set with name '%s' already exists" % name)
 
-    # Read and annotate data
-    target_for_annotation = exprs_file
+    exprs_data = parse_gct(file_path=exprs_file)
 
-    gct_data = parse_gct(file_path=target_for_annotation)
-    print("Annotating features")
-    (feature_data, annotation_version) = roger.logic.geneanno.annotate(session, gct_data, tax_id, symbol_type)
+    (annotation_data, annotation_version) = roger.logic.geneanno.annotate(session, exprs_data, tax_id, symbol_type)
 
-    print("Persisting data set")
-    # Persist data
-    datasets_path = os.path.join(roger_wd_dir, DATASET_SUB_FOLDER)
-    dataset_path = os.path.join(datasets_path, name)
-    if not os.path.exists(dataset_path):
-        os.makedirs(dataset_path)
+    annotated_pheno_data = annotate_ds_pheno_data(exprs_data, pheno_file)
 
-    wc_exprs_file = None
-    if exprs_file is not None:
-        wc_exprs_file = os.path.abspath(os.path.join(dataset_path, "exprs.gct"))
-        shutil.copy(exprs_file, wc_exprs_file)
-
-    wc_pheno_file = os.path.abspath(os.path.join(dataset_path, "pheno.tsv"))
-    pheno_data = annotate_ds_pheno_data(gct_data, pheno_file)
-    pheno_data.to_csv(wc_pheno_file, sep="\t")
-
-    dataset_entry = ds_type(Name=name,
-                            GeneAnnotationVersion=annotation_version,
-                            Description=description,
-                            FeatureCount=gct_data.shape[0],
-                            SampleCount=gct_data.shape[1],
-                            ExprsWC=wc_exprs_file,
-                            ExprsSrc=exprs_file,
-                            NormalizationMethod=normalization_method,
-                            PhenoWC=wc_pheno_file,
-                            PhenoSrc=pheno_file,
-                            TaxID=tax_id,
-                            Xref=xref,
-                            CreatedBy=roger.util.get_current_user_name(),
-                            CreationTime=roger.util.get_current_datetime())
-    session.add(dataset_entry)
-    session.flush()
-    feature_data["DataSetID"] = dataset_entry.ID
-    roger.util.insert_data_frame(session, feature_data, FeatureMapping.__table__)
-    session.commit()
-    return name
+    return roger.persistence.dge.DataSetProperties(ds_type,
+                                                   tax_id,
+                                                   exprs_file,
+                                                   pheno_file,
+                                                   exprs_data,
+                                                   annotated_pheno_data,
+                                                   annotation_data,
+                                                   annotation_version,
+                                                   name,
+                                                   normalization_method,
+                                                   description,
+                                                   xref)
 
 
 # -----------------

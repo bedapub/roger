@@ -53,8 +53,6 @@ def test_parse_signal_file():
 def test_parse_counts_file(test_file):
     parsed = roger.util.parse_gct(test_file)
 
-    print(parsed)
-
     exp_cols = ['31_L24', '32_L68', '33_L13', '34_L2', '37_L46', '38_L8', '41_L43', '42_L55', '43_L58',
                 '44_L12', '47_L17', '48_L87', '51_L27', '52_L6', '53_L63', '54_L34', '57_L38', '58_L20']
 

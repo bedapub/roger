@@ -3,14 +3,16 @@ roger init
 roger add-species "rnorvegicus_gene_ensembl" 10116
 roger add-species "mmusculus_gene_ensembl" 10090
 
-
+roger add-ds-ma test_data/ds/ma-example-signals.gct 10090 affy_mouse430_2
+roger add-design "test_data/ds/ma-example-design.txt" ma-example-signals
 roger add-contrast test_data/ds/ma-example-contrast.txt ma-example-design ma-example-signals
 roger run-dge-ma ma-example-contrast ma-example-design ma-example-signals
 
-roger remove-design "ma-example-design" "ma-example-signals"
-roger remove-contrast ma-example-contrast ma-example-design ma-example-signals
-
 roger add-ds-rnaseq test_data/ds/rnaseq-example-readCounts.gct 9606 entrezgene
-roger add-design test_data/ds/rnaseq-example-DesignMatrix rnaseq-example-readCounts
+roger add-design test_data/ds/rnaseq-example-DesignMatrix.txt rnaseq-example-readCounts
 roger add-contrast test_data/ds/rnaseq-example-ContrastMatrix.txt rnaseq-example-DesignMatrix rnaseq-example-readCounts
 roger run-dge-rnaseq rnaseq-example-ContrastMatrix rnaseq-example-DesignMatrix rnaseq-example-readCounts
+
+
+roger remove-design "ma-example-design" "ma-example-signals"
+roger remove-contrast ma-example-contrast ma-example-design ma-example-signals
