@@ -4,10 +4,13 @@ import os
 import errno
 import numpy as np
 import pandas as pd
+from numpy import float64
 from sqlalchemy import Table, func
 from sqlalchemy.orm import Session
 
 from enum import EnumMeta
+
+from roger.exception import ROGERUsageError
 
 
 def read_df(file_path):
@@ -82,8 +85,60 @@ def get_current_user_name():
 
 
 def parse_gct(file_path):
-    df = pd.read_csv(file_path, sep="\t", skiprows=2, index_col=0)
-    return df.drop(columns=df.columns[0])
+    with open(file_path) as myfile:
+        header = [next(myfile).rstrip() for _ in range(3)]
+
+    version_line = header[0]
+    dim_line = header[1].split("\t")
+    col_line = header[2].split("\t")
+
+    if version_line != "#1.2":
+        raise ROGERUsageError("Unable to parse GCT file '%s': missing GCT header" % file_path)
+
+    # Number of genes + number of samples
+    n_dim_elems = 2
+
+    if len(dim_line) != n_dim_elems:
+        raise ROGERUsageError("Unable to parse GCT file '%s': missing dimension header in GCT header" % file_path)
+
+    try:
+        dims = [int(x) for x in header[1].split("\t")]
+    except ValueError:
+        raise ROGERUsageError("Unable to parse GCT file '%s': ill-formatted dimension header '%s'" %
+                              (file_path, header[1]))
+
+    # Name col + Description col + at least one sample col
+    n_minimum_cols = 3
+
+    if len(col_line) < n_minimum_cols or col_line[0].lower() != "name" or col_line[1].lower() != "description":
+        raise ROGERUsageError("Unable to parse GCT file '%s': ill-formatted column header '%s ...'" %
+                              (file_path, header[2][0:100]))
+
+    sample_names = col_line[2:]
+
+    if len(sample_names) != len(set(sample_names)):
+        raise ROGERUsageError("Unable to parse GCT file '%s': duplicated sample names" % file_path)
+
+    df = pd.read_table(file_path, sep="\t", skiprows=2, index_col=0)
+    df = df.drop(columns=df.columns[0])
+
+    if dims[0] != df.shape[0]:
+        raise ROGERUsageError("Unable to parse GCT file '%s': Number of expected genes don't match (%d vs %d)" %
+                              (file_path, dims[0], df.shape[0]))
+
+    if dims[1] != df.shape[1]:
+        raise ROGERUsageError("Unable to parse GCT file '%s': Number of expected samples don't match (%d vs %d)" %
+                              (file_path, dims[1], df.shape[1]))
+
+    if not all([col_type == float64 for col_type in df.dtypes]):
+        raise ROGERUsageError("Unable to parse GCT file '%s': parses columns have unexpected type" % file_path)
+
+    gene_duplicates = df.index.duplicated()
+    if any(gene_duplicates):
+        raise ROGERUsageError("Unable to parse GCT file '%s': duplicated row names '%s ...'" %
+                              (file_path, df[gene_duplicates].index[0:2].tolist()))
+
+    return df
 
 
 def silent_rmdir(dir_path):

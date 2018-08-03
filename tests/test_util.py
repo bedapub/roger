@@ -1,6 +1,9 @@
 import pandas as pd
+import pytest
 
+from roger.exception import ROGERUsageError
 from roger.persistence.schema import GeneAnnotation
+
 import roger.util
 from tests import has_equal_elements
 
@@ -41,3 +44,16 @@ def test_parse_gct_file():
     assert parsed.shape == (45101, 24)
     assert "1415670_at" in parsed.index
     assert has_equal_elements(parsed.columns, exp_cols)
+
+
+@pytest.mark.parametrize("test_file", [
+    "test_data/ds/wrong_gct/no_header.gct",
+    "test_data/ds/wrong_gct/no_dim_header.gct",
+    "test_data/ds/wrong_gct/gene_mismatch.gct",
+    "test_data/ds/wrong_gct/sample_mismatch.gct",
+    "test_data/ds/wrong_gct/duplicated_cols.gct",
+    "test_data/ds/wrong_gct/duplicated_genes.gct"
+])
+def test_parse_broken_gct_files(test_file):
+    with pytest.raises(ROGERUsageError):
+        roger.util.parse_gct(test_file)
