@@ -84,7 +84,7 @@ because these commands provide slightly different optional parameters
 
 ```bash
 roger add-ds-rnaseq test_data/ds/rnaseq-example-readCounts.gct 9606 entrezgene
-roger add-design test_data/ds/rnaseq-example-DesignMatrix rnaseq-example-readCounts
+roger add-design test_data/ds/rnaseq-example-DesignMatrix.txt rnaseq-example-readCounts
 roger add-contrast test_data/ds/rnaseq-example-ContrastMatrix.txt rnaseq-example-DesignMatrix rnaseq-example-readCounts
 roger run-dge-rnaseq rnaseq-example-ContrastMatrix rnaseq-example-DesignMatrix rnaseq-example-readCounts
 ```
