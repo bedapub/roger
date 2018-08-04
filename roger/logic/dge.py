@@ -72,10 +72,11 @@ def perform_limma(exprs_file: str,
 
     dge_tbl = pandas2ri.ri2py(ribios_roger.limmaDgeTable(eset_fit))
 
-    used_feature_names = robjects.conversion.ri2py(base.rownames(eset_fit.rx2("genes")))
+    used_names = robjects.conversion.ri2py(base.rownames(eset_fit.rx2("genes")))
+    used_features = feature_anno['FeatureIndex'].isin(used_names)
 
     # TODO: return result type instead of a tuple
-    return eset, eset_fit, dge_tbl, used_feature_names
+    return eset, eset_fit, dge_tbl, used_features
 
 
 def perform_edger(exprs_file: str,
@@ -103,7 +104,7 @@ def perform_edger(exprs_file: str,
 
     slot = edger_input.slots["dgeList"]
     slot.rx2["genes"] = ribios_io.readTable(fdf_file_path)
-    slot.rx2["annotation"] = "GeneID"
+    slot.rx2["annotation"] = "Name"
     edger_input.slots["dgeList"] = slot
 
     edger_result = ribios_ngs.dgeWithEdgeR(edger_input)
@@ -114,10 +115,11 @@ def perform_edger(exprs_file: str,
     dge_tbl = dge_tbl.rename(index=str, columns={"logCPM": "AveExpr",
                                                  "LR": "t"})
 
-    used_feature_names = robjects.conversion.ri2py(biobase.featureNames(edger_result))
+    used_names = robjects.conversion.ri2py(biobase.featureNames(edger_result))
+    used_features = feature_anno['Name'].isin(used_names)
 
     # TODO: return result type instead of a tuple
-    return edger_result.do_slot("dgeList"), edger_result.do_slot("dgeGLM"), dge_tbl, used_feature_names
+    return edger_result.do_slot("dgeList"), edger_result.do_slot("dgeGLM"), dge_tbl, used_features
 
 
 # ---------------
@@ -188,10 +190,10 @@ def run_dge(session,
     print("Performing differential gene expression analysis using %s" % algorithm_name)
     contrast_matrix = contrast_data.contrast_matrix
     design_matrix = design_data.design_matrix
-    eset, eset_fit, dge_tbl, used_feature_names = algorithm(ds_data.ExprsWC,
-                                                            feature_data,
-                                                            design_matrix,
-                                                            contrast_matrix)
+    eset, eset_fit, dge_tbl, used_features = algorithm(ds_data.ExprsWC,
+                                                       feature_data,
+                                                       design_matrix,
+                                                       contrast_matrix)
 
     print("Persisting model information")
     # TODO why are methods stored in table anyway?
@@ -219,21 +221,18 @@ def run_dge(session,
     session.flush()
 
     print("Persisting feature subsets")
-    feature_subset = feature_data[feature_data['Feature'].isin(used_feature_names)]
-    feature_subset = feature_data.set_index("Name").join(feature_subset)
-    is_used = feature_subset["Feature"].apply(lambda x: True if type(x).__name__ == "str" else False)
 
-    feature_subset = pd.DataFrame({"FeatureIndex": feature_subset["FeatureIndex"],
+    feature_subset = pd.DataFrame({"FeatureIndex": feature_data["FeatureIndex"],
                                    "DataSetID": ds_data.ID,
                                    "ContrastID": contrast_data.ID,
                                    "DGEmethodID": method.ID,
-                                   "IsUsed": is_used,
+                                   "IsUsed": used_features,
                                    "Description": "Default filtering by '%s'" % algorithm_name})
     roger.util.insert_data_frame(session, feature_subset, FeatureSubset.__table__)
 
     print("Persisting DGE table")
     dge_tbl = dge_tbl.join(contrast_data.contrast_columns.set_index("Name"), on="Contrast", rsuffix="_C") \
-        .join(feature_data.set_index("Name"), on="Feature", rsuffix="_F")
+        .join(feature_data.set_index("Name"), on="Name", rsuffix="_F")
     dgetable = pd.DataFrame({'ContrastColumnID': dge_tbl["ID"],
                              'FeatureIndex': dge_tbl["FeatureIndex"],
                              "ContrastID": contrast_data.ID,

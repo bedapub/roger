@@ -38,8 +38,8 @@ class TestDGEAnalysis(object):
          "rnaseq-example-readCounts",
          "test_data/ds/rnaseq-example-dgeTable.txt")
     ])
-    def test_edger(self, algorithm, contrast_name, design_name, ds_name, expected_dge_file,
-                   sqlite_datasets: SQLAlchemy):
+    def test_dge_algos(self, algorithm, contrast_name, design_name, ds_name, expected_dge_file,
+                       sqlite_datasets: SQLAlchemy):
         session = sqlite_datasets.session()
 
         contrast_data = roger.persistence.dge.get_contrast(session,

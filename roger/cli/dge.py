@@ -1,8 +1,6 @@
 import click
 import flask
 
-import roger.logic.dge
-import roger.persistence.dge
 from roger.cli import cli
 from roger.persistence.schema import MicroArrayType, RNASeqDataSet, RNASeqType, MicroArrayDataSet
 from roger.util import get_enum_names, get_or_guess_name
@@ -119,6 +117,7 @@ def add_ds_ma(norm_exprs_file,
     print("Adding microarray data set '%s' ..." % name)
     from roger.persistence import db
     import roger.logic.dge
+    import roger.persistence.dge
 
     session = db.session()
 
@@ -168,6 +167,7 @@ def add_ds_rnaseq(exprs_file,
     print("Adding RNAseq data set '%s' ..." % name)
     from roger.persistence import db
     import roger.logic.dge
+    import roger.persistence.dge
 
     session = db.session()
 
@@ -359,4 +359,55 @@ def run_dge_rnaseq(contrast, design, dataset, algorithm="edgeR"):
                             dataset,
                             roger.logic.dge.perform_edger,
                             algorithm)
+    print("Done")
+
+# -----------------
+# DGE Model & Results
+# -----------------
+
+
+@cli.command(name="list-dge-models",
+             short_help='Lists DGE models')
+@click.option('--contrast', help='Show only contrasts for the given contrast')
+@click.option('--design', help='Show only contrasts for the given design')
+@click.option('--dataset', help='Show only contrasts for the given data set')
+@click.option('--method_name', help='Show only contrasts for the given contrast')
+def list_dge_models(contrast, design, dataset, method_name):
+    print('Querying available DGE models ...')
+    from roger.persistence import db
+    import roger.persistence.dge
+
+    print(roger.persistence.dge.list_dge_models(db.session(), contrast, design, dataset, method_name))
+
+
+@cli.command(name="show-dge-table",
+             short_help='Shows the DGE result table for the specified design:design:contrast combination')
+@click.argument('contrast', metavar='<contrast>')
+@click.argument('design', metavar='<design_name>')
+@click.argument('dataset', metavar='<dataset_name>')
+@click.argument('method', metavar='<dge_method_name>')
+def show_dge_table(contrast, design, dataset, method):
+    print('Querying available DGE models ...')
+    from roger.persistence import db
+    import roger.persistence.dge
+
+    model = roger.persistence.dge.get_dge_model(db.session(), contrast, design, dataset, method)
+    print(model.result_table)
+
+
+@cli.command(name="export-dge-table",
+             short_help='Exports DGE results from a specific experiment onto the disk')
+@click.argument('contrast', metavar='<contrast>')
+@click.argument('design', metavar='<design_name>')
+@click.argument('dataset', metavar='<dataset_name>')
+@click.argument('method', metavar='<dge_method_name>')
+@click.argument('out_file', type=click.File('wb'))
+def export_dge_table(contrast, design, dataset, method, out_file):
+    print('Querying available DGE models ...')
+    from roger.persistence import db
+    from roger.util import write_df
+    from roger.persistence.dge import get_dge_model
+
+    model = get_dge_model(db.session(), contrast, design, dataset, method)
+    write_df(model.result_table, out_file)
     print("Done")

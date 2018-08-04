@@ -387,6 +387,12 @@ class DGEmodel(db.Model):
 
     __table_args__ = {'mysql_engine': 'InnoDB'}
 
+    @hybrid_property
+    def result_table(self):
+        return roger.util.as_data_frame(DGEtable.query
+                                        .filter(DGEtable.ContrastID == self.ContrastID)
+                                        .filter(DGEtable.DGEmethodID == self.DGEmethodID))
+
     def __repr__(self):
         return "<DGEmodel(ContrastID='%s', DGEmethodID='%s')>" \
                % (self.ContrastID, self.DGEmethodID)

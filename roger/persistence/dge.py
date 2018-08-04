@@ -6,7 +6,8 @@ from pandas import DataFrame, read_table
 
 import roger.util
 
-from roger.persistence.schema import DGEmethod, DataSet, Design, SampleSubset, Contrast, ContrastColumn, FeatureMapping
+from roger.persistence.schema import DGEmethod, DataSet, Design, SampleSubset, Contrast, ContrastColumn, \
+    FeatureMapping, DGEmodel
 from roger.exception import ROGERUsageError
 from roger.util import as_data_frame, silent_remove, silent_rmdir, get_or_guess_name, get_current_user_name, \
     get_current_datetime, insert_data_frame
@@ -286,3 +287,54 @@ def add_contrast(session, contrast_file, design_name, dataset_name, name=None, d
 
     session.commit()
     return name
+
+
+# -----------------
+# Contrast Matrix
+# -----------------
+
+
+def query_dge_models(session, contrast_name, design_name, dataset_name, method_name, *query_attr_args):
+    q = session.query(*query_attr_args) \
+        .filter(Contrast.DesignID == Design.ID) \
+        .filter(Design.DataSetID == DataSet.ID) \
+        .filter(DGEmodel.ContrastID == Contrast.ID) \
+        .filter(DGEmodel.DGEmethodID == DGEmethod.ID)
+    if contrast_name is not None:
+        q = q.filter(Contrast.Name == contrast_name)
+    if design_name is not None:
+        q = q.filter(Design.Name == design_name)
+    if dataset_name is not None:
+        q = q.filter(DataSet.Name == dataset_name)
+    if method_name is not None:
+        q = q.filter(DGEmethod.Name == method_name)
+    print(q)
+    return q
+
+
+def get_dge_model(session, contrast_name, design_name, dataset_name, method_name):
+    model = query_dge_models(session, contrast_name, design_name, dataset_name, method_name,
+                             DGEmodel).one_or_none()
+    if model is None:
+        raise ROGERUsageError("Model for %s:%s:%s already exists" % (dataset_name, design_name, contrast_name))
+    return model
+
+
+def list_dge_models(session, contrast_name, design_name, dataset_name, method_name):
+    q = query_dge_models(session, contrast_name, design_name, dataset_name, method_name,
+                         DataSet.Name.label("DataSet"),
+                         Design.Name.label("Design"),
+                         Contrast.Name.label("Contrast"),
+                         DGEmethod.Name.label("Method"))
+    return as_data_frame(q)
+
+
+def delete_dge_model(session, name):
+    ds_entiry = get_ds(session, name)
+    silent_remove(ds_entiry.PhenoWC)
+    silent_remove(ds_entiry.ExprsWC)
+    silent_remove(ds_entiry.NormalizedExprsWC)
+    silent_rmdir(os.path.dirname(ds_entiry.NormalizedExprsWC))
+
+    session.query(DataSet).filter(DataSet.Name == name).delete()
+    session.commit()
