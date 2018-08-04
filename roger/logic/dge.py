@@ -58,8 +58,8 @@ def perform_limma(exprs_file: str,
     # colnames(contrast_data) < - make.names(colnames(contrast_data))
     eset = methods.new("ExpressionSet", exprs=exprs_data)
 
-    # Yep, this is how you call replacement functions from python
-    eset = biobase.__dict__["fData<-"](eset, feature_anno)
+    # TODO We drop Description column here, because it might cause warnings
+    eset = biobase.__dict__["fData<-"](eset, feature_anno.drop(columns=['Description']))
 
     weights = robjects.vectors.IntVector([1] * base.ncol(exprs_data)[0])
     if use_weighted:
@@ -73,6 +73,7 @@ def perform_limma(exprs_file: str,
     dge_tbl = pandas2ri.ri2py(ribios_roger.limmaDgeTable(eset_fit))
 
     used_names = robjects.conversion.ri2py(base.rownames(eset_fit.rx2("genes")))
+
     used_features = feature_anno['FeatureIndex'].isin(used_names)
 
     # TODO: return result type instead of a tuple
@@ -97,8 +98,13 @@ def perform_edger(exprs_file: str,
     feature_anno.to_csv(fdf_file_path, sep="\t")
 
     exprs_data = ribios_io.read_exprs_matrix(exprs_file)
-
-    descon = ribios_expression.parseDesignContrast(designFile=design_file_path, contrastFile=contrast_file_path)
+    descon = ribios_expression.parseDesignContrast(designFile=design_file_path,
+                                                   contrastFile=contrast_file_path)
+                                                   # sampleGroups="TODO",
+                                                   # groupLevels="TODO",
+                                                   # dispLevels="TODO",
+                                                   # contrasts="TODO",
+                                                   # expSampleNames=base.colnames(exprs_data))
 
     edger_input = ribios_ngs.EdgeObject(exprs_data, descon)
 

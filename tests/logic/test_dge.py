@@ -1,5 +1,7 @@
 import pytest
 from flask_sqlalchemy import SQLAlchemy
+from pandas import read_table
+
 from roger.logic.dge import perform_edger, perform_limma
 
 import roger.logic
@@ -26,19 +28,21 @@ class TestDataSet(object):
 
 
 class TestDGEAnalysis(object):
-    @pytest.mark.parametrize("algorithm, contrast_name, design_name, ds_name, expected_dge_file", [
+    @pytest.mark.parametrize("algorithm, contrast_name, design_name, ds_name, expected_dge_file, feature_subset", [
         (perform_limma,
          "ma-example-contrast",
          "ma-example-design",
          "ma-example-signals",
-         "test_data/ds/ma-example-dgeTable.txt"),
+         "test_data/ds/ma-example-dgeTable.txt",
+         "test_data/ds/ma-example-featureSubset.txt"),
         (perform_edger,
          "rnaseq-example-ContrastMatrix",
          "rnaseq-example-DesignMatrix",
          "rnaseq-example-readCounts",
-         "test_data/ds/rnaseq-example-dgeTable.txt")
+         "test_data/ds/rnaseq-example-dgeTable.txt",
+         "test_data/ds/rnaseq-example-featureSubset.txt")
     ])
-    def test_dge_algos(self, algorithm, contrast_name, design_name, ds_name, expected_dge_file,
+    def test_dge_algos(self, algorithm, contrast_name, design_name, ds_name, expected_dge_file, feature_subset,
                        sqlite_datasets: SQLAlchemy):
         session = sqlite_datasets.session()
 
@@ -50,10 +54,10 @@ class TestDGEAnalysis(object):
         design_data = contrast_data.Design
         ds_data = design_data.DataSet
 
-        eset, eset_fit, dge_tbl, used_feature_names = algorithm(ds_data.ExprsWC,
-                                                                ds_data.feature_data,
-                                                                design_data.design_matrix,
-                                                                contrast_data.contrast_matrix)
+        eset, eset_fit, dge_tbl, subset = algorithm(ds_data.ExprsWC,
+                                                    ds_data.feature_data,
+                                                    design_data.design_matrix,
+                                                    contrast_data.contrast_matrix)
 
         expected_dge = read_df(expected_dge_file)
 
@@ -68,3 +72,5 @@ class TestDGEAnalysis(object):
         assert has_equal_elements(dge_tbl["t"], expected_dge["t"], epsilon=0.0001)
         assert has_equal_elements(dge_tbl["PValue"], expected_dge["PValue"], epsilon=0.0001)
         assert has_equal_elements(dge_tbl["FDR"], expected_dge["FDR"], epsilon=0.0001)
+
+        assert has_equal_elements(subset, read_table(feature_subset, header=None).ix[:, 0])
