@@ -57,8 +57,6 @@ def perform_limma(exprs_file: str,
     # TODO check of this is actually present or not
     exprs_data = ribios_io.read_exprs_matrix(exprs_file)
 
-    # conts_names_backup < - colnames(contrast_data)
-    # colnames(contrast_data) < - make.names(colnames(contrast_data))
     eset = methods.new("ExpressionSet", exprs=exprs_data)
 
     # TODO We drop Description column here, because it might cause warnings
@@ -66,7 +64,6 @@ def perform_limma(exprs_file: str,
 
     weights = robjects.vectors.IntVector([1] * base.ncol(exprs_data)[0])
     if use_weighted:
-        # doLog("Estimating weights by linear model", level=1L)
         weights = limma.arrayWeights(eset, design=design_data)
 
     eset_fit = limma.lmFit(object=eset, design=design_data, weights=weights)
@@ -135,7 +132,6 @@ def perform_edger(exprs_file: str,
 # ---------------
 # Datasets
 # ---------------
-
 
 def create_ds(session,
               ds_type: Type[DataSet],

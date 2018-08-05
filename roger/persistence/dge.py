@@ -3,6 +3,7 @@ import shutil
 from typing import Type
 
 from pandas import DataFrame, read_table
+import numpy as np
 
 import roger.util
 
@@ -171,6 +172,26 @@ def remove_design(session, design_name, ds_name):
     session.commit()
 
 
+def __check_matrix(ref_columns, matrix, matrix_name, ref_list_name):
+    if len(ref_columns) != matrix.shape[0]:
+        raise ROGERUsageError("Number of rows in %s does not match the number of %s: %d vs %d"
+                              % (matrix_name, ref_list_name, len(ref_columns), matrix.shape[0]))
+    if matrix.index.dtype.name == "object" and set(matrix.index) != set(ref_columns):
+        raise ROGERUsageError("Row names of %s and %s do not match" % (matrix_name, ref_list_name))
+
+    for col_name in matrix.columns:
+        if not np.issubdtype(matrix[col_name].dtype, np.integer):
+            raise ROGERUsageError("Column '%s' is not an integer type" % col_name)
+
+
+def check_design_matrix(ref_columns, matrix):
+    __check_matrix(ref_columns, matrix, "design matrix", "sample names")
+
+
+def check_contrast_matrix(ref_columns, matrix):
+    __check_matrix(ref_columns, matrix, "contrast matrix", "design matrix column names")
+
+
 # TODO: Method to pass DESIGN / work with matrix:
 # 1 directly add TSV file with no extra information
 # 2 pass TSV and apply SVA for covariance detection
@@ -186,6 +207,7 @@ def add_design(session, design_file, dataset_name, name=None, description=None):
         raise ROGERUsageError("Design of data set '%s' with name '%s' already exist" % (dataset_name, name))
 
     design_data = read_table(design_file, sep='\t', index_col=0)
+    check_design_matrix(ds.exprs_data.columns, design_data)
 
     pheno_data = ds.pheno_data
     # TODO make this customizable by user
@@ -272,6 +294,7 @@ def add_contrast(session, contrast_file, design_name, dataset_name, name=None, d
     session.flush()
 
     contrast_data = read_table(contrast_file, sep='\t', index_col=0)
+    check_contrast_matrix(design.design_matrix.columns, contrast_data)
 
     contrast_cols = contrast_data.columns
     contrast_table = DataFrame({"ContrastID": contrast.ID,
