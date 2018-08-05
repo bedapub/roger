@@ -174,7 +174,7 @@ class DataSet(db.Model):
 
     @hybrid_property
     def pheno_data(self):
-        return read_table(self.PhenoWC, sep='\t')
+        return read_table(self.PhenoWC, sep='\t', index_col=0)
 
     @hybrid_property
     def feature_data(self):

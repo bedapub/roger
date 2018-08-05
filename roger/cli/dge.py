@@ -1,3 +1,5 @@
+import shutil
+
 import click
 import flask
 
@@ -202,10 +204,88 @@ def remove_ds(name):
     print("Done")
 
 
+@cli.command(name="show-exprs",
+             short_help='Shows the expression matrix from a given data set')
+@click.argument('dataset', metavar='<dataset_name>')
+def show_exprs(dataset):
+    print("Querying dataset '%s'..." % dataset)
+    from roger.persistence import db
+    from roger.persistence.dge import get_ds
+
+    ds = get_ds(db.session(), dataset)
+    print(ds.exprs_data)
+
+
+@cli.command(name="export-exprs",
+             short_help='Exports the expression matrix from a given data set')
+@click.argument('dataset', metavar='<dataset_name>')
+@click.argument('out_file', type=click.File('wb'))
+def export_exprs(dataset, out_file):
+    print("Saving expression matrix to '%s' ..." % out_file.name)
+    from roger.persistence import db
+    from roger.persistence.dge import get_ds
+    import shutil
+
+    ds = get_ds(db.session(), dataset)
+    shutil.copy(ds.ExprsWC, out_file.name)
+    print("Done")
+
+
+@cli.command(name="show-feature-data",
+             short_help='Shows the feature annotation data from a given data set')
+@click.argument('dataset', metavar='<dataset_name>')
+def show_feature_data(dataset):
+    print("Querying dataset '%s'..." % dataset)
+    from roger.persistence import db
+    from roger.persistence.dge import get_ds
+
+    ds = get_ds(db.session(), dataset)
+    print(ds.feature_data)
+
+
+@cli.command(name="export-feature-data",
+             short_help='Exports the feature annotation data from a given data set')
+@click.argument('dataset', metavar='<dataset_name>')
+@click.argument('out_file', type=click.File('wb'))
+def export_feature_data(dataset, out_file):
+    print("Saving feature annotation data to '%s' ..." % out_file.name)
+    from roger.persistence import db
+    from roger.persistence.dge import get_ds
+
+    ds = get_ds(db.session(), dataset)
+    ds.feature_data.to_csv(out_file, sep="\t")
+    print("Done")
+
+
+@cli.command(name="show-pheno-data",
+             short_help='Shows the pheno data from a given data set')
+@click.argument('dataset', metavar='<dataset_name>')
+def show_pheno_data(dataset):
+    print("Querying dataset '%s'..." % dataset)
+    from roger.persistence import db
+    from roger.persistence.dge import get_ds
+
+    ds = get_ds(db.session(), dataset)
+    print(ds.pheno_data)
+
+
+@cli.command(name="export-pheno-data",
+             short_help='Exports the pheno data from a given data set')
+@click.argument('dataset', metavar='<dataset_name>')
+@click.argument('out_file', type=click.File('wb'))
+def export_pheno_data(dataset, out_file):
+    print("Saving pheno data to '%s' ..." % out_file.name)
+    from roger.persistence import db
+    from roger.persistence.dge import get_ds
+
+    ds = get_ds(db.session(), dataset)
+    ds.pheno_data.to_csv(out_file, sep="\t")
+    print("Done")
+
+
 # -----------------
 # Design Matrix
 # -----------------
-
 
 @cli.command(name="list-design",
              short_help='Lists available designs')
@@ -242,6 +322,34 @@ def add_design(design_matrix,
     print("Done - added design with name '%s'" % name)
 
 
+@cli.command(name="show-design",
+             short_help='Show contrast matrix')
+@click.argument('design', metavar='<design_name>')
+@click.argument('dataset', metavar='<dataset_name>')
+def show_design(design, dataset):
+    print('Querying available DGE models ...')
+    from roger.persistence import db
+    from roger.persistence.dge import get_design
+
+    design = get_design(db.session(), design, dataset)
+    print(design.design_matrix)
+
+
+@cli.command(name="export-design",
+             short_help='Exports design matrix onto the disk')
+@click.argument('design', metavar='<design_name>')
+@click.argument('dataset', metavar='<dataset_name>')
+@click.argument('out_file', type=click.File('wb'))
+def export_design(design, dataset, out_file):
+    print("Saving design matrix to '%s' ..." % out_file.name)
+    from roger.persistence import db
+    from roger.persistence.dge import get_design
+
+    design = get_design(db.session(), design, dataset)
+    design.design_matrix.to_csv(out_file, sep="\t")
+    print("Done")
+
+
 @cli.command(name="remove-design",
              short_help='Removes the given design')
 @click.argument('design_name', metavar='<design_name>')
@@ -258,7 +366,6 @@ def remove_design(design_name, dataset_name):
 # -----------------
 # Contrast Matrix
 # -----------------
-
 
 @cli.command(name="list-contrast",
              short_help='Lists available contrasts')
@@ -299,6 +406,36 @@ def add_contrast(contrast_matrix,
     print("Done - added contrast with name '%s'" % name)
 
 
+@cli.command(name="show-contrast",
+             short_help='Show contrast matrix')
+@click.argument('contrast', metavar='<contrast>')
+@click.argument('design', metavar='<design_name>')
+@click.argument('dataset', metavar='<dataset_name>')
+def show_contrast(contrast, design, dataset):
+    print('Querying available DGE models ...')
+    from roger.persistence import db
+    from roger.persistence.dge import get_contrast
+
+    contrast = get_contrast(db.session(), contrast, design, dataset)
+    print(contrast.contrast_matrix)
+
+
+@cli.command(name="export-contrast",
+             short_help='Exports contrast matrix onto the disk')
+@click.argument('contrast', metavar='<contrast>')
+@click.argument('design', metavar='<design_name>')
+@click.argument('dataset', metavar='<dataset_name>')
+@click.argument('out_file', type=click.File('wb'))
+def export_contrast(contrast, design, dataset, out_file):
+    print("Exporting contrast matrix to '%s' ..." % out_file.name)
+    from roger.persistence import db
+    from roger.persistence.dge import get_contrast
+
+    contrast = get_contrast(db.session(), contrast, design, dataset)
+    contrast.contrast_matrix.to_csv(out_file, sep="\t")
+    print("Done")
+
+
 @cli.command(name="remove-contrast",
              short_help='Removes the given contrast')
 @click.argument('contrast_name', metavar='<contrast_name>')
@@ -316,7 +453,6 @@ def remove_contrast(contrast_name, design_name, dataset_name):
 # -----------------
 # DGE & executions
 # -----------------
-
 
 @cli.command(name="run-dge-ma",
              short_help='Run differential gene expression analysis on microarray data')
@@ -361,10 +497,10 @@ def run_dge_rnaseq(contrast, design, dataset, algorithm="edgeR"):
                             algorithm)
     print("Done")
 
+
 # -----------------
 # DGE Model & Results
 # -----------------
-
 
 @cli.command(name="list-dge-models",
              short_help='Lists DGE models')
@@ -403,7 +539,7 @@ def show_dge_table(contrast, design, dataset, method):
 @click.argument('method', metavar='<dge_method_name>')
 @click.argument('out_file', type=click.File('wb'))
 def export_dge_table(contrast, design, dataset, method, out_file):
-    print('Querying available DGE models ...')
+    print("Exporting DGE table to '%s' ..." % out_file.name)
     from roger.persistence import db
     from roger.util import write_df
     from roger.persistence.dge import get_dge_model
