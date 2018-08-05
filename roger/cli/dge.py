@@ -411,3 +411,18 @@ def export_dge_table(contrast, design, dataset, method, out_file):
     model = get_dge_model(db.session(), contrast, design, dataset, method)
     write_df(model.result_table, out_file)
     print("Done")
+
+
+@cli.command(name="remove-dge-model",
+             short_help='Removes the given DGE model and its result entries')
+@click.argument('contrast', metavar='<contrast>')
+@click.argument('design', metavar='<design_name>')
+@click.argument('dataset', metavar='<dataset_name>')
+@click.argument('method', metavar='<dge_method_name>')
+def remove_dge_model(contrast, design, dataset, method):
+    print("Deleting DGE result from %s:%s:%s calculated with method %s" % (dataset, design, contrast, method))
+    from roger.persistence import db
+    from roger.persistence.dge import remove_dge_model
+
+    remove_dge_model(db.session(), contrast, design, dataset, method)
+    print("Done")

@@ -49,7 +49,6 @@ class DataSetProperties(object):
 # DGE methods
 # --------------------------
 
-
 def list_methods(session):
     return as_data_frame(session.query(DGEmethod.Name, DGEmethod.Description, DGEmethod.Version))
 
@@ -73,7 +72,6 @@ def delete_method(session, name):
 # --------------------------
 # Data sets
 # --------------------------
-
 
 def get_ds(session, name) -> DataSet:
     ds = session.query(DataSet).filter(DataSet.Name == name).one_or_none()
@@ -132,10 +130,9 @@ def delete_ds(session, name):
     ds_entiry = get_ds(session, name)
     silent_remove(ds_entiry.PhenoWC)
     silent_remove(ds_entiry.ExprsWC)
-    silent_remove(ds_entiry.NormalizedExprsWC)
-    silent_rmdir(os.path.dirname(ds_entiry.NormalizedExprsWC))
+    silent_rmdir(os.path.dirname(ds_entiry.ExprsWC))
 
-    session.query(DataSet).filter(DataSet.Name == name).delete()
+    session.delete(ds_entiry)
     session.commit()
 
 
@@ -222,7 +219,6 @@ def add_design(session, design_file, dataset_name, name=None, description=None):
 # -----------------
 # Contrast Matrix
 # -----------------
-
 
 def query_contrast(session, contrast_name, design_name, ds_name) -> Contrast:
     return session.query(Contrast) \
@@ -311,11 +307,11 @@ def query_dge_models(session, contrast_name, design_name, dataset_name, method_n
     return q
 
 
-def get_dge_model(session, contrast_name, design_name, dataset_name, method_name):
+def get_dge_model(session, contrast_name, design_name, dataset_name, method_name) -> DGEmodel:
     model = query_dge_models(session, contrast_name, design_name, dataset_name, method_name,
                              DGEmodel).one_or_none()
     if model is None:
-        raise ROGERUsageError("Model for %s:%s:%s already exists" % (dataset_name, design_name, contrast_name))
+        raise ROGERUsageError("Model for %s:%s:%s does not exists" % (dataset_name, design_name, contrast_name))
     return model
 
 
@@ -328,12 +324,11 @@ def list_dge_models(session, contrast_name, design_name, dataset_name, method_na
     return as_data_frame(q)
 
 
-def delete_dge_model(session, name):
-    ds_entiry = get_ds(session, name)
-    silent_remove(ds_entiry.PhenoWC)
-    silent_remove(ds_entiry.ExprsWC)
-    silent_remove(ds_entiry.NormalizedExprsWC)
-    silent_rmdir(os.path.dirname(ds_entiry.NormalizedExprsWC))
+def remove_dge_model(session, contrast, design, dataset, method):
+    model_entiry = get_dge_model(session, contrast, design, dataset, method)
+    silent_remove(model_entiry.InputObjFile)
+    silent_remove(model_entiry.FitObjFile)
+    silent_rmdir(os.path.dirname(model_entiry.FitObjFile))
 
-    session.query(DataSet).filter(DataSet.Name == name).delete()
+    session.delete(model_entiry)
     session.commit()
