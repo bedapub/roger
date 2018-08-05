@@ -142,7 +142,6 @@ class DataSet(db.Model):
     Description = Column(String(DEFAULT_STR_SIZE))
     FeatureCount = Column(Integer, nullable=False)
     SampleCount = Column(Integer, nullable=False)
-    # TODO: exprs and norm_exprs ar optional, but there should be at least one set
     # Path to working copy of GCT file
     ExprsWC = Column(String(DEFAULT_STR_SIZE), nullable=False)
     # Path to external / save copy of GCT file
@@ -153,8 +152,6 @@ class DataSet(db.Model):
     PhenoSrc = Column(String(DEFAULT_STR_SIZE))
     TaxID = Column(Integer, nullable=False)
     Xref = Column(String(DEFAULT_STR_SIZE))
-    # TODO: External URL to (e.g. MongoDB)
-    # URL = Column(String(DEFAULT_STR_SIZE), nullable=False)
     CreatedBy = Column(String(DEFAULT_STR_SIZE), nullable=False)
     CreationTime = Column(DateTime, nullable=False)
 

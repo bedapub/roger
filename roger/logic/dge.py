@@ -26,18 +26,21 @@ pandas2ri.activate()
 base = importr("base")
 biobase = importr("Biobase")
 
+ROGER_SAMPLE_NAME = "ROGER_SampleName"
 
-def annotate_ds_pheno_data(gct_data, pheno_file):
-    # TODO: Move this to separate
-    # design_data = pd.read_table(design_file, sep='\t', index_col=0)
-    # groups = design_data.apply(lambda row: "_".join(["%s.%d" % (key, value) for (key, value) in row.items()]), axis=1)
-    pheno_data = pd.DataFrame()
-    if pheno_file is not None:
-        pheno_data = pd.read_table(pheno_file, sep='\t', index_col=0)
 
-    pheno_data["ROGER_SampleName"] = list(gct_data)
-    pheno_data["ROGER_SampleIndex"] = list(range(0, pheno_data.shape[0]))
-    # pheno_data["_SampleGroup"] = groups.values
+def annotate_ds_pheno_data(gct_data, pheno_data=pd.DataFrame()):
+    if pheno_data.shape[0] > 0:
+        if pheno_data.shape[0] != len(gct_data.columns):
+            raise ROGERUsageError("Number of rows in pheno data and number of samples don't match: %d vs %d"
+                                  % (pheno_data.shape[0], len(gct_data.columns)))
+
+    if ROGER_SAMPLE_NAME not in pheno_data:
+        pheno_data[ROGER_SAMPLE_NAME] = list(gct_data)
+    if ROGER_SAMPLE_NAME in pheno_data and set(pheno_data[ROGER_SAMPLE_NAME]) != set(gct_data):
+        raise ROGERUsageError("Sample names given by column '%s' don't match the sample names in expression data"
+                              % ROGER_SAMPLE_NAME)
+
     return pheno_data
 
 
@@ -101,11 +104,11 @@ def perform_edger(exprs_file: str,
     exprs_data = ribios_io.read_exprs_matrix(exprs_file)
     descon = ribios_expression.parseDesignContrast(designFile=design_file_path,
                                                    contrastFile=contrast_file_path)
-                                                   # sampleGroups="TODO",
-                                                   # groupLevels="TODO",
-                                                   # dispLevels="TODO",
-                                                   # contrasts="TODO",
-                                                   # expSampleNames=base.colnames(exprs_data))
+    # sampleGroups="TODO",
+    # groupLevels="TODO",
+    # dispLevels="TODO",
+    # contrasts="TODO",
+    # expSampleNames=base.colnames(exprs_data))
 
     edger_input = ribios_ngs.EdgeObject(exprs_data, descon)
 
@@ -158,7 +161,11 @@ def create_ds(session,
 
     (annotation_data, annotation_version) = roger.logic.geneanno.annotate(session, exprs_data, tax_id, symbol_type)
 
-    annotated_pheno_data = annotate_ds_pheno_data(exprs_data, pheno_file)
+    pheno_data = pd.DataFrame()
+    if pheno_file is not None:
+        pheno_data = pd.read_table(pheno_file, sep='\t', index_col=0)
+
+    annotated_pheno_data = annotate_ds_pheno_data(exprs_data, pheno_data)
 
     return roger.persistence.dge.DataSetProperties(ds_type,
                                                    tax_id,
