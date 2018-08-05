@@ -308,7 +308,6 @@ def query_dge_models(session, contrast_name, design_name, dataset_name, method_n
         q = q.filter(DataSet.Name == dataset_name)
     if method_name is not None:
         q = q.filter(DGEmethod.Name == method_name)
-    print(q)
     return q
 
 
