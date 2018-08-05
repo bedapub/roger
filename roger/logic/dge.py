@@ -97,6 +97,7 @@ def perform_edger(exprs_file: str,
     contrast_matrix.to_csv(contrast_file_path, sep="\t")
     feature_anno.to_csv(fdf_file_path, sep="\t")
 
+    # TODO how to pass the other additional arguments???
     exprs_data = ribios_io.read_exprs_matrix(exprs_file)
     descon = ribios_expression.parseDesignContrast(designFile=design_file_path,
                                                    contrastFile=contrast_file_path)
