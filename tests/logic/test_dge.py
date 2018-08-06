@@ -140,7 +140,6 @@ class TestDataSet(object):
 
 
 class TestDGEAnalysis(object):
-    @pytest.mark.skip("TODO")
     @pytest.mark.parametrize("algorithm, contrast_name, design_name, ds_name, expected_dge_file, feature_subset", [
         (perform_limma,
          "ma-example-contrast",
