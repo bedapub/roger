@@ -26,7 +26,7 @@ pandas2ri.activate()
 base = importr("base")
 biobase = importr("Biobase")
 
-ROGER_SAMPLE_NAME = "ROGER_SampleName"
+ROGER_SAMPLE_NAME = "SAMPLE"
 
 
 def annotate_ds_pheno_data(gct_data, pheno_data=pd.DataFrame()):
@@ -36,7 +36,7 @@ def annotate_ds_pheno_data(gct_data, pheno_data=pd.DataFrame()):
                                   % (pheno_data.shape[0], len(gct_data.columns)))
 
     if ROGER_SAMPLE_NAME not in pheno_data:
-        pheno_data[ROGER_SAMPLE_NAME] = list(gct_data)
+        pheno_data.insert(0, ROGER_SAMPLE_NAME, list(gct_data))
     if ROGER_SAMPLE_NAME in pheno_data and set(pheno_data[ROGER_SAMPLE_NAME]) != set(gct_data):
         raise ROGERUsageError("Sample names given by column '%s' don't match the sample names in expression data"
                               % ROGER_SAMPLE_NAME)
@@ -231,7 +231,6 @@ def run_dge(session,
     session.flush()
 
     print("Persisting feature subsets")
-
     feature_subset = pd.DataFrame({"FeatureIndex": feature_data["FeatureIndex"],
                                    "DataSetID": ds_data.ID,
                                    "ContrastID": contrast_data.ID,
