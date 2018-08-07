@@ -37,7 +37,7 @@ class TestDGEAnalysis(object):
 
         eset, eset_fit, dge_tbl, subset = algorithm(ds_data.ExprsWC,
                                                     ds_data.feature_data,
-                                                    design_data.design_matrix,
+                                                    design_data,
                                                     contrast_data.contrast_matrix)
 
         expected_dge = read_df(expected_dge_file)

@@ -1,5 +1,3 @@
-import shutil
-
 import click
 import flask
 
@@ -304,6 +302,17 @@ def list_design(dataset):
 @click.argument('dataset', metavar='<dataset>')
 @click.option('--name', help='A unique identifier for the design (default: file name)')
 @click.option('--description', help='General design description')
+@click.option('--sample_groups',
+              help='File containing a list of sample groups, separated by newline',
+              type=click.Path(exists=True),
+              mutually_exclusive=["sample_group_pheno_column"])
+@click.option('--sample_group_levels',
+              help='File containing a list of sample group levels, separated by newline',
+              type=click.Path(exists=True))
+@click.option('--sample_group_pheno_column',
+              help='Name of column in the pheno data matrix from which ROGER should'
+                   'read the sample groups',
+              mutually_exclusive=["sample_groups"])
 def add_design(design_matrix,
                dataset,
                name,

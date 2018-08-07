@@ -188,28 +188,50 @@ def check_design_matrix(ref_columns, matrix):
     __check_matrix(ref_columns, matrix, "design matrix", "sample names")
 
 
-def check_contrast_matrix(ref_columns, matrix):
-    __check_matrix(ref_columns, matrix, "contrast matrix", "design matrix column names")
+class DesignData(object):
+    def __init__(self,
+                 design: Design,
+                 sample_subset: DataFrame):
+        self.design = design
+        self.sample_subset = sample_subset
 
 
-# TODO: Method to pass DESIGN / work with matrix:
-# 1 directly add TSV file with no extra information
-# 2 pass TSV and apply SVA for covariance detection
-# 3 pass TSV matrix + covariance information from R session (by using model.matrix methods and friends)
-# (4 pass matrix and covariance information as JSON file [NOT recommended])
-def add_design(session, design_file, dataset_name, name=None, description=None):
-    ds = get_ds(session, dataset_name)
+def __get_sample_groups(design_data, pheno_data, sample_groups=None,
+                        sample_group_pheno_column=None):
+    if sample_group_pheno_column is not None and sample_groups is not None:
+            raise ROGERUsageError("You cannot give a list of sample groups and specify a "
+                                  "sample group column within the pheno data at the same time")
 
-    name = get_or_guess_name(name, design_file)
+    if sample_group_pheno_column is None and sample_groups is not None:
+        return sample_groups
 
-    design = query_design(session, name, dataset_name).one_or_none()
-    if design is not None:
-        raise ROGERUsageError("Design of data set '%s' with name '%s' already exist" % (dataset_name, name))
+    if sample_group_pheno_column is not None and sample_groups is None:
+        if sample_group_pheno_column not in pheno_data:
+            raise ROGERUsageError("Column '%s' does not exist in the pheno matrix of the given study"
+                                  % sample_group_pheno_column)
+        return pheno_data[sample_group_pheno_column]
 
-    design_data = read_table(design_file, sep='\t', index_col=0)
-    check_design_matrix(ds.exprs_data.columns, design_data)
+    # No information given? infer sample groups then from the design matrix
+    return design_data.apply(lambda row: "_".join(["%s.%d" % (key, value) for (key, value) in row.items()]), axis=1)\
+        .tolist()
 
-    pheno_data = ds.pheno_data
+
+def create_design_data(design_data, pheno_data, name=None, description=None,
+                       sample_groups=None,
+                       sample_group_levels=None,
+                       sample_group_pheno_column=None) -> DesignData:
+    check_design_matrix(pheno_data[ROGER_SAMPLE_NAME], design_data)
+
+    sample_groups = __get_sample_groups(design_data, pheno_data, sample_groups,
+                                        sample_group_pheno_column)
+
+    if sample_group_levels is None:
+        sample_group_levels = list(set(sample_groups))
+
+    if any([x not in sample_group_levels for x in sample_groups]):
+        raise ROGERUsageError("Sample group list contains groups that are not part of sample group levels: %s vs %s"
+                              % (sample_groups, sample_group_levels))
+
     # TODO make this customizable by user
     sample_subset = DataFrame({"SampleIndex": range(0, pheno_data.shape[0]),
                                "IsUsed": True,
@@ -221,18 +243,59 @@ def add_design(session, design_file, dataset_name, name=None, description=None):
                  "values": design_data[col_name].values.tolist()}
                 for col_name in design_data.columns]
 
-    design_entry = Design(DataSetID=ds.ID,
-                          VariableCount=sample_subset[sample_subset.IsUsed].shape[0],
+    design_entry = Design(VariableCount=sample_subset[sample_subset.IsUsed].shape[0],
                           Name=name,
                           Description=description,
                           DesignMatrix=json_obj,
+                          SampleGroups=sample_groups,
+                          SampleGroupLevels=sample_group_levels,
                           CreatedBy=get_current_user_name(),
                           CreationTime=get_current_datetime())
-    session.add(design_entry)
+
+    return DesignData(design_entry, sample_subset)
+
+
+def read_array(source_file, nullable=False):
+    if source_file is None:
+        if nullable is False:
+            raise ValueError("No source file given and nullable is False")
+        return None
+
+    with open(source_file) as f:
+        content = f.readlines()
+    return [x.strip() for x in content]
+
+
+# TODO: Method to pass DESIGN / work with matrix:
+# 1 directly add TSV file with no extra information
+# 2 pass TSV and apply SVA for covariance detection
+# 3 pass TSV matrix + covariance information from R session (by using model.matrix methods and friends)
+# (4 pass matrix and covariance information as JSON file [NOT recommended])
+def add_design(session, design_file, dataset_name, name=None, description=None,
+               sample_groups_file=None,
+               sample_group_levels_file=None,
+               sample_group_pheno_column=None):
+    ds = get_ds(session, dataset_name)
+
+    name = get_or_guess_name(name, design_file)
+
+    design = query_design(session, name, dataset_name).one_or_none()
+    if design is not None:
+        raise ROGERUsageError("Design of data set '%s' with name '%s' already exist" % (dataset_name, name))
+
+    design_data = create_design_data(read_table(design_file, sep='\t', index_col=0),
+                                     ds.pheno_data,
+                                     name, description,
+                                     read_array(sample_groups_file, nullable=True),
+                                     read_array(sample_group_levels_file, nullable=True),
+                                     sample_group_pheno_column)
+
+    design_data.design.DataSetID = ds.ID
+    session.add(design_data.design)
     session.flush()
 
-    sample_subset["DesignID"] = design_entry.ID
-    insert_data_frame(session, sample_subset, SampleSubset.__table__)
+    design_data.sample_subset["DesignID"] = design_data.design.ID
+    insert_data_frame(session, design_data.sample_subset, SampleSubset.__table__)
 
     session.commit()
     return name
@@ -269,6 +332,10 @@ def list_contrast(session, design_name=None, ds_name=None):
     if ds_name is not None:
         q = q.filter(DataSet.Name == ds_name)
     return as_data_frame(q)
+
+
+def check_contrast_matrix(ref_columns, matrix):
+    __check_matrix(ref_columns, matrix, "contrast matrix", "design matrix column names")
 
 
 def remove_contrast(session, contrast_name, design_name, ds_name):
@@ -355,3 +422,6 @@ def remove_dge_model(session, contrast, design, dataset, method):
 
     session.delete(model_entiry)
     session.commit()
+
+
+ROGER_SAMPLE_NAME = "SAMPLE"

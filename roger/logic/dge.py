@@ -7,17 +7,14 @@ from rpy2 import robjects
 import pandas as pd
 import os.path
 
-import roger.logic
-import roger.persistence
 from roger.exception import ROGERUsageError
+from roger.logic.geneanno import annotate
 
-from roger.persistence.dge import get_ds
+from roger.persistence.dge import ROGER_SAMPLE_NAME, DataSetProperties, get_contrast
+from roger.persistence.geneanno import list_species
 from roger.persistence.schema import DGEmethod, DGEtable, DGEmodel, \
-    DataSet, FeatureSubset
-import roger.logic.geneanno
-import roger.persistence.geneanno
-import roger.persistence.dge
-from roger.util import get_or_guess_name, parse_gct
+    DataSet, FeatureSubset, Design
+from roger.util import get_or_guess_name, parse_gct, insert_data_frame
 
 DGE_MODEL_SUB_FOLDER = "dge_model"
 
@@ -25,8 +22,6 @@ pandas2ri.activate()
 
 base = importr("base")
 biobase = importr("Biobase")
-
-ROGER_SAMPLE_NAME = "SAMPLE"
 
 
 def annotate_ds_pheno_data(gct_data, pheno_data=pd.DataFrame()):
@@ -46,7 +41,7 @@ def annotate_ds_pheno_data(gct_data, pheno_data=pd.DataFrame()):
 
 def perform_limma(exprs_file: str,
                   feature_anno: pd.DataFrame,
-                  design_data: pd.DataFrame,
+                  design: Design,
                   contrast_matrix: pd.DataFrame,
                   use_weighted: bool = False):
     methods = importr("methods")
@@ -54,7 +49,8 @@ def perform_limma(exprs_file: str,
     ribios_io = importr("ribiosIO")
     ribios_roger = importr("ribiosROGER")
 
-    # TODO check of this is actually present or not
+    design_data = design.design_matrix
+
     exprs_data = ribios_io.read_exprs_matrix(exprs_file)
 
     eset = methods.new("ExpressionSet", exprs=exprs_data)
@@ -82,7 +78,7 @@ def perform_limma(exprs_file: str,
 
 def perform_edger(exprs_file: str,
                   feature_anno: pd.DataFrame,
-                  design_data: pd.DataFrame,
+                  design: Design,
                   contrast_matrix: pd.DataFrame):
     ribios_io = importr("ribiosIO")
     ribios_expression = importr("ribiosExpression")
@@ -90,22 +86,25 @@ def perform_edger(exprs_file: str,
     utils = importr("utils")
 
     design_file, design_file_path = tempfile.mkstemp()
-    fdf_file, fdf_file_path = tempfile.mkstemp()
     contrast_file, contrast_file_path = tempfile.mkstemp()
+    fdf_file, fdf_file_path = tempfile.mkstemp()
 
-    design_data.to_csv(design_file_path, sep="\t")
+    design_matrix = design.design_matrix
+    design_matrix.index = range(1, len(design_matrix.index) + 1)
+    design_matrix.to_csv(design_file_path, sep="\t")
     contrast_matrix.to_csv(contrast_file_path, sep="\t")
     feature_anno.to_csv(fdf_file_path, sep="\t")
 
     # TODO how to pass the other additional arguments???
     exprs_data = ribios_io.read_exprs_matrix(exprs_file)
+
     descon = ribios_expression.parseDesignContrast(designFile=design_file_path,
-                                                   contrastFile=contrast_file_path)
-    # sampleGroups="TODO",
-    # groupLevels="TODO",
-    # dispLevels="TODO",
-    # contrasts="TODO",
-    # expSampleNames=base.colnames(exprs_data))
+                                                   contrastFile=contrast_file_path,
+                                                   sampleGroups=",".join(design.SampleGroups),
+                                                   groupLevels=",".join(design.SampleGroupLevels),
+                                                   dispLevels=robjects.r("NULL"),
+                                                   contrasts=robjects.r("NULL"),
+                                                   expSampleNames=base.colnames(exprs_data))
 
     edger_input = ribios_ngs.EdgeObject(exprs_data, descon)
 
@@ -124,6 +123,8 @@ def perform_edger(exprs_file: str,
 
     used_names = robjects.conversion.ri2py(biobase.featureNames(edger_result))
     used_features = feature_anno['Name'].isin(used_names)
+
+    print(len(robjects.conversion.ri2py(biobase.featureNames(edger_result))))
 
     # TODO: return result type instead of a tuple
     return edger_result.do_slot("dgeList"), edger_result.do_slot("dgeGLM"), dge_tbl, used_features
@@ -146,7 +147,7 @@ def create_ds(session,
     name = get_or_guess_name(name, exprs_file)
 
     # Input checking
-    species_list = roger.persistence.geneanno.list_species(session)
+    species_list = list_species(session)
     if species_list[species_list.TaxID == tax_id].empty:
         raise ROGERUsageError('Unknown taxon id: %s' % tax_id)
 
@@ -155,7 +156,7 @@ def create_ds(session,
 
     exprs_data = parse_gct(file_path=exprs_file)
 
-    (annotation_data, annotation_version) = roger.logic.geneanno.annotate(session, exprs_data, tax_id, symbol_type)
+    (annotation_data, annotation_version) = annotate(session, exprs_data, tax_id, symbol_type)
 
     pheno_data = pd.DataFrame()
     if pheno_file is not None:
@@ -163,24 +164,23 @@ def create_ds(session,
 
     annotated_pheno_data = annotate_ds_pheno_data(exprs_data, pheno_data)
 
-    return roger.persistence.dge.DataSetProperties(ds_type,
-                                                   tax_id,
-                                                   exprs_file,
-                                                   pheno_file,
-                                                   exprs_data,
-                                                   annotated_pheno_data,
-                                                   annotation_data,
-                                                   annotation_version,
-                                                   name,
-                                                   normalization_method,
-                                                   description,
-                                                   xref)
+    return DataSetProperties(ds_type,
+                             tax_id,
+                             exprs_file,
+                             pheno_file,
+                             exprs_data,
+                             annotated_pheno_data,
+                             annotation_data,
+                             annotation_version,
+                             name,
+                             normalization_method,
+                             description,
+                             xref)
 
 
 # -----------------
 # DGE & executions
 # -----------------
-
 
 def run_dge(session,
             roger_wd_dir,
@@ -191,7 +191,7 @@ def run_dge(session,
             algorithm_name="limma"):
     print("Retrieving data from database")
 
-    contrast_data = roger.persistence.dge.get_contrast(session, contrast, design, dataset)
+    contrast_data = get_contrast(session, contrast, design, dataset)
     design_data = contrast_data.Design
     ds_data = design_data.DataSet
 
@@ -199,10 +199,9 @@ def run_dge(session,
 
     print("Performing differential gene expression analysis using %s" % algorithm_name)
     contrast_matrix = contrast_data.contrast_matrix
-    design_matrix = design_data.design_matrix
     eset, eset_fit, dge_tbl, used_features = algorithm(ds_data.ExprsWC,
                                                        feature_data,
-                                                       design_matrix,
+                                                       design_data,
                                                        contrast_matrix)
 
     print("Persisting model information")
@@ -237,7 +236,7 @@ def run_dge(session,
                                    "DGEmethodID": method.ID,
                                    "IsUsed": used_features,
                                    "Description": "Default filtering by '%s'" % algorithm_name})
-    roger.util.insert_data_frame(session, feature_subset, FeatureSubset.__table__)
+    insert_data_frame(session, feature_subset, FeatureSubset.__table__)
 
     print("Persisting DGE table")
     dge_tbl = dge_tbl.join(contrast_data.contrast_columns.set_index("Name"), on="Contrast", rsuffix="_C") \
@@ -252,5 +251,5 @@ def run_dge(session,
                              'LogFC': dge_tbl["logFC"],
                              'PValue': dge_tbl["PValue"],
                              'FDR': dge_tbl["FDR"]})
-    roger.util.insert_data_frame(session, dgetable, DGEtable.__table__)
+    insert_data_frame(session, dgetable, DGEtable.__table__)
     session.commit()

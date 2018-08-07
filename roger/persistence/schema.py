@@ -237,6 +237,10 @@ class Design(db.Model):
     Description = Column(String(DEFAULT_STR_SIZE))
     # Matrix (array of array) + derived-flag
     DesignMatrix = Column(RogerJSON, nullable=False)
+    # Grouping of the samples, array of strings whose number of elements must be equal with the number of samples
+    SampleGroups = Column(RogerJSON, nullable=False)
+    # List of existing groups / group levels
+    SampleGroupLevels = Column(RogerJSON, nullable=False)
     CreatedBy = Column(String(DEFAULT_STR_SIZE), nullable=False)
     # A flag that tells the user that no human entity has locked into the design
     # if NULL, the design was not reviewed by a user
@@ -251,7 +255,8 @@ class Design(db.Model):
     )
 
     def __repr__(self):
-        return "<Design(ID='%s', DataSetID='%s', Name='%s')>" % (self.ID, self.DataSetID, self.Name)
+        return "<Design(ID='%s', DataSetID='%s', Name='%s', SampleGroups='%s', SampleGroupLevels='%s')>" \
+               % (self.ID, self.DataSetID, self.Name, self.SampleGroups, self.SampleGroupLevels)
 
     @hybrid_property
     def design_matrix(self):

@@ -2,11 +2,11 @@ from flask import Flask
 import os
 import pytest
 
+from roger.logic.dge import create_ds
 from roger.persistence import db
 import roger.logic.mart.provider
-import roger.persistence.geneanno
-import roger.persistence.dge
-import roger.logic.dge
+from roger.persistence.dge import add_ds, add_design, add_contrast
+from roger.persistence.geneanno import human_tax_id, human_dataset, add_species
 from roger.persistence.schema import RNASeqDataSet, MicroArrayDataSet
 from tests import mouse_dataset, mouse_tax_id
 
@@ -45,44 +45,44 @@ def __init_db_with_datasets():
         with app.app_context():
             db.create_all()
             session = db.session()
-            roger.persistence.geneanno.add_species(session,
-                                                   roger.persistence.geneanno.human_dataset,
-                                                   roger.persistence.geneanno.human_tax_id)
-            roger.persistence.geneanno.add_species(session, mouse_dataset, mouse_tax_id)
+            add_species(session, human_dataset, human_tax_id)
+            add_species(session, mouse_dataset, mouse_tax_id)
 
-            roger.persistence.dge.add_ds(session,
-                                         app.config['ROGER_DATA_FOLDER'],
-                                         roger.logic.dge.create_ds(session,
-                                                                   MicroArrayDataSet,
-                                                                   "test_data/ds/ma-example-signals.gct",
-                                                                   mouse_tax_id,
-                                                                   "affy_mouse430_2"))
+            add_ds(session,
+                   app.config['ROGER_DATA_FOLDER'],
+                   create_ds(session,
+                             MicroArrayDataSet,
+                             "test_data/ds/ma-example-signals.gct",
+                             mouse_tax_id,
+                             "affy_mouse430_2"))
 
-            roger.persistence.dge.add_design(session,
-                                             "test_data/ds/ma-example-design.txt",
-                                             "ma-example-signals")
+            add_design(session,
+                       "test_data/ds/ma-example-design.txt",
+                       "ma-example-signals", )
 
-            roger.persistence.dge.add_contrast(session,
-                                               "test_data/ds/ma-example-contrast.txt",
-                                               "ma-example-design",
-                                               "ma-example-signals")
+            add_contrast(session,
+                         "test_data/ds/ma-example-contrast.txt",
+                         "ma-example-design",
+                         "ma-example-signals")
 
-            roger.persistence.dge.add_ds(session,
-                                         app.config['ROGER_DATA_FOLDER'],
-                                         roger.logic.dge.create_ds(session,
-                                                                   RNASeqDataSet,
-                                                                   "test_data/ds/rnaseq-example-readCounts.gct",
-                                                                   roger.persistence.geneanno.human_tax_id,
-                                                                   "entrezgene"))
+            add_ds(session,
+                   app.config['ROGER_DATA_FOLDER'],
+                   roger.logic.dge.create_ds(session,
+                                             RNASeqDataSet,
+                                             "test_data/ds/rnaseq-example-readCounts.gct",
+                                             human_tax_id,
+                                             "entrezgene"))
 
-            roger.persistence.dge.add_design(session,
-                                             "test_data/ds/rnaseq-example-DesignMatrix.txt",
-                                             "rnaseq-example-readCounts")
+            add_design(session,
+                       "test_data/ds/rnaseq-example-DesignMatrix.txt",
+                       "rnaseq-example-readCounts",
+                       sample_groups_file="test_data/ds/rnaseq-example-sampleGroups.txt",
+                       sample_group_levels_file="test_data/ds/rnaseq-example-sampleGroupLevels.txt")
 
-            roger.persistence.dge.add_contrast(session,
-                                               "test_data/ds/rnaseq-example-ContrastMatrix.txt",
-                                               "rnaseq-example-DesignMatrix",
-                                               "rnaseq-example-readCounts")
+            add_contrast(session,
+                         "test_data/ds/rnaseq-example-ContrastMatrix.txt",
+                         "rnaseq-example-DesignMatrix",
+                         "rnaseq-example-readCounts")
 
     return app
 
