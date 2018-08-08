@@ -111,10 +111,10 @@ def add_ds(session,
                                     FeatureCount=ds_prop.exprs_data.shape[0],
                                     SampleCount=ds_prop.exprs_data.shape[1],
                                     ExprsWC=wc_exprs_file,
-                                    ExprsSrc=ds_prop.exprs_file,
+                                    ExprsSrc=os.path.abspath(ds_prop.exprs_file),
                                     NormalizationMethod=ds_prop.normalization_method,
                                     PhenoWC=wc_pheno_file,
-                                    PhenoSrc=ds_prop.pheno_file,
+                                    PhenoSrc=os.path.abspath(ds_prop.pheno_file),
                                     TaxID=ds_prop.tax_id,
                                     Xref=ds_prop.xref,
                                     CreatedBy=roger.util.get_current_user_name(),
@@ -196,6 +196,15 @@ class DesignData(object):
         self.design = design
         self.sample_subset = sample_subset
 
+
+# LOOKUP ORDER:
+# Did the user specify a --sampleGroups Parameter? -> take that as sample groups
+# 	ELSE: Did the user specify --sampleGropuPhenoColumn? -> look up column data
+# 	    ELSE: Infer sample groups from design matrix
+#
+# LOOPUP ORDER for Group Levels:
+# User Passed --sampleGroupLevels? -> Use these levels and check if only these levels are used in sample groups
+# 		ELSE: inver levels from sample groups
 
 def __get_sample_groups(design_data, pheno_data, sample_groups=None,
                         sample_group_pheno_column=None):
