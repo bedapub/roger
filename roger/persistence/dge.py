@@ -310,7 +310,9 @@ def query_contrast(session, contrast_name, design_name, ds_name) -> Contrast:
     return session.query(Contrast) \
         .filter(Contrast.DesignID == Design.ID) \
         .filter(Design.DataSetID == DataSet.ID) \
-        .filter(Contrast.Name == contrast_name and Design.Name == design_name and DataSet.Name == ds_name)
+        .filter(Contrast.Name == contrast_name) \
+        .filter(Design.Name == design_name) \
+        .filter(DataSet.Name == ds_name)
 
 
 def get_contrast(session, contrast_name, design_name, ds_name) -> Contrast:
