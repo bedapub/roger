@@ -144,7 +144,8 @@ def delete_ds(session, name):
 def query_design(session, design_name, ds_name) -> Design:
     return session.query(Design) \
         .filter(Design.DataSetID == DataSet.ID) \
-        .filter(Design.Name == design_name and DataSet.Name == ds_name)
+        .filter(Design.Name == design_name) \
+        .filter(DataSet.Name == ds_name)
 
 
 def get_design(session, design_name, ds_name) -> Design:
