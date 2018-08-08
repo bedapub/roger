@@ -80,6 +80,7 @@ def perform_edger(exprs_file: str,
                   feature_anno: pd.DataFrame,
                   design: Design,
                   contrast_matrix: pd.DataFrame):
+
     ribios_io = importr("ribiosIO")
     ribios_expression = importr("ribiosExpression")
     ribios_ngs = importr("ribiosNGS")
@@ -90,21 +91,22 @@ def perform_edger(exprs_file: str,
     fdf_file, fdf_file_path = tempfile.mkstemp()
 
     design_matrix = design.design_matrix
-    design_matrix.index = range(1, len(design_matrix.index) + 1)
+
     design_matrix.to_csv(design_file_path, sep="\t")
     contrast_matrix.to_csv(contrast_file_path, sep="\t")
     feature_anno.to_csv(fdf_file_path, sep="\t")
 
-    # TODO how to pass the other additional arguments???
     exprs_data = ribios_io.read_exprs_matrix(exprs_file)
 
     descon = ribios_expression.parseDesignContrast(designFile=design_file_path,
                                                    contrastFile=contrast_file_path,
-                                                   sampleGroups=",".join(design.SampleGroups),
-                                                   groupLevels=",".join(design.SampleGroupLevels),
+                                                   sampleGroups=base.paste(base.make_names(design.SampleGroups),
+                                                                           collapse=","),
+                                                   groupLevels=base.paste(base.make_names(design.SampleGroupLevels),
+                                                                          collapse=","),
                                                    dispLevels=robjects.r("NULL"),
-                                                   contrasts=robjects.r("NULL"),
-                                                   expSampleNames=base.colnames(exprs_data))
+                                                   contrasts=robjects.r("NULL"))
+                                                   # expSampleNames=base.colnames(exprs_data))
 
     edger_input = ribios_ngs.EdgeObject(exprs_data, descon)
 
