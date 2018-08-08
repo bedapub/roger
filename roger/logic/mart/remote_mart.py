@@ -23,7 +23,7 @@ class RemoteBioMartDataSet(BioMartDataSet):
     @cache.memoize()
     def get_bulk_query(self, params):
         response = self.__dataset.search(params=params)
-        result = read_csv(cStringIO(response.text), sep='\t', names=params['attributes'])
+        result = read_csv(cStringIO(response.text), sep='\t', names=params['attributes'], dtype=str)
         return result
 
     @property

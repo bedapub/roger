@@ -13,6 +13,5 @@ roger add-design test_data/ds/rnaseq-example-DesignMatrix.txt rnaseq-example-rea
 roger add-contrast test_data/ds/rnaseq-example-ContrastMatrix.txt rnaseq-example-DesignMatrix rnaseq-example-readCounts
 roger run-dge-rnaseq rnaseq-example-ContrastMatrix rnaseq-example-DesignMatrix rnaseq-example-readCounts
 
-
 roger remove-design "ma-example-design" "ma-example-signals"
 roger remove-contrast ma-example-contrast ma-example-design ma-example-signals

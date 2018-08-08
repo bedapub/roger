@@ -43,7 +43,7 @@ class TestDGEAnalysis(object):
         expected_dge = read_df(expected_dge_file)
 
         # TODO: We cannot simply compare the entire frame, since gene annotation comes from
-        # a external Ensembl installation and that can change over time
+        # an external Ensembl installation and that can change over time
         # Alternative: Use Mocked instance of annotation service
         assert has_equal_elements(dge_tbl["Contrast"], expected_dge["Contrast"])
         assert has_equal_elements(dge_tbl["FeatureIndex"], expected_dge["FeatureIndex"])

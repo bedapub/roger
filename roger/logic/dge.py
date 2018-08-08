@@ -14,7 +14,7 @@ from roger.persistence.dge import ROGER_SAMPLE_NAME, DataSetProperties, get_cont
 from roger.persistence.geneanno import list_species
 from roger.persistence.schema import DGEmethod, DGEtable, DGEmodel, \
     DataSet, FeatureSubset, Design
-from roger.util import get_or_guess_name, parse_gct, insert_data_frame
+from roger.util import get_or_guess_name, parse_gct, insert_data_frame, read_df
 
 DGE_MODEL_SUB_FOLDER = "dge_model"
 
@@ -160,7 +160,7 @@ def create_ds(session,
 
     pheno_data = pd.DataFrame()
     if pheno_file is not None:
-        pheno_data = pd.read_table(pheno_file, sep='\t', index_col=0)
+        pheno_data = read_df(pheno_file)
 
     annotated_pheno_data = annotate_ds_pheno_data(exprs_data, pheno_data)
 

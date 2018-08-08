@@ -11,4 +11,4 @@ def entry_point():
     try:
         roger.cli.cli()
     except ROGERUsageError as e:
-        click.echo(e.message)
+        click.echo(e.message, err=True)

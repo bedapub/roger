@@ -120,6 +120,7 @@ def parse_gct(file_path):
 
     df = pd.read_table(file_path, sep="\t", skiprows=2, index_col=0)
     df = df.drop(columns=df.columns[0])
+    df.index = df.index.astype(str)
 
     if dims[0] != df.shape[0]:
         raise ROGERUsageError("Unable to parse GCT file '%s': Number of expected genes don't match (%d vs %d)" %

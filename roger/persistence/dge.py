@@ -379,7 +379,6 @@ def add_contrast(session, contrast_file, design_name, dataset_name, name=None, d
 # Contrast Matrix
 # -----------------
 
-
 def query_dge_models(session, contrast_name, design_name, dataset_name, method_name, *query_attr_args):
     q = session.query(*query_attr_args) \
         .filter(Contrast.DesignID == Design.ID) \

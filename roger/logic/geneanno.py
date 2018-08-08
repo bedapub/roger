@@ -44,15 +44,10 @@ def annotate(session, gct_data, tax_id, symbol_type):
     feature_anno = pd.DataFrame(data={"Name": gct_data.index,
                                       "FeatureIndex": range(0, gct_data.shape[0])},
                                 index=gct_data.index)
-
-    # Pandas tries to convert columns to floats when possible,
-    # but sometimes the expression files contais errors / mixed types and leave columns unconverted
-    # In order to make joining possible for any edge case (look at rnaseq-example-readCounts.gct),
-    # we have "normalize" the types, i.e. make them all 'str'
-    feature_anno.Name = feature_anno.Name.apply(lambda x: "%d" % x if type(x) != str else x)
-    all_sym[symbol_type] = all_sym[symbol_type].apply(lambda x: "%d" % x if type(x) != str else x)
-
     feature_anno = feature_anno.join(all_sym.set_index(symbol_type))
+
+    if feature_anno[feature_anno.isnull().any(axis=1)].shape[0] == feature_anno.shape[0]:
+        raise ROGERUsageError("Unable to annotate features in expression file")
 
     # TODO Find a better heuristic to drop multiple Ensembl ID association
     feature_anno = feature_anno[~feature_anno.index.duplicated(keep='first')]

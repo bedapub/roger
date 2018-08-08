@@ -10,7 +10,6 @@ from roger.util import get_enum_names, get_or_guess_name
 # DGE methods
 # ---------------
 
-
 @cli.command(name="list-dge-methods",
              short_help='Lists all Differential Gene Expression methods utilized in ROGER studies')
 def list_dge_methods():
@@ -52,7 +51,6 @@ def list_dge_methods():
 # ---------------
 # Datasets
 # ---------------
-
 
 @cli.command(name="list-ds",
              short_help='Lists available datasets')
@@ -121,7 +119,7 @@ def add_ds_ma(norm_exprs_file,
 
     session = db.session()
 
-    print("Parsing and annotating data")
+    print("Parsing and annotating data ...")
     ds_prop = roger.logic.dge.create_ds(session,
                                         MicroArrayDataSet,
                                         norm_exprs_file,
@@ -133,7 +131,7 @@ def add_ds_ma(norm_exprs_file,
                                         description,
                                         xref)
 
-    print("Parsing data set")
+    print("Persisting data set ...")
     roger.persistence.dge.add_ds(session,
                                  flask.current_app.config['ROGER_DATA_FOLDER'],
                                  ds_prop)
@@ -171,7 +169,7 @@ def add_ds_rnaseq(exprs_file,
 
     session = db.session()
 
-    print("Parsing and annotating data")
+    print("Parsing and annotating data ...")
     ds_prop = roger.logic.dge.create_ds(session,
                                         RNASeqDataSet,
                                         exprs_file,
@@ -183,7 +181,7 @@ def add_ds_rnaseq(exprs_file,
                                         description,
                                         xref)
 
-    print("Parsing data set")
+    print("Persisting data set ...")
     roger.persistence.dge.add_ds(session,
                                  flask.current_app.config['ROGER_DATA_FOLDER'],
                                  ds_prop)
@@ -304,19 +302,20 @@ def list_design(dataset):
 @click.option('--description', help='General design description')
 @click.option('--sample_groups',
               help='File containing a list of sample groups, separated by newline',
-              type=click.Path(exists=True),
-              mutually_exclusive=["sample_group_pheno_column"])
+              type=click.Path(exists=True))
 @click.option('--sample_group_levels',
               help='File containing a list of sample group levels, separated by newline',
               type=click.Path(exists=True))
-@click.option('--sample_group_pheno_column',
+@click.option('--sample_group_column',
               help='Name of column in the pheno data matrix from which ROGER should'
-                   'read the sample groups',
-              mutually_exclusive=["sample_groups"])
+                   'read the sample groups')
 def add_design(design_matrix,
                dataset,
                name,
-               description):
+               description,
+               sample_groups,
+               sample_group_levels,
+               sample_group_column):
     name = get_or_guess_name(name, design_matrix)
 
     print("Adding design '%s' to data set '%s' ..." % (name, dataset))
@@ -327,7 +326,10 @@ def add_design(design_matrix,
                                             design_matrix,
                                             dataset,
                                             name,
-                                            description)
+                                            description,
+                                            sample_groups,
+                                            sample_group_levels,
+                                            sample_group_column)
     print("Done - added design with name '%s'" % name)
 
 
