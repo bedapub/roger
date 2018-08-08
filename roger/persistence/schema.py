@@ -1,3 +1,5 @@
+from typing import List
+
 from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, Enum
 from sqlalchemy import ForeignKey, UniqueConstraint, ForeignKeyConstraint
 from sqlalchemy.orm import relationship
@@ -178,6 +180,14 @@ class DataSet(db.Model):
         return roger.util.as_data_frame(FeatureMapping.query
                                         .filter(FeatureMapping.DataSetID == self.ID)
                                         .order_by(FeatureMapping.FeatureIndex))
+
+    @hybrid_property
+    def dge_models(self):
+        return DGEmodel.query \
+            .filter(Contrast.DesignID == Design.ID) \
+            .filter(Design.DataSetID == DataSet.ID) \
+            .filter(DGEmodel.ContrastID == Contrast.ID) \
+            .filter(DataSet.ID == self.ID).all()
 
 
 class MicroArrayDataSet(DataSet):

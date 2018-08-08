@@ -1,6 +1,6 @@
 import os.path
 import shutil
-from typing import Type
+from typing import Type, List
 
 from pandas import DataFrame, read_table
 import numpy as np
@@ -73,6 +73,10 @@ def delete_method(session, name):
 # --------------------------
 # Data sets
 # --------------------------
+
+def get_all_ds(session) -> List[DataSet]:
+    return session.query(DataSet).all()
+
 
 def get_ds(session, name) -> DataSet:
     ds = session.query(DataSet).filter(DataSet.Name == name).one_or_none()
@@ -209,8 +213,8 @@ class DesignData(object):
 def __get_sample_groups(design_data, pheno_data, sample_groups=None,
                         sample_group_pheno_column=None):
     if sample_group_pheno_column is not None and sample_groups is not None:
-            raise ROGERUsageError("You cannot give a list of sample groups and specify a "
-                                  "sample group column within the pheno data at the same time")
+        raise ROGERUsageError("You cannot give a list of sample groups and specify a "
+                              "sample group column within the pheno data at the same time")
 
     if sample_group_pheno_column is None and sample_groups is not None:
         return sample_groups
@@ -222,7 +226,7 @@ def __get_sample_groups(design_data, pheno_data, sample_groups=None,
         return pheno_data[sample_group_pheno_column].tolist()
 
     # No information given? infer sample groups then from the design matrix
-    return design_data.apply(lambda row: "_".join(["%s.%d" % (key, value) for (key, value) in row.items()]), axis=1)\
+    return design_data.apply(lambda row: "_".join(["%s.%d" % (key, value) for (key, value) in row.items()]), axis=1) \
         .tolist()
 
 

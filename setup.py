@@ -16,7 +16,8 @@ setup(
         "numpy",
         # "cmapPy", TODO no support for python 3 for now
         "flask_sqlalchemy",
-        "Flask-Caching"
+        "Flask-Caching",
+        "jinja2"
     ],
     setup_requires=["pytest-runner"],
     tests_require=["pytest"],

@@ -43,7 +43,7 @@ def decorate_app(roger_app):
         file.save(os.path.join(roger_app.config['ROGER_DATA_FOLDER'], filename))
         return file
 
-    @roger_app.route('/submitFull', methods=['POST'])
+    @roger_app.route('/api/submitFull', methods=['POST'])
     def get_tasks():
         userName = get_ident('username')
         jobName = get_ident('jobname')

@@ -1,0 +1,34 @@
+{% extends "layout.html" %}
+
+{% block title %}Study Overview{% endblock %}
+
+{% block content %}
+    <h1>Studies available in ROGER and their DGE results:</h1>
+    <table width="100%">
+        <thead>
+        <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Experiments</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for study in studies %}
+            <tr>
+                <td>{{ study.Name }}</td>
+                <td>{{ study.Description }}</td>
+                <td>
+                    <ul>
+                        {% for model in study.dge_models %}
+                            <li>{{ model.Method.Name }} - {{ model.Contrast.Design.Name }} - {{ model.Contrast.Name }}</li>
+                        {% endfor %}
+                    </ul>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <ul>
+
+    </ul>
+{% endblock %}
