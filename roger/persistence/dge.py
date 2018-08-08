@@ -209,7 +209,7 @@ def __get_sample_groups(design_data, pheno_data, sample_groups=None,
         if sample_group_pheno_column not in pheno_data:
             raise ROGERUsageError("Column '%s' does not exist in the pheno matrix of the given study"
                                   % sample_group_pheno_column)
-        return pheno_data[sample_group_pheno_column]
+        return pheno_data[sample_group_pheno_column].tolist()
 
     # No information given? infer sample groups then from the design matrix
     return design_data.apply(lambda row: "_".join(["%s.%d" % (key, value) for (key, value) in row.items()]), axis=1)\
