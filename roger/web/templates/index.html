@@ -20,7 +20,13 @@
                 <td>
                     <ul>
                         {% for model in study.dge_models %}
-                            <li>{{ model.Method.Name }} - {{ model.Contrast.Design.Name }} - {{ model.Contrast.Name }}</li>
+                            <li>
+                                <a href="{{ url_for('web.dge_result', contrast_id=model.Contrast.ID, method_id=model.Method.ID) }}">
+                                    {{ model.Method.Name }}
+                                    - {{ model.Contrast.Design.Name }}
+                                    - {{ model.Contrast.Name }}
+                                </a>
+                            </li>
                         {% endfor %}
                     </ul>
                 </td>
@@ -28,7 +34,4 @@
         {% endfor %}
         </tbody>
     </table>
-    <ul>
-
-    </ul>
 {% endblock %}

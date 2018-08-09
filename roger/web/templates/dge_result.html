@@ -1,0 +1,33 @@
+{% extends "layout.html" %}
+
+{% block title %}DGE Result of
+    {{ model.Contrast.Design.DataSet.Name }}:{{ model.Contrast.Design.Name }}:{{ model.Contrast.Name }}{% endblock %}
+
+{% block content %}
+    <h1>DGE results of '{{ model.Method.Name }}' applied to {{ model.Contrast.Design.DataSet.Name }}
+        -> {{ model.Contrast.Design.Name }} -> {{ model.Contrast.Name }}</h1>
+
+    <h2>MDA Plot</h2>
+    <img style="width:800px; height:800px" src="data:image/png;base64,{{ mds_plot }}" alt="MDA Plot"/>
+
+    <h2>PCA Plot</h2>
+    <img style="width:800px; height:800px" src="data:image/png;base64,{{ pca_plot }}" alt="PCA Plot"/>
+
+    <h2>CDA Plot</h2>
+    <img style="width:800px; height:800px" src="data:image/png;base64,{{ cda_plot }}" alt="CDA Plot"/>
+
+    <h2>Norm Boxplot</h2>
+    <img style="width:800px; height:800px" src="data:image/png;base64,{{ norm_boxplot }}" alt="Norm Boxplot"/>
+
+    <h2>BCV Plot</h2>
+    <img style="width:800px; height:800px" src="data:image/png;base64,{{ bcv_plot }}" alt="BCV Plot"/>
+
+    <h2>Volcano Plot</h2>
+    <img style="width:800px; height:800px" src="data:image/png;base64,{{ volcano_plot }}" alt="Volcano Plot"/>
+
+    <h2>Smear Plot</h2>
+    <img style="width:800px; height:800px" src="data:image/png;base64,{{ smear_plot }}" alt="Smear Plot"/>
+
+    <h2>Pairs Plot</h2>
+    <img style="width:800px; height:800px" src="data:image/png;base64,{{ pairs_plot }}" alt="Pairs Plot"/>
+{% endblock %}

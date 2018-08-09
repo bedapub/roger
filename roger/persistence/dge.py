@@ -420,6 +420,12 @@ def get_dge_model(session, contrast_name, design_name, dataset_name, method_name
     return model
 
 
+def get_model_by_id(contrast_id, method_id) -> DGEmodel:
+    return DGEmodel.query\
+        .filter(DGEmodel.ContrastID == contrast_id)\
+        .filter(DGEmodel.DGEmethodID == method_id).one()
+
+
 def list_dge_models(session, contrast_name, design_name, dataset_name, method_name):
     q = query_dge_models(session, contrast_name, design_name, dataset_name, method_name,
                          DataSet.Name.label("DataSet"),
