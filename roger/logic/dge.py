@@ -127,7 +127,7 @@ def perform_edger(exprs_file: str,
     used_features = feature_anno['Name'].isin(used_names)
 
     # TODO: return result type instead of a tuple
-    return edger_result.do_slot("dgeList"), edger_result.do_slot("dgeGLM"), dge_tbl, used_features
+    return edger_input, edger_result, dge_tbl, used_features
 
 
 # ---------------
