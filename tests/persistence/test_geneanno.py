@@ -19,7 +19,7 @@ class TestGeneAnnotationPersistence(object):
         roger.persistence.geneanno.add_species(session, rat_dataset, rat_tax_id)
         assert len(roger.persistence.geneanno.list_species(session)) == 2
 
-    @pytest.mark.skip(reason="TODO high performance problem with embedded SQLite database")
+    @pytest.mark.skip(reason="TODO high performance problem with SQLite database")
     def test_import_and_delete_species(self, sqlite_in_memory):
         session = sqlite_in_memory.session()
         assert roger.persistence.geneanno.list_species(session).empty
