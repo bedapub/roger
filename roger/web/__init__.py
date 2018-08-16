@@ -1,14 +1,11 @@
-import base64
-import tempfile
-
 from flask import Blueprint, render_template
 
+from roger.logic.plot import gen_base64_plot
 from roger.persistence.dge import get_all_ds, get_model_by_id
 from roger.persistence import db
 
 from rpy2.robjects.packages import importr
 
-ribios_utils = importr("ribiosUtils")
 ribios_plot = importr("ribiosPlot")
 ribios_ngs = importr("ribiosNGS")
 ribios_expression = importr("ribiosExpression")
@@ -26,16 +23,6 @@ web = Blueprint('web', __name__, template_folder='templates')
 def index():
     studies = get_all_ds(db.session())
     return render_template('index.html', studies=studies)
-
-
-def gen_base64_plot(plot_opr):
-    plot_fd, plot_file_path = tempfile.mkstemp(suffix=".png")
-    ribios_utils.openFileDevice(plot_file_path, width=15, height=15)
-    plot_opr()
-    ribios_utils.closeFileDevice()
-
-    with open(plot_file_path, "rb") as image_file:
-        return str(base64.b64encode(image_file.read()), "utf-8")
 
 
 @web.route('/dge_result/<int:contrast_id>/<int:method_id>')
