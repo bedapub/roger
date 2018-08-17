@@ -1,6 +1,5 @@
 import click
 
-import roger.logic.dge
 from roger.cli import cli
 
 
@@ -54,7 +53,7 @@ def init_database():
 
     from roger.persistence import db
     import roger.persistence.geneanno
-    import roger.persistence.dge
+    import roger.logic.dge
 
     print("Adding human gene annotation ...")
     roger.persistence.geneanno.init(db)
