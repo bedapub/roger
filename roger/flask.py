@@ -3,8 +3,8 @@ import tempfile
 import os
 
 from roger.persistence import db
-from roger.web import web
-import roger.rest.rest
+# from roger.web import web
+# import roger.rest.rest
 import roger.logic
 import roger.logic.mart.provider
 
@@ -24,7 +24,8 @@ def create_app(script_info):
                                                 'CACHE_DEFAULT_TIMEOUT': 60*60*24,
                                                 'CACHE_DIR': os.path.join(app.config['ROGER_DATA_FOLDER'], "cache")})
         roger.logic.mart.provider.init_annotation_service(app)
-        roger.rest.rest.decorate_app(app)
-        app.register_blueprint(web, url_prefix='/')
+        # roger.rest.rest.decorate_app(app)
+        # TODO performanc egoes dowon if imported ...
+        # app.register_blueprint(web, url_prefix='/')
 
     return app
