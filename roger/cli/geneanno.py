@@ -1,5 +1,6 @@
 import click
 
+import roger.logic.dge
 from roger.cli import cli
 
 
@@ -54,14 +55,13 @@ def init_database():
     from roger.persistence import db
     import roger.persistence.geneanno
     import roger.persistence.dge
-    #import roger.persistence.gse
 
     print("Adding human gene annotation ...")
     roger.persistence.geneanno.init(db)
     # Add standard DGE methods
 
     print("Adding standard DGE and GSE methods ...")
-    roger.persistence.dge.add_method(db.session(), "limma", "limma")
-    roger.persistence.dge.add_method(db.session(), "edgeR", "edgeR")
+    session = db.session()
+    roger.logic.dge.init_methods(session)
 
     print("Done")

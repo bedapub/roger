@@ -1,4 +1,5 @@
 import roger.logic
+import roger.logic.dge
 import roger.logic.mart
 import roger.persistence.dge
 

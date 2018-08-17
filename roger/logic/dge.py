@@ -10,12 +10,11 @@ import os.path
 
 from roger.exception import ROGERUsageError
 from roger.logic.geneanno import annotate
-
-from roger.persistence.dge import ROGER_SAMPLE_NAME, DataSetProperties, get_contrast, query_dge_models
+from roger.persistence.dge import ROGER_SAMPLE_NAME, DataSetProperties, get_contrast, query_dge_models, add_method
 from roger.persistence.geneanno import list_species
 from roger.persistence.schema import DGEmethod, DGEtable, DGEmodel, \
     DataSet, FeatureSubset, Design
-from roger.util import get_or_guess_name, parse_gct, insert_data_frame, read_df
+from roger.util import get_or_guess_name, parse_gct, insert_data_frame, read_df, all_subclasses
 
 DGE_MODEL_SUB_FOLDER = "dge_model"
 
@@ -218,6 +217,12 @@ class EdgeRDGE(DGEAlgorithm):
 
         # TODO: return result type instead of a tuple
         return DGEResult(edger_input, edger_result, dge_tbl, used_features)
+
+
+def init_methods(session):
+    for algorithm_class in all_subclasses(DGEAlgorithm):
+        algorithm = algorithm_class()
+        add_method(session, algorithm.name, algorithm.description)
 
 
 # ---------------

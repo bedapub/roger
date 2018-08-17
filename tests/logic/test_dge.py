@@ -2,10 +2,17 @@ import pytest
 from flask_sqlalchemy import SQLAlchemy
 from pandas import read_table
 
-from roger.logic.dge import DGEAlgorithm, LimmaDGE, EdgeRDGE
-from roger.persistence.dge import get_contrast
+from roger.logic.dge import DGEAlgorithm, LimmaDGE, EdgeRDGE, init_methods
+from roger.persistence.dge import get_contrast, list_methods
 from roger.util import read_df
 from tests import has_equal_elements
+
+
+class TestDGEMethodInit(object):
+    def test_dge_methods_exist_on_init(self, sqlite_in_memory):
+        session = sqlite_in_memory.session()
+        init_methods(session)
+        assert len(list_methods(session)) > 1
 
 
 class TestDGEAnalysis(object):
