@@ -2,6 +2,8 @@ import getpass
 import datetime
 import os
 import errno
+import os.path
+
 import numpy as np
 import pandas as pd
 from sqlalchemy import Table, func
@@ -165,3 +167,9 @@ def silent_remove(filename):
     except OSError as e:
         if e.errno != errno.ENOENT:  # errno.ENOENT = no such file or directory
             raise e  # re-raise exception if a different error occurred
+
+
+def abspath_or_none(file):
+    if file is None:
+        return None
+    return os.path.abspath(file)

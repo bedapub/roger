@@ -11,7 +11,7 @@ from roger.persistence.schema import DGEmethod, DataSet, Design, SampleSubset, C
     FeatureMapping, DGEmodel
 from roger.exception import ROGERUsageError
 from roger.util import as_data_frame, silent_remove, silent_rmdir, get_or_guess_name, get_current_user_name, \
-    get_current_datetime, insert_data_frame
+    get_current_datetime, insert_data_frame, abspath_or_none
 
 DATASET_SUB_FOLDER = "dataset"
 
@@ -119,7 +119,7 @@ def add_ds(session,
                                     ExprsSrc=os.path.abspath(ds_prop.exprs_file),
                                     NormalizationMethod=ds_prop.normalization_method,
                                     PhenoWC=wc_pheno_file,
-                                    PhenoSrc=os.path.abspath(ds_prop.pheno_file),
+                                    PhenoSrc=abspath_or_none(ds_prop.pheno_file),
                                     TaxID=ds_prop.tax_id,
                                     Xref=ds_prop.xref,
                                     CreatedBy=roger.util.get_current_user_name(),
