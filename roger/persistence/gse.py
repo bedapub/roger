@@ -3,20 +3,24 @@ import pandas as pd
 import sys
 from sqlalchemy import func
 
-from roger.persistence.schema import GSEmethod, GeneSetCategory, GeneSet, GeneSetGene
+from roger.persistence.schema import GSEmethod, GeneSetCategory, GeneSet, GeneSetGene, DGEmethod
 from roger.persistence.geneanno import GeneAnnotation
 from roger.util import as_data_frame, insert_data_frame
 from roger.exception import ROGERUsageError
 
 
 def list_methods(session):
-    return as_data_frame(session.query(GSEmethod.Name, GSEmethod.Description, GSEmethod.Version))
+    return as_data_frame(session.query(GSEmethod.Name,
+                                       GSEmethod.Description,
+                                       DGEmethod.Name.label("Reference DGE Method"))
+                         .filter(GSEmethod.DGEmethodID == DGEmethod.ID))
 
 
-def add_method(session, name, description, version):
-    method = GSEmethod(Name=name, Description=description, Version=version)
+def add_method(session, method: DGEmethod, name: str, description: str):
+    method = GSEmethod(DGEMethod=method, Name=name, Description=description)
     session.add(method)
     session.commit()
+    return method
 
 
 def delete_method(session, name):

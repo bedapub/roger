@@ -61,15 +61,7 @@ def init_database():
     # Add standard DGE methods
 
     print("Adding standard DGE and GSE methods ...")
-    roger.persistence.dge.add_method(db.session(), "limma", "limma", "3.30.6")
-    roger.persistence.dge.add_method(db.session(), "edgeR", "edgeR", "3.16.4")
-    #roger.persistence.dge.add_method(db.session(), "DESeq2", "DESeq2", "1.14.1")
-    #roger.persistence.dge.add_method(db.session(), "voom+limma", "limma::voom+limma", "3.30.6")
+    roger.persistence.dge.add_method(db.session(), "limma", "limma")
+    roger.persistence.dge.add_method(db.session(), "edgeR", "edgeR")
 
-    # Add standard GSE methods
-    #roger.persistence.dge.add_method(db.session(), "camera",      "limma::camera",                 "3.30.6")
-    #roger.persistence.dge.add_method(db.session(), "GSEA-P",      "GSEA by gene permutation",      "2.0.0")
-    #roger.persistence.dge.add_method(db.session(), "GSEA",        "GSEA by sample permutation",    "2.0.0")
-    #roger.persistence.dge.add_method(db.session(), "BioQC+limma", "ES of BioQC compared by limma", "1.2.0")
-    #roger.persistence.dge.add_method(db.session(), "GAGE",        "GAGE",                          "2.24.0")
     print("Done")

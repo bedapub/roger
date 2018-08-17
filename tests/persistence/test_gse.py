@@ -1,5 +1,6 @@
 import roger.logic
 import roger.logic.mart
+import roger.persistence.dge
 import roger.persistence.gse
 import roger.persistence.geneanno
 
@@ -9,7 +10,8 @@ class TestGSEPersistence(object):
     def test_list_and_create_gse_method(self, sqlite_in_memory):
         session = sqlite_in_memory.session()
         assert roger.persistence.gse.list_methods(session).empty
-        roger.persistence.gse.add_method(session, "GSEMethod1", "GSE method", "0.1")
+        dge_method = roger.persistence.dge.add_method(session, "DGEMethod", "DGE method")
+        roger.persistence.gse.add_method(session, dge_method, "GSEMethod1", "GSE method")
         assert len(roger.persistence.gse.list_methods(session)) == 1
 
     def test_list_and_create_gmt(self, sqlite_in_memory):

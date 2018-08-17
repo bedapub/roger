@@ -1,5 +1,6 @@
 import tempfile
-from typing import Type
+from typing import Type, List
+from abc import ABC, abstractmethod
 
 from rpy2.robjects.packages import importr
 from rpy2.robjects import pandas2ri
@@ -39,95 +40,184 @@ def annotate_ds_pheno_data(gct_data, pheno_data=pd.DataFrame()):
     return pheno_data
 
 
-def perform_limma(exprs_file: str,
-                  feature_anno: pd.DataFrame,
-                  design: Design,
-                  contrast_matrix: pd.DataFrame,
-                  use_weighted: bool = False):
-    methods = importr("methods")
-    limma = importr("limma")
-    ribios_io = importr("ribiosIO")
-    ribios_roger = importr("ribiosROGER")
+class GSEAlgorithm(ABC):
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        """Returns the name of this GSE method"""
+        pass
 
-    design_data = design.design_matrix
+    @property
+    @abstractmethod
+    def description(self) -> str:
+        """Returns the description for this GSE method"""
+        pass
 
-    exprs_data = ribios_io.read_exprs_matrix(exprs_file)
-
-    eset = methods.new("ExpressionSet", exprs=exprs_data)
-
-    # TODO We drop Description column here, because it might cause warnings
-    eset = biobase.__dict__["fData<-"](eset, feature_anno.drop(columns=['Description']))
-
-    weights = robjects.vectors.IntVector([1] * base.ncol(exprs_data)[0])
-    if use_weighted:
-        weights = limma.arrayWeights(eset, design=design_data)
-
-    eset_fit = limma.lmFit(object=eset, design=design_data, weights=weights)
-    eset_fit = limma.contrasts_fit(eset_fit, contrast_matrix)
-    eset_fit = limma.eBayes(eset_fit)
-
-    dge_tbl = pandas2ri.ri2py(ribios_roger.limmaDgeTable(eset_fit))
-
-    used_names = robjects.conversion.ri2py(base.rownames(eset_fit.rx2("genes")))
-
-    used_features = feature_anno['FeatureIndex'].isin(used_names)
-
-    # TODO: return result type instead of a tuple
-    return eset, eset_fit, dge_tbl, used_features
+    @abstractmethod
+    def exec_gse(self) -> pd.DataFrame:
+        """Executes the GSE algorithm on the given data"""
+        pass
 
 
-def perform_edger(exprs_file: str,
-                  feature_anno: pd.DataFrame,
-                  design: Design,
-                  contrast_matrix: pd.DataFrame):
+class DGEResult(ABC):
+    """Result class that hold all relevant information produced by a DGE algorithm"""
 
-    ribios_io = importr("ribiosIO")
-    ribios_expression = importr("ribiosExpression")
-    ribios_ngs = importr("ribiosNGS")
-    utils = importr("utils")
+    def __init__(self, input_obj, fit_obj, dge_table, used_feature_list):
+        self.input_obj = input_obj
+        self.fit_obj = fit_obj
+        self.dge_table = dge_table
+        self.used_feature_list = used_feature_list
 
-    design_file, design_file_path = tempfile.mkstemp()
-    contrast_file, contrast_file_path = tempfile.mkstemp()
-    fdf_file, fdf_file_path = tempfile.mkstemp()
 
-    design_matrix = design.design_matrix
+class DGEAlgorithm(ABC):
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        """Returns the name of this DGE method"""
+        pass
 
-    design_matrix.to_csv(design_file_path, sep="\t")
-    contrast_matrix.to_csv(contrast_file_path, sep="\t")
-    feature_anno.to_csv(fdf_file_path, sep="\t")
+    @property
+    @abstractmethod
+    def description(self) -> str:
+        """Returns the description for this DGE method"""
+        pass
 
-    exprs_data = ribios_io.read_exprs_matrix(exprs_file)
+    @property
+    @abstractmethod
+    def gse_methods(self) -> List[GSEAlgorithm]:
+        """Returns the available GSE methods for this particular DGE method"""
+        pass
 
-    descon = ribios_expression.parseDesignContrast(designFile=design_file_path,
-                                                   contrastFile=contrast_file_path,
-                                                   sampleGroups=base.paste(base.make_names(design.SampleGroups),
-                                                                           collapse=","),
-                                                   groupLevels=base.paste(base.make_names(design.SampleGroupLevels),
-                                                                          collapse=","),
-                                                   dispLevels=robjects.r("NULL"),
-                                                   contrasts=robjects.r("NULL"))
-                                                   # expSampleNames=base.colnames(exprs_data))
+    @abstractmethod
+    def exec_dge(self,
+                 exprs_file: str,
+                 feature_anno: pd.DataFrame,
+                 design: Design,
+                 contrast_matrix: pd.DataFrame,
+                 **kwargs) -> DGEResult:
+        """Executes the DGE algorithm on the given data"""
+        pass
 
-    edger_input = ribios_ngs.EdgeObject(exprs_data, descon)
 
-    slot = edger_input.slots["dgeList"]
-    slot.rx2["genes"] = ribios_io.readTable(fdf_file_path)
-    slot.rx2["annotation"] = "Name"
-    edger_input.slots["dgeList"] = slot
+class LimmaDGE(DGEAlgorithm):
+    @property
+    def name(self) -> str:
+        return "limma"
 
-    edger_result = ribios_ngs.dgeWithEdgeR(edger_input)
+    @property
+    def description(self) -> str:
+        return "limma"
 
-    dge_file, dge_file_path = tempfile.mkstemp()
-    utils.write_table(ribios_ngs.dgeTable(edger_result), dge_file_path, sep="\t")
-    dge_tbl = pd.read_table(dge_file_path)
-    dge_tbl = dge_tbl.rename(index=str, columns={"logCPM": "AveExpr",
-                                                 "LR": "t"})
+    @property
+    def gse_methods(self) -> List[GSEAlgorithm]:
+        # TODO add GSE methods here
+        return []
 
-    used_names = robjects.conversion.ri2py(biobase.featureNames(edger_result))
-    used_features = feature_anno['Name'].isin(used_names)
+    def exec_dge(self,
+                 exprs_file: str,
+                 feature_anno: pd.DataFrame,
+                 design: Design,
+                 contrast_matrix: pd.DataFrame,
+                 use_weighted: bool = False) -> DGEResult:
+        methods = importr("methods")
+        limma = importr("limma")
+        ribios_io = importr("ribiosIO")
+        ribios_roger = importr("ribiosROGER")
 
-    # TODO: return result type instead of a tuple
-    return edger_input, edger_result, dge_tbl, used_features
+        design_data = design.design_matrix
+
+        exprs_data = ribios_io.read_exprs_matrix(exprs_file)
+
+        eset = methods.new("ExpressionSet", exprs=exprs_data)
+
+        # TODO We drop Description column here, because it might cause warnings
+        eset = biobase.__dict__["fData<-"](eset, feature_anno.drop(columns=['Description']))
+
+        weights = robjects.vectors.IntVector([1] * base.ncol(exprs_data)[0])
+        if use_weighted:
+            weights = limma.arrayWeights(eset, design=design_data)
+
+        eset_fit = limma.lmFit(object=eset, design=design_data, weights=weights)
+        eset_fit = limma.contrasts_fit(eset_fit, contrast_matrix)
+        eset_fit = limma.eBayes(eset_fit)
+
+        dge_tbl = pandas2ri.ri2py(ribios_roger.limmaDgeTable(eset_fit))
+
+        used_names = robjects.conversion.ri2py(base.rownames(eset_fit.rx2("genes")))
+
+        used_features = feature_anno['FeatureIndex'].isin(used_names)
+
+        # TODO: return result type instead of a tuple
+        return DGEResult(eset, eset_fit, dge_tbl, used_features)
+
+
+class EdgeRDGE(DGEAlgorithm):
+    @property
+    def name(self) -> str:
+        return "edgeR"
+
+    @property
+    def description(self) -> str:
+        return "edgeR"
+
+    @property
+    def gse_methods(self) -> List[GSEAlgorithm]:
+        # TODO add GSE methods here
+        return []
+
+    def exec_dge(self,
+                 exprs_file: str,
+                 feature_anno: pd.DataFrame,
+                 design: Design,
+                 contrast_matrix: pd.DataFrame,
+                 **kwargs) -> DGEResult:
+        ribios_io = importr("ribiosIO")
+        ribios_expression = importr("ribiosExpression")
+        ribios_ngs = importr("ribiosNGS")
+        utils = importr("utils")
+
+        design_file, design_file_path = tempfile.mkstemp()
+        contrast_file, contrast_file_path = tempfile.mkstemp()
+        fdf_file, fdf_file_path = tempfile.mkstemp()
+
+        design_matrix = design.design_matrix
+
+        design_matrix.to_csv(design_file_path, sep="\t")
+        contrast_matrix.to_csv(contrast_file_path, sep="\t")
+        feature_anno.to_csv(fdf_file_path, sep="\t")
+
+        exprs_data = ribios_io.read_exprs_matrix(exprs_file)
+
+        descon = ribios_expression.parseDesignContrast(designFile=design_file_path,
+                                                       contrastFile=contrast_file_path,
+                                                       sampleGroups=base.paste(base.make_names(design.SampleGroups),
+                                                                               collapse=","),
+                                                       groupLevels=base.paste(base.make_names(design.SampleGroupLevels),
+                                                                              collapse=","),
+                                                       dispLevels=robjects.r("NULL"),
+                                                       contrasts=robjects.r("NULL"))
+        # expSampleNames=base.colnames(exprs_data))
+
+        edger_input = ribios_ngs.EdgeObject(exprs_data, descon)
+
+        slot = edger_input.slots["dgeList"]
+        slot.rx2["genes"] = ribios_io.readTable(fdf_file_path)
+        slot.rx2["annotation"] = "Name"
+        edger_input.slots["dgeList"] = slot
+
+        edger_result = ribios_ngs.dgeWithEdgeR(edger_input)
+
+        dge_file, dge_file_path = tempfile.mkstemp()
+        utils.write_table(ribios_ngs.dgeTable(edger_result), dge_file_path, sep="\t")
+        dge_tbl = pd.read_table(dge_file_path)
+        dge_tbl = dge_tbl.rename(index=str, columns={"logCPM": "AveExpr",
+                                                     "LR": "t"})
+
+        used_names = robjects.conversion.ri2py(biobase.featureNames(edger_result))
+        used_features = feature_anno['Name'].isin(used_names)
+
+        # TODO: return result type instead of a tuple
+        return DGEResult(edger_input, edger_result, dge_tbl, used_features)
 
 
 # ---------------
@@ -187,14 +277,12 @@ def run_dge(session,
             contrast,
             design,
             dataset,
-            algorithm,
-            algorithm_name="limma"):
-
-    model = query_dge_models(session, contrast, design, dataset, algorithm_name,
+            algorithm: DGEAlgorithm):
+    model = query_dge_models(session, contrast, design, dataset, algorithm.name,
                              DGEmodel).one_or_none()
     if model is not None:
         raise ROGERUsageError("A model for %s:%s:%s has already been generated by the method '%s'"
-                              % (dataset, design, contrast, algorithm_name))
+                              % (dataset, design, contrast, algorithm.name))
 
     print("Retrieving data from database")
     contrast_data = get_contrast(session, contrast, design, dataset)
@@ -203,16 +291,16 @@ def run_dge(session,
 
     feature_data = ds_data.feature_data
 
-    print("Performing differential gene expression analysis using %s" % algorithm_name)
+    print("Performing differential gene expression analysis using %s" % algorithm.name)
     contrast_matrix = contrast_data.contrast_matrix
-    eset, eset_fit, dge_tbl, used_features = algorithm(ds_data.ExprsWC,
-                                                       feature_data,
-                                                       design_data,
-                                                       contrast_matrix)
+    dge_result = algorithm.exec_dge(ds_data.ExprsWC,
+                                    feature_data,
+                                    design_data,
+                                    contrast_matrix)
 
     print("Persisting model information")
     # TODO why are methods stored in table anyway?
-    method = session.query(DGEmethod).filter(DGEmethod.Name == algorithm_name).one()
+    method = session.query(DGEmethod).filter(DGEmethod.Name == algorithm.name).one()
 
     dge_method_sub_dir = "%d_%d" % (contrast_data.ID, method.ID)
 
@@ -222,10 +310,10 @@ def run_dge(session,
         os.makedirs(dge_model_path)
 
     input_obj_file = os.path.abspath(os.path.join(dge_model_path, "input_obj.rds"))
-    base.saveRDS(eset, file=input_obj_file)
+    base.saveRDS(dge_result.input_obj, file=input_obj_file)
 
     fit_obj_file = os.path.abspath(os.path.join(dge_model_path, "fit_obj.rds"))
-    base.saveRDS(eset_fit, file=fit_obj_file)
+    base.saveRDS(dge_result.fit_obj, file=fit_obj_file)
 
     dge_model = DGEmodel(ContrastID=contrast_data.ID,
                          DGEmethodID=method.ID,
@@ -240,12 +328,12 @@ def run_dge(session,
                                    "DataSetID": ds_data.ID,
                                    "ContrastID": contrast_data.ID,
                                    "DGEmethodID": method.ID,
-                                   "IsUsed": used_features,
-                                   "Description": "Default filtering by '%s'" % algorithm_name})
+                                   "IsUsed": dge_result.used_feature_list,
+                                   "Description": "Default filtering by '%s'" % algorithm.name})
     insert_data_frame(session, feature_subset, FeatureSubset.__table__)
 
-    dge_tbl = dge_tbl\
-        .join(contrast_data.contrast_columns.set_index("Name"), on="Contrast", rsuffix="_C")\
+    dge_tbl = dge_result.dge_table \
+        .join(contrast_data.contrast_columns.set_index("Name"), on="Contrast", rsuffix="_C") \
         .join(feature_data.set_index("FeatureIndex"), on="FeatureIndex", rsuffix="_F")
 
     dgetable = pd.DataFrame({'ContrastColumnID': dge_tbl["ID"],

@@ -372,13 +372,12 @@ class DGEmethod(db.Model):
     ID = Column(Integer, primary_key=True)
     Name = Column(String(DEFAULT_STR_SIZE), nullable=False, unique=True)
     Description = Column(String(DEFAULT_STR_SIZE))
-    Version = Column(String(DEFAULT_STR_SIZE), nullable=False)
 
     __table_args__ = {'mysql_engine': 'InnoDB'}
 
     def __repr__(self):
-        return "<DGEmethod(ID='%s', Name='%s', Description='%s', Version='%s')>" \
-               % (self.ID, self.Name, self.Description, self.Version)
+        return "<DGEmethod(ID='%s', Name='%s', Description='%s')>" \
+               % (self.ID, self.Name, self.Description)
 
 
 class DGEmodel(db.Model):
@@ -391,6 +390,7 @@ class DGEmodel(db.Model):
     InputObjFile = Column(String(DEFAULT_STR_SIZE), nullable=False)
     # Evaluated model
     FitObjFile = Column(String(DEFAULT_STR_SIZE), nullable=False)
+    MethodDescription = Column(String(DEFAULT_STR_SIZE), nullable=False)
 
     Contrast = relationship("Contrast", foreign_keys=[ContrastID])
     Method = relationship("DGEmethod", foreign_keys=[DGEmethodID])
@@ -470,15 +470,20 @@ class GSEmethod(db.Model):
     __tablename__ = 'GSEmethod'
 
     ID = Column(Integer, primary_key=True)
-    Name = Column(String(DEFAULT_STR_SIZE), nullable=False, unique=True)
+    DGEmethodID = Column(Integer, ForeignKey(DGEmethod.ID))
+    Name = Column(String(DEFAULT_STR_SIZE), nullable=False)
     Description = Column(String(DEFAULT_STR_SIZE))
-    Version = Column(String(DEFAULT_STR_SIZE), nullable=False)
 
-    __table_args__ = {'mysql_engine': 'InnoDB'}
+    __table_args__ = (
+        UniqueConstraint(DGEmethodID, Name, name='GSEmethodPerDGE'),
+        {'mysql_engine': 'InnoDB'}
+    )
+
+    DGEMethod = relationship("DGEmethod", foreign_keys=[DGEmethodID])
 
     def __repr__(self):
-        return "<GSEmethod(ID='%s', Name='%s', Description='%s', Version='%s')>" \
-               % (self.ID, self.Name, self.Description, self.Version)
+        return "<GSEmethod(ID='%s', DGEmethodID'%s' Name='%s', Description='%s')>" \
+               % (self.ID, self.DGEmethodID, self.Name, self.Description)
 
 
 class GSEtable(db.Model):

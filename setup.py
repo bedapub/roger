@@ -1,6 +1,7 @@
 from setuptools import setup
 
 setup(
+    version="0.2",
     name='ROGER',
     packages=['roger'],
     include_package_data=True,

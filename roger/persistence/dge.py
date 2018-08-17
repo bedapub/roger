@@ -51,13 +51,14 @@ class DataSetProperties(object):
 # --------------------------
 
 def list_methods(session):
-    return as_data_frame(session.query(DGEmethod.Name, DGEmethod.Description, DGEmethod.Version))
+    return as_data_frame(session.query(DGEmethod.Name, DGEmethod.Description))
 
 
-def add_method(session, name, description, version):
-    method = DGEmethod(Name=name, Description=description, Version=version)
+def add_method(session, name, description):
+    method = DGEmethod(Name=name, Description=description)
     session.add(method)
     session.commit()
+    return method
 
 
 def delete_method(session, name):
