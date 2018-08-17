@@ -472,8 +472,8 @@ def remove_contrast(contrast_name, design_name, dataset_name):
 @click.argument('dataset', metavar='<dataset_name>')
 # TODO limma support only for now ...
 # @click.option('--algorithm', default="limma", help='Used method method for normalization')
-def run_dge_ma(contrast, design, dataset, algorithm="limma"):
-    print("Performing DGE algorithm '%s' ..." % algorithm)
+def run_dge_ma(contrast, design, dataset):
+    print("Performing DGE algorithm '%s' ..." % "limma")
     from roger.persistence import db
     import roger.logic.dge
 
@@ -482,8 +482,7 @@ def run_dge_ma(contrast, design, dataset, algorithm="limma"):
                             contrast,
                             design,
                             dataset,
-                            roger.logic.dge.perform_limma,
-                            algorithm)
+                            roger.logic.dge.LimmaDGE())
     print("Done")
 
 
@@ -494,8 +493,8 @@ def run_dge_ma(contrast, design, dataset, algorithm="limma"):
 @click.argument('dataset', metavar='<dataset_name>')
 # TODO edgeR support only for now ...
 # @click.option('--algorithm', default="edgeR", help='Used method method for normalization')
-def run_dge_rnaseq(contrast, design, dataset, algorithm="edgeR"):
-    print("Performing DGE algorithm '%s' ..." % algorithm)
+def run_dge_rnaseq(contrast, design, dataset):
+    print("Performing DGE algorithm '%s' ..." % "edgeR")
     from roger.persistence import db
     import roger.logic.dge
 
@@ -504,8 +503,7 @@ def run_dge_rnaseq(contrast, design, dataset, algorithm="edgeR"):
                             contrast,
                             design,
                             dataset,
-                            roger.logic.dge.perform_edger,
-                            algorithm)
+                            roger.logic.dge.EdgeRDGE())
     print("Done")
 
 
