@@ -5,11 +5,15 @@ import pandas as pd
 import tempfile
 from pandas import DataFrame, read_table
 from numpy import log10, abs
+from rpy2.robjects import pandas2ri
 from rpy2.robjects.packages import importr
 from rpy2.robjects.vectors import ListVector
+from rpy2 import robjects
 from sqlalchemy.orm import Session
 
-from roger.persistence.schema import DGEmodel, GeneSetCategory, GeneSet, GSEmethod, DGEmethod
+pandas2ri.activate()
+
+from roger.persistence.schema import DGEmodel, GeneSetCategory, GeneSet, GSEmethod, DGEmethod, GSEtable
 from roger.util import as_data_frame
 
 DGE_MODEL_SUB_FOLDER = "dge_model"
@@ -57,6 +61,39 @@ class EdgeRCamera(GSEAlgorithm):
         return read_table(enrich_tbl_file_path)
 
 
+getGeneSymbols = robjects.r('''
+    function(featureTbl) {
+        genes <- NULL
+        if("GeneSymbol" %in% colnames(featureTbl)) {
+            genes <- featureTbl[,"GeneSymbol"]
+        } else if ("HumanGeneSymbol" %in% colnames(featureTbl)) {
+            genes <- featureTbl[, "HumanGeneSymbol"]
+        }
+        if(is.null(genes)) return(NULL)
+        if(mean(!is.na(genes))>=0.25) { ## when more than 25% probes are annotated 
+            return(as.character(genes))
+        } else {
+            return(NULL)
+        }
+    }
+''')
+
+
+esetCamera = robjects.r('''
+    function(eset, geneSymbols, design, contrasts, gscs) {
+        categories <- gsCategory(gscs)
+        cameraTables <- tapply(gscs, categories, function(gsc) {
+                            tt <- gscCamera(exprs(eset), geneSymbols,
+                                 gsc=gsc, design=design, contrasts=contrasts)
+                            })
+        cameraTable <- do.call(rbind, cameraTables)
+        cameraTable$Category <- rep(names(cameraTables), sapply(cameraTables, nrow))
+        cameraTable <- putColsFirst(cameraTable, "Category")
+        rownames(cameraTable) <- NULL
+        return(cameraTable)
+    }
+''')
+
 class LimmaCamera(GSEAlgorithm):
     @property
     def name(self) -> str:
@@ -67,17 +104,21 @@ class LimmaCamera(GSEAlgorithm):
         return "CAMERA for limma"
 
     def exec_gse(self, dge_model, gscs) -> pd.DataFrame:
-        gse_res = ribios_ngs.doGse(dge_model, gscs)
+        eset_gene_symbols = getGeneSymbols(biobase.fData(dge_model))
+        camera_result = esetCamera(dge_model, eset_gene_symbols,
+                                  dge_model.Contrast.Design.design_matrix,
+                                  dge_model.Contrast.contrast_matrix,
+                                  gscs)
         enrich_tbl_file, enrich_tbl_file_path = tempfile.mkstemp()
-        utils.write_table(ribios_ngs.fullEnrichTable(gse_res), enrich_tbl_file_path, sep="\t")
+        utils.write_table(camera_result, enrich_tbl_file_path, sep="\t")
         return read_table(enrich_tbl_file_path)
 
 
-def get_gmt_locations(session: Session, gene_set_category_filter: List[str] =None):
+def get_gmt_locations(session: Session, gene_set_category_filter: List[str] = None):
     query = session.query(GeneSetCategory.Name.label("Category"),
                           GeneSetCategory.FileWC,
                           GeneSet.ID,
-                          GeneSet.Name)\
+                          GeneSet.Name) \
         .filter(GeneSetCategory.ID == GeneSet.CategoryID)
 
     if gene_set_category_filter:
@@ -99,9 +140,9 @@ def perform_gse(session: Session,
 
     contrast_columns = dge_model.Contrast.contrast_columns
 
-    gse_method_id = session.query(GSEmethod.ID)\
-        .filter(GSEmethod.DGEmethodID == DGEmethod.ID)\
-        .filter(DGEmethod.ID == dge_model.Method.ID)\
+    gse_method_id = session.query(GSEmethod.ID) \
+        .filter(GSEmethod.DGEmethodID == DGEmethod.ID) \
+        .filter(DGEmethod.ID == dge_model.Method.ID) \
         .filter(GSEmethod.Name == algorithm.name).scalar()
 
     enrich_tbl = algorithm.exec_gse(dge_fit_obj, gscs)
