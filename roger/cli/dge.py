@@ -445,7 +445,7 @@ def remove_contrast(contrast_name, design_name, dataset_name):
 # TODO limma support only for now ...
 # @click.option('--algorithm', default="limma", help='Used method method for normalization')
 def run_dge_ma(contrast, design, dataset):
-    print("Performing DGE algorithm '%s' ..." % "limma")
+    print("Performing DGE algorithm ...")
     from roger.persistence import db
     import roger.logic.dge
 
@@ -466,7 +466,7 @@ def run_dge_ma(contrast, design, dataset):
 # TODO edgeR support only for now ...
 # @click.option('--algorithm', default="edgeR", help='Used method method for normalization')
 def run_dge_rnaseq(contrast, design, dataset):
-    print("Performing DGE algorithm '%s' ..." % "edgeR")
+    print("Performing DGE algorithm ...")
     from roger.persistence import db
     import roger.logic.dge
 

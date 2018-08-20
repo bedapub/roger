@@ -1,3 +1,5 @@
+import flask
+
 import roger.logic
 import roger.logic.mart
 import roger.persistence.dge
@@ -24,6 +26,7 @@ class TestGSEPersistence(object):
         assert roger.persistence.gse.list_gmt(session).empty
         # TODO tests file in __data is not part of open source distribution yet
         roger.persistence.gse.add_gmt(session,
+                                      flask.current_app.config['ROGER_DATA_FOLDER'],
                                       gmt_cat_name,
                                       "test_data/gmt/dummy.gmt",
                                       roger.persistence.geneanno.human_tax_id)

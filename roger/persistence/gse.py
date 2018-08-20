@@ -1,12 +1,19 @@
+import shutil
+
 from gseapy.parser import gsea_gmt_parser
 import pandas as pd
 import sys
-from sqlalchemy import func
+import os.path
 
-from roger.persistence.schema import GSEmethod, GeneSetCategory, GeneSet, GeneSetGene, DGEmethod
+from sqlalchemy import func
+from sqlalchemy.orm import Session
+
+from roger.persistence.schema import GSEmethod, GeneSetCategory, GeneSet, GeneSetGene, DGEmethod, GSEtable
 from roger.persistence.geneanno import GeneAnnotation
 from roger.util import as_data_frame, insert_data_frame
 from roger.exception import ROGERUsageError
+
+GENE_SET_SUB_FOLDER = "gene_sets"
 
 
 def list_methods(session):
@@ -40,13 +47,23 @@ def list_gmt(session):
 
 
 # TODO: Support annotation of genes based on identifier types other than just gene symbols
-def add_gmt(session, category_name, file, tax_id, description=None):
+def add_gmt(session, roger_wd_dir, category_name, file, tax_id, description=None):
     gene_anno = as_data_frame(session.query(GeneAnnotation).filter(GeneAnnotation.TaxID == tax_id))
     # TODO Make min_size configurable?
     gmt = gsea_gmt_parser(file, min_size=1, max_size=sys.maxsize)
-    category = GeneSetCategory(Name=category_name)
+
+    gene_sets_path = os.path.join(roger_wd_dir, GENE_SET_SUB_FOLDER)
+    file_copy_path = os.path.join(gene_sets_path, os.path.basename(file))
+
+    category = GeneSetCategory(Name=category_name, FileWC=file_copy_path, FileSrc=os.path.abspath(file))
     session.add(category)
+
+    if not os.path.exists(gene_sets_path):
+        os.makedirs(gene_sets_path)
+    shutil.copy(file, file_copy_path)
+
     session.flush()
+
     gene_sets = [GeneSet(Category=category,
                          Name=gene_set_name,
                          TaxID=tax_id,
@@ -66,7 +83,7 @@ def add_gmt(session, category_name, file, tax_id, description=None):
     genes_table = pd.DataFrame.from_dict(gene_set_data)
     annotated_genes = genes_table.join(gene_anno.set_index('GeneSymbol'), on='GeneSymbol')
     # Filter out non-matching genes
-    matched_genes = annotated_genes[annotated_genes.RogerGeneIndex.notna()]\
+    matched_genes = annotated_genes[annotated_genes.RogerGeneIndex.notna()] \
         .drop_duplicates(subset=['RogerGeneIndex', 'GeneSetID'], keep=False)
 
     # Bulk insert all gene set genes
@@ -74,7 +91,7 @@ def add_gmt(session, category_name, file, tax_id, description=None):
     session.commit()
 
     # Report number of gene symbols that could not be matched with gene annotation
-    p_unknown_gene_symbols = (annotated_genes.shape[0] - matched_genes.shape[0])/float(annotated_genes.shape[0])
+    p_unknown_gene_symbols = (annotated_genes.shape[0] - matched_genes.shape[0]) / float(annotated_genes.shape[0])
     return p_unknown_gene_symbols
 
 
@@ -87,3 +104,14 @@ def delete_gmt(session, category_name):
 
     session.query(GeneSetCategory).filter(GeneSetCategory.Name == category_name).delete()
     session.commit()
+
+
+# -----------------
+# GSE & execution
+# -----------------
+
+def create_gse_result(session: Session,
+                      gse_table: pd.DataFrame):
+    insert_data_frame(session, gse_table, GSEtable.__table__)
+    session.commit()
+

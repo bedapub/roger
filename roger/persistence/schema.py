@@ -72,6 +72,8 @@ class GeneSetCategory(db.Model):
 
     ID = Column(Integer, primary_key=True)
     Name = Column(String(DEFAULT_STR_SIZE), unique=True, nullable=False)
+    FileWC = Column(String(DEFAULT_STR_SIZE), nullable=False)
+    FileSrc = Column(String(DEFAULT_STR_SIZE), nullable=False)
 
     GeneSets = relationship("GeneSet", back_populates="Category")
 
@@ -176,6 +178,9 @@ class DataSet(db.Model):
     @hybrid_property
     def feature_data(self):
         return roger.util.as_data_frame(FeatureMapping.query
+                                        .add_columns(GeneAnnotation.GeneSymbol)
+                                        .outerjoin(GeneAnnotation,
+                                                   FeatureMapping.RogerGeneIndex == GeneAnnotation.RogerGeneIndex)
                                         .filter(FeatureMapping.DataSetID == self.ID)
                                         .order_by(FeatureMapping.FeatureIndex))
 
@@ -396,12 +401,6 @@ class DGEmodel(db.Model):
     Method = relationship("DGEmethod", foreign_keys=[DGEmethodID])
 
     __table_args__ = {'mysql_engine': 'InnoDB'}
-
-    @hybrid_property
-    def result_table(self):
-        return roger.util.as_data_frame(DGEtable.query
-                                        .filter(DGEtable.ContrastID == self.ContrastID)
-                                        .filter(DGEtable.DGEmethodID == self.DGEmethodID))
 
     def __repr__(self):
         return "<DGEmodel(ContrastID='%s', DGEmethodID='%s')>" \

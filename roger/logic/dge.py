@@ -10,7 +10,9 @@ import os.path
 
 from roger.exception import ROGERUsageError
 from roger.logic.geneanno import annotate
+from roger.logic.gse import GSEAlgorithm, EdgeRCamera, LimmaCamera
 from roger.persistence.dge import ROGER_SAMPLE_NAME, DataSetProperties, get_contrast, query_dge_models, add_method
+from roger.persistence.gse import add_method as add_gse_method
 from roger.persistence.geneanno import list_species
 from roger.persistence.schema import DGEmethod, DGEtable, DGEmodel, \
     DataSet, FeatureSubset, Design
@@ -22,6 +24,13 @@ pandas2ri.activate()
 
 base = importr("base")
 biobase = importr("Biobase")
+ribios_io = importr("ribiosIO")
+ribios_expression = importr("ribiosExpression")
+ribios_ngs = importr("ribiosNGS")
+utils = importr("utils")
+methods = importr("methods")
+limma = importr("limma")
+ribios_roger = importr("ribiosROGER")
 
 
 def annotate_ds_pheno_data(gct_data, pheno_data=pd.DataFrame()):
@@ -39,33 +48,15 @@ def annotate_ds_pheno_data(gct_data, pheno_data=pd.DataFrame()):
     return pheno_data
 
 
-class GSEAlgorithm(ABC):
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        """Returns the name of this GSE method"""
-        pass
-
-    @property
-    @abstractmethod
-    def description(self) -> str:
-        """Returns the description for this GSE method"""
-        pass
-
-    @abstractmethod
-    def exec_gse(self) -> pd.DataFrame:
-        """Executes the GSE algorithm on the given data"""
-        pass
-
-
 class DGEResult(ABC):
     """Result class that hold all relevant information produced by a DGE algorithm"""
 
-    def __init__(self, input_obj, fit_obj, dge_table, used_feature_list):
+    def __init__(self, input_obj, fit_obj, dge_table, used_feature_list, method_description):
         self.input_obj = input_obj
         self.fit_obj = fit_obj
         self.dge_table = dge_table
         self.used_feature_list = used_feature_list
+        self.method_description = method_description
 
 
 class DGEAlgorithm(ABC):
@@ -83,7 +74,7 @@ class DGEAlgorithm(ABC):
 
     @property
     @abstractmethod
-    def gse_methods(self) -> List[GSEAlgorithm]:
+    def gse_methods(self) -> List[Type[GSEAlgorithm]]:
         """Returns the available GSE methods for this particular DGE method"""
         pass
 
@@ -108,9 +99,8 @@ class LimmaDGE(DGEAlgorithm):
         return "limma"
 
     @property
-    def gse_methods(self) -> List[GSEAlgorithm]:
-        # TODO add GSE methods here
-        return []
+    def gse_methods(self) -> List[Type[GSEAlgorithm]]:
+        return [LimmaCamera]
 
     def exec_dge(self,
                  exprs_file: str,
@@ -118,10 +108,6 @@ class LimmaDGE(DGEAlgorithm):
                  design: Design,
                  contrast_matrix: pd.DataFrame,
                  use_weighted: bool = False) -> DGEResult:
-        methods = importr("methods")
-        limma = importr("limma")
-        ribios_io = importr("ribiosIO")
-        ribios_roger = importr("ribiosROGER")
 
         design_data = design.design_matrix
 
@@ -146,8 +132,10 @@ class LimmaDGE(DGEAlgorithm):
 
         used_features = feature_anno['FeatureIndex'].isin(used_names)
 
+        method_desc = "R limma version: %s" % limma.__version__
+
         # TODO: return result type instead of a tuple
-        return DGEResult(eset, eset_fit, dge_tbl, used_features)
+        return DGEResult(eset, eset_fit, dge_tbl, used_features, method_desc)
 
 
 class EdgeRDGE(DGEAlgorithm):
@@ -160,9 +148,8 @@ class EdgeRDGE(DGEAlgorithm):
         return "edgeR"
 
     @property
-    def gse_methods(self) -> List[GSEAlgorithm]:
-        # TODO add GSE methods here
-        return []
+    def gse_methods(self) -> List[Type[GSEAlgorithm]]:
+        return [EdgeRCamera]
 
     def exec_dge(self,
                  exprs_file: str,
@@ -170,10 +157,6 @@ class EdgeRDGE(DGEAlgorithm):
                  design: Design,
                  contrast_matrix: pd.DataFrame,
                  **kwargs) -> DGEResult:
-        ribios_io = importr("ribiosIO")
-        ribios_expression = importr("ribiosExpression")
-        ribios_ngs = importr("ribiosNGS")
-        utils = importr("utils")
 
         design_file, design_file_path = tempfile.mkstemp()
         contrast_file, contrast_file_path = tempfile.mkstemp()
@@ -215,14 +198,19 @@ class EdgeRDGE(DGEAlgorithm):
         used_names = robjects.conversion.ri2py(biobase.featureNames(edger_result))
         used_features = feature_anno['Name'].isin(used_names)
 
+        method_desc = "R ribiosNGS version: %s" % ribios_ngs.__version__
+
         # TODO: return result type instead of a tuple
-        return DGEResult(edger_input, edger_result, dge_tbl, used_features)
+        return DGEResult(edger_input, edger_result, dge_tbl, used_features, method_desc)
 
 
 def init_methods(session):
     for algorithm_class in all_subclasses(DGEAlgorithm):
         algorithm = algorithm_class()
-        add_method(session, algorithm.name, algorithm.description)
+        dge_method = add_method(session, algorithm.name, algorithm.description)
+        for gse_algorithm_class in algorithm.gse_methods:
+            gse_algorithm = gse_algorithm_class()
+            add_gse_method(session, dge_method, gse_algorithm.name, gse_algorithm.description)
 
 
 # ---------------
@@ -323,7 +311,8 @@ def run_dge(session,
     dge_model = DGEmodel(ContrastID=contrast_data.ID,
                          DGEmethodID=method.ID,
                          InputObjFile=input_obj_file,
-                         FitObjFile=fit_obj_file)
+                         FitObjFile=fit_obj_file,
+                         MethodDescription=dge_result.method_description)
 
     session.add(dge_model)
     session.flush()
@@ -353,3 +342,10 @@ def run_dge(session,
                              'FDR': dge_tbl["FDR"]})
     insert_data_frame(session, dgetable, DGEtable.__table__)
     session.commit()
+
+
+def get_algorithm(name) -> DGEAlgorithm:
+    algorithm_dict = {algo.name: algo for algo in [cls() for cls in all_subclasses(DGEAlgorithm)]}
+    if name not in algorithm_dict:
+        raise ROGERUsageError("Algorithm '%s' does not exist" % name)
+    return algorithm_dict[name]
