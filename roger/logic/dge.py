@@ -109,14 +109,15 @@ class LimmaDGE(DGEAlgorithm):
                  contrast_matrix: pd.DataFrame,
                  use_weighted: bool = False) -> DGEResult:
 
-        design_data = design.design_matrix
+        fdf_file, fdf_file_path = tempfile.mkstemp()
+        feature_anno.to_csv(fdf_file_path, sep="\t")
 
+        design_data = design.design_matrix
         exprs_data = ribios_io.read_exprs_matrix(exprs_file)
 
         eset = methods.new("ExpressionSet", exprs=exprs_data)
 
-        # TODO We drop Description column here, because it might cause warnings
-        eset = biobase.__dict__["fData<-"](eset, feature_anno.drop(columns=['Description']))
+        eset = biobase.__dict__["fData<-"](eset, utils.read_table(fdf_file_path, header=True, row_names=1, sep="\t"))
 
         weights = robjects.vectors.IntVector([1] * base.ncol(exprs_data)[0])
         if use_weighted:
@@ -134,7 +135,6 @@ class LimmaDGE(DGEAlgorithm):
 
         method_desc = "R limma version: %s" % limma.__version__
 
-        # TODO: return result type instead of a tuple
         return DGEResult(eset, eset_fit, dge_tbl, used_features, method_desc)
 
 
@@ -200,7 +200,6 @@ class EdgeRDGE(DGEAlgorithm):
 
         method_desc = "R ribiosNGS version: %s" % ribios_ngs.__version__
 
-        # TODO: return result type instead of a tuple
         return DGEResult(edger_input, edger_result, dge_tbl, used_features, method_desc)
 
 
@@ -292,7 +291,6 @@ def run_dge(session,
                                     contrast_matrix)
 
     print("Persisting model information")
-    # TODO why are methods stored in table anyway?
     method = session.query(DGEmethod).filter(DGEmethod.Name == algorithm.name).one()
 
     dge_method_sub_dir = "%d_%d" % (contrast_data.ID, method.ID)
@@ -302,10 +300,10 @@ def run_dge(session,
     if not os.path.exists(dge_model_path):
         os.makedirs(dge_model_path)
 
-    input_obj_file = os.path.abspath(os.path.join(dge_model_path, "input_obj.rds"))
+    input_obj_file = os.path.abspath(os.path.join(dge_model_path, "limma_input_obj.rds"))
     base.saveRDS(dge_result.input_obj, file=input_obj_file)
 
-    fit_obj_file = os.path.abspath(os.path.join(dge_model_path, "fit_obj.rds"))
+    fit_obj_file = os.path.abspath(os.path.join(dge_model_path, "limma_fit_obj"))
     base.saveRDS(dge_result.fit_obj, file=fit_obj_file)
 
     dge_model = DGEmodel(ContrastID=contrast_data.ID,

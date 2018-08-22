@@ -11,13 +11,14 @@ from rpy2.robjects.vectors import ListVector
 from rpy2 import robjects
 from sqlalchemy.orm import Session
 
-pandas2ri.activate()
-
-from roger.persistence.schema import DGEmodel, GeneSetCategory, GeneSet, GSEmethod, DGEmethod, GSEtable
+from roger.persistence.schema import DGEmodel, GeneSetCategory, GeneSet, GSEmethod, DGEmethod
 from roger.util import as_data_frame
+
+pandas2ri.activate()
 
 DGE_MODEL_SUB_FOLDER = "dge_model"
 
+limma = importr("limma")
 base = importr("base")
 utils = importr("utils")
 biobase = importr("Biobase")
@@ -40,7 +41,7 @@ class GSEAlgorithm(ABC):
         pass
 
     @abstractmethod
-    def exec_gse(self, dge_model, gscs) -> pd.DataFrame:
+    def exec_gse(self, dge_model: DGEmodel, gscs) -> pd.DataFrame:
         """Executes the GSE algorithm on the given data"""
         pass
 
@@ -54,8 +55,11 @@ class EdgeRCamera(GSEAlgorithm):
     def description(self) -> str:
         return "CAMERA for edgeR"
 
-    def exec_gse(self, dge_model, gscs) -> pd.DataFrame:
-        gse_res = ribios_ngs.doGse(dge_model, gscs)
+    def exec_gse(self, dge_model: DGEmodel, gscs) -> pd.DataFrame:
+        dge_model_path = dge_model.FitObjFile
+        dge_fit_obj = base.readRDS(dge_model_path)
+
+        gse_res = ribios_ngs.doGse(dge_fit_obj, gscs)
         enrich_tbl_file, enrich_tbl_file_path = tempfile.mkstemp()
         utils.write_table(ribios_ngs.fullEnrichTable(gse_res), enrich_tbl_file_path, sep="\t")
         return read_table(enrich_tbl_file_path)
@@ -78,7 +82,6 @@ getGeneSymbols = robjects.r('''
     }
 ''')
 
-
 esetCamera = robjects.r('''
     function(eset, geneSymbols, design, contrasts, gscs) {
         categories <- gsCategory(gscs)
@@ -94,6 +97,7 @@ esetCamera = robjects.r('''
     }
 ''')
 
+
 class LimmaCamera(GSEAlgorithm):
     @property
     def name(self) -> str:
@@ -104,11 +108,14 @@ class LimmaCamera(GSEAlgorithm):
         return "CAMERA for limma"
 
     def exec_gse(self, dge_model, gscs) -> pd.DataFrame:
-        eset_gene_symbols = getGeneSymbols(biobase.fData(dge_model))
-        camera_result = esetCamera(dge_model, eset_gene_symbols,
-                                  dge_model.Contrast.Design.design_matrix,
-                                  dge_model.Contrast.contrast_matrix,
-                                  gscs)
+        dge_model_path = dge_model.InputObjFile
+        dge_input_obj = base.readRDS(dge_model_path)
+
+        eset_gene_symbols = getGeneSymbols(biobase.fData(dge_input_obj))
+        camera_result = esetCamera(dge_input_obj, eset_gene_symbols,
+                                   dge_model.Contrast.Design.design_matrix,
+                                   dge_model.Contrast.contrast_matrix,
+                                   gscs)
         enrich_tbl_file, enrich_tbl_file_path = tempfile.mkstemp()
         utils.write_table(camera_result, enrich_tbl_file_path, sep="\t")
         return read_table(enrich_tbl_file_path)
@@ -131,9 +138,6 @@ def perform_gse(session: Session,
                 dge_model: DGEmodel,
                 algorithm: GSEAlgorithm,
                 gene_set_category_filter: List[str] = None):
-    dge_model_path = dge_model.FitObjFile
-    dge_fit_obj = base.readRDS(dge_model_path)
-
     gene_sets = get_gmt_locations(session, gene_set_category_filter)
     gscs_list = {gene_set.Category: gene_set.FileWC for index, gene_set in gene_sets.iterrows()}
     gscs = ribios_gsea.readGmt(ListVector(gscs_list))
@@ -145,7 +149,7 @@ def perform_gse(session: Session,
         .filter(DGEmethod.ID == dge_model.Method.ID) \
         .filter(GSEmethod.Name == algorithm.name).scalar()
 
-    enrich_tbl = algorithm.exec_gse(dge_fit_obj, gscs)
+    enrich_tbl = algorithm.exec_gse(dge_model, gscs)
 
     gene_sets.Category = gene_sets.Category.str.lower()
     gene_sets.Name = gene_sets.Name.str.lower()
@@ -170,4 +174,11 @@ def perform_gse(session: Session,
     mapped = gse_tbl[~gse_tbl.GeneSetID.isnull()]
     if unmapped.shape[0] > 0:
         print("Warning: unable to map %d of %d entries to gene sets " % (unmapped.shape[0], merged_enrich_tbl.shape[0]))
-    return mapped
+
+    mapped_duplications = gse_tbl.drop_duplicates(subset=['ContrastColumnID', 'GeneSetID'])
+
+    if mapped_duplications.shape[0] < mapped.shape[0]:
+        print("Warning: %d of %d entries of mapped result entries are duplicated"
+              % (mapped.shape[0]-mapped_duplications.shape[0], mapped.shape[0]))
+
+    return mapped_duplications

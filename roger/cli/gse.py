@@ -2,7 +2,6 @@ import click
 import flask
 
 from roger.cli import cli
-from roger.logic.dge import get_algorithm
 
 
 @cli.command(name="list-gse-methods", short_help='Lists all Gene Set Enrichment methods utilized in ROGER studies')
@@ -94,6 +93,7 @@ def run_gse(contrast, design, dataset, dge_method, gene_set_category_filters):
     from roger.persistence import db
     import roger.persistence.dge
     import roger.persistence.gse
+    import roger.logic.dge
     import roger.logic.gse
 
     session = db.session()
@@ -101,7 +101,7 @@ def run_gse(contrast, design, dataset, dge_method, gene_set_category_filters):
     dge_model = roger.persistence.dge.get_dge_model(session, contrast, design, dataset, dge_method)
 
     # TODO CAMERA support only for now ... (which is in [0] always)
-    camera_algorithm = get_algorithm(dge_model.Method.Name).gse_methods[0]()
+    camera_algorithm = roger.logic.dge.get_algorithm(dge_model.Method.Name).gse_methods[0]()
 
     gse_table = roger.logic.gse.perform_gse(session,
                                             dge_model,
