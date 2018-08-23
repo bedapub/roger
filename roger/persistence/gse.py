@@ -8,7 +8,8 @@ import os.path
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from roger.persistence.schema import GSEmethod, GeneSetCategory, GeneSet, GeneSetGene, DGEmethod, GSEtable
+from roger.persistence.schema import GSEmethod, GeneSetCategory, GeneSet, GeneSetGene, DGEmethod, GSEtable, Contrast, \
+    Design, DataSet, DGEmodel, ContrastColumn
 from roger.persistence.geneanno import GeneAnnotation
 from roger.util import as_data_frame, insert_data_frame
 from roger.exception import ROGERUsageError
@@ -110,8 +111,68 @@ def delete_gmt(session, category_name):
 # GSE & execution
 # -----------------
 
+
+def query_gse_table(session, contrast, design, dataset, dge_method, gse_method):
+    return session.query(GSEtable) \
+        .filter(Contrast.DesignID == Design.ID) \
+        .filter(Design.DataSetID == DataSet.ID) \
+        .filter(DGEmodel.ContrastID == Contrast.ID) \
+        .filter(DGEmodel.DGEmethodID == DGEmethod.ID) \
+        .filter(ContrastColumn.ContrastID == Contrast.ID) \
+        .filter(ContrastColumn.ID == GSEtable.ContrastColumnID) \
+        .filter(GSEtable.GSEmethodID == GSEmethod.ID) \
+        .filter(Contrast.Name == contrast) \
+        .filter(Design.Name == design) \
+        .filter(DataSet.Name == dataset) \
+        .filter(DGEmethod.Name == dge_method) \
+        .filter(GSEmethod.Name == gse_method)
+
+
+def list_gse_tables(session, contrast, design, dataset, dge_method, gse_method):
+    q = session.query(DataSet.Name.label("Data Set"),
+                      Design.Name.label("Design"),
+                      Contrast.Name.label("Contrast"),
+                      DGEmethod.Name.label("DGE Method"),
+                      GSEmethod.Name.label("GSE Method"),
+                      func.count(GSEtable.GeneSetID).label("Entry Count")) \
+        .filter(Contrast.DesignID == Design.ID) \
+        .filter(Design.DataSetID == DataSet.ID) \
+        .filter(DGEmodel.ContrastID == Contrast.ID) \
+        .filter(DGEmodel.DGEmethodID == DGEmethod.ID) \
+        .filter(ContrastColumn.ContrastID == Contrast.ID) \
+        .filter(ContrastColumn.ID == GSEtable.ContrastColumnID) \
+        .filter(GSEtable.GSEmethodID == GSEmethod.ID).group_by(GSEtable.GSEmethodID)
+    if contrast is not None:
+        q = q.filter(Contrast.Name == contrast)
+    if design is not None:
+        q = q.filter(Design.Name == design)
+    if dataset is not None:
+        q = q.filter(DataSet.Name == dataset)
+    if dge_method is not None:
+        q = q.filter(DGEmethod.Name == dge_method)
+    if gse_method is not None:
+        q = q.filter(GSEmethod.Name == gse_method)
+    return as_data_frame(q)
+
+
+def get_gse_table(session, contrast, design, dataset, dge_method, gse_method) -> pd.DataFrame:
+    q = query_gse_table(session, contrast, design, dataset, dge_method, gse_method)
+    gse_table = as_data_frame(q)
+
+    if gse_table.empty:
+        raise ROGERUsageError("GSE results for %s:%s:%s:%s:%s do not exist"
+                              % (contrast, design, dataset, dge_method, gse_method))
+    return gse_table
+
+
 def create_gse_result(session: Session,
                       gse_table: pd.DataFrame):
     insert_data_frame(session, gse_table, GSEtable.__table__)
     session.commit()
 
+
+def remove_gse_table(session, contrast, design, dataset, dge_method, gse_method):
+    gse_entries = query_gse_table(session, contrast, design, dataset, dge_method, gse_method).all()
+    for gse_entry in gse_entries:
+        session.delete(gse_entry)
+    session.commit()

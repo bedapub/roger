@@ -112,3 +112,72 @@ def run_gse(contrast, design, dataset, dge_method, gene_set_category_filters):
     roger.persistence.gse.create_gse_result(session, gse_table)
 
     print("Done")
+
+
+@cli.command(name="list-gse-tables",
+             short_help='Lists available GSE results')
+@click.option('--contrast', help='Show only result overviews for the given contrast')
+@click.option('--design', help='Show only result overviews for the given design')
+@click.option('--dataset', help='Show only result overviews for the given data set')
+@click.option('--dge_method', help='Show only result overviews for the given DGE method')
+@click.option('--gse_method', help='Show only result overviews for the given GSE method')
+def list_gse_tables(contrast, design, dataset, dge_method, gse_method):
+    print('Querying available DGE models ...')
+    from roger.persistence import db
+    import roger.persistence.gse
+
+    print(roger.persistence.gse.list_gse_tables(db.session(), contrast, design, dataset, dge_method, gse_method))
+
+
+@cli.command(name="show-gse-table",
+             short_help='Shows the GSE result table for the specified design:design:contrast:dge_method combination')
+@click.argument('contrast', metavar='<contrast>')
+@click.argument('design', metavar='<design_name>')
+@click.argument('dataset', metavar='<dataset_name>')
+@click.argument('dge_method', metavar='<dge_method_name>')
+@click.argument('gse_method', metavar='<gse_method_name>')
+def show_gse_table(contrast, design, dataset, dge_method, gse_method):
+    print('Querying GSE table ...')
+    from roger.persistence import db
+    import roger.persistence.gse
+
+    result_table = roger.persistence.gse.get_gse_table(db.session(),
+                                                       contrast, design, dataset,
+                                                       dge_method, gse_method)
+    print(result_table)
+
+
+@cli.command(name="export-gse-table",
+             short_help='Exports DGE results from a specific experiment onto the disk')
+@click.argument('contrast', metavar='<contrast>')
+@click.argument('design', metavar='<design_name>')
+@click.argument('dataset', metavar='<dataset_name>')
+@click.argument('dge_method', metavar='<dge_method_name>')
+@click.argument('gse_method', metavar='<gse_method_name>')
+@click.argument('out_file', type=click.File('wb'))
+def export_gse_table(contrast, design, dataset, dge_method, gse_method, out_file):
+    print("Exporting GSE table to '%s' ..." % out_file.name)
+    from roger.persistence import db
+    from roger.util import write_df
+    from roger.persistence.gse import get_gse_table
+
+    result_table = get_gse_table(db.session(), contrast, design, dataset, dge_method, gse_method)
+    write_df(result_table, out_file)
+    print("Done")
+
+
+@cli.command(name="remove-gse-table",
+             short_help='Removes the given GSE result table for the specific experiment')
+@click.argument('contrast', metavar='<contrast>')
+@click.argument('design', metavar='<design_name>')
+@click.argument('dataset', metavar='<dataset_name>')
+@click.argument('dge_method', metavar='<dge_method_name>')
+@click.argument('gse_method', metavar='<gse_method_name>')
+def remove_gse_table(contrast, design, dataset, dge_method, gse_method):
+    print("Deleting GSE result from %s:%s:%s:%s:%s"
+          % (dataset, design, contrast, dge_method, gse_method))
+    from roger.persistence import db
+    from roger.persistence.gse import remove_gse_table
+
+    remove_gse_table(db.session(), contrast, design, dataset, dge_method, gse_method)
+    print("Done")

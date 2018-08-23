@@ -485,10 +485,10 @@ def run_dge_rnaseq(contrast, design, dataset):
 
 @cli.command(name="list-dge-models",
              short_help='Lists DGE models')
-@click.option('--contrast', help='Show only contrasts for the given contrast')
-@click.option('--design', help='Show only contrasts for the given design')
-@click.option('--dataset', help='Show only contrasts for the given data set')
-@click.option('--method_name', help='Show only contrasts for the given contrast')
+@click.option('--contrast', help='Show only models for the given contrast')
+@click.option('--design', help='Show only models for the given design')
+@click.option('--dataset', help='Show only models for the given data set')
+@click.option('--method_name', help='Show only models for the given contrast')
 def list_dge_models(contrast, design, dataset, method_name):
     print('Querying available DGE models ...')
     from roger.persistence import db

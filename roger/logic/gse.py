@@ -10,6 +10,7 @@ from rpy2.robjects.packages import importr
 from rpy2.robjects.vectors import ListVector
 from rpy2 import robjects
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from roger.persistence.schema import DGEmodel, GeneSetCategory, GeneSet, GSEmethod, DGEmethod
 from roger.util import as_data_frame
