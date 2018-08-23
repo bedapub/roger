@@ -44,7 +44,7 @@ Would enable ROGER to consume data from rat and mouse as well.
 Internaly, ROGER will downlaod gene identifiers from the Ensembl BioMart service and assign them with internal identifiers
 to allow efficient indexing.
    
-# Example DGE analysis
+# Example DGE  & GSE analysis
 
 Every data set used for the following examples can be found in [test_data](test_data).
 
@@ -70,10 +70,18 @@ You can use `roger show-symbol-types 10090`  to see a list of supported feature 
     ```bash
     roger add-contrast test_data/ds/ma-example-contrast.txt ma-example-design ma-example-signals
     ```
-
 4. Execute limma on added data set:
     ```bash
     roger run-dge-ma ma-example-contrast ma-example-design ma-example-signals
+    ```
+5. Execute CAMERA for limma:
+    ```bash
+    roger run-gse ma-example-contrast ma-example-design ma-example-signals limma
+    ```
+6. Export results to files:
+    ```bash
+    roger export-dge-table ma-example-contrast ma-example-design ma-example-signals limma output.txt
+    roger export-gse-table ma-example-contrast ma-example-design ma-example-signals limma CAMERA output.txt
     ```
 
 ## DGE Analysis with RNAseq data / edgeR:
@@ -87,4 +95,11 @@ roger add-ds-rnaseq test_data/ds/rnaseq-example-readCounts.gct 9606 entrezgene
 roger add-design test_data/ds/rnaseq-example-DesignMatrix.txt rnaseq-example-readCounts
 roger add-contrast test_data/ds/rnaseq-example-ContrastMatrix.txt rnaseq-example-DesignMatrix rnaseq-example-readCounts
 roger run-dge-rnaseq rnaseq-example-ContrastMatrix rnaseq-example-DesignMatrix rnaseq-example-readCounts
+roger run-gse rnaseq-example-ContrastMatrix rnaseq-example-DesignMatrix rnaseq-example-readCounts edgeR
 ```
+
+# Other Commands
+
+Use ``roger --help`` to get a more detailed description of all available roger commands
+
+## Listing  
