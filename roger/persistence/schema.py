@@ -10,6 +10,8 @@ from roger.persistence.json_backport import RogerJSON
 import roger.util
 
 DEFAULT_STR_SIZE = 64
+STR_PATH_SIZE = 256
+STR_DESC_SIZE = STR_PATH_SIZE
 
 
 class ExprsType(enum.Enum):
@@ -72,8 +74,8 @@ class GeneSetCategory(db.Model):
 
     ID = Column(Integer, primary_key=True)
     Name = Column(String(DEFAULT_STR_SIZE), unique=True, nullable=False)
-    FileWC = Column(String(DEFAULT_STR_SIZE), nullable=False)
-    FileSrc = Column(String(DEFAULT_STR_SIZE), nullable=False)
+    FileWC = Column(String(STR_PATH_SIZE), nullable=False)
+    FileSrc = Column(String(STR_PATH_SIZE), nullable=False)
 
     GeneSets = relationship("GeneSet", back_populates="Category")
 
@@ -89,10 +91,10 @@ class GeneSet(db.Model):
 
     ID = Column(Integer, primary_key=True)
     CategoryID = Column(Integer, ForeignKey(GeneSetCategory.ID, ondelete="CASCADE"), nullable=False)
-    Name = Column(String(DEFAULT_STR_SIZE), nullable=False)
+    Name = Column(String(STR_DESC_SIZE), nullable=False)
     # Behaviour: If TaxID == HumanTaxID then use RogerGeneIndex from this GeneSet. Else convert to human GeneSets first
     TaxID = Column(Integer, nullable=False)
-    Description = Column(String(DEFAULT_STR_SIZE))
+    Description = Column(String(STR_DESC_SIZE))
     GeneCount = Column(Integer, nullable=False)
     # True if geneset is supposed to be internal
     IsPrivate = Column(Boolean, nullable=False)
@@ -141,15 +143,15 @@ class DataSet(db.Model):
     Name = Column(String(DEFAULT_STR_SIZE), unique=True, nullable=False)
     # To ensure that analysis is reproducible when loading new gene annotations into database
     GeneAnnotationVersion = Column(String(DEFAULT_STR_SIZE), nullable=False)
-    Description = Column(String(DEFAULT_STR_SIZE))
+    Description = Column(String(STR_DESC_SIZE))
     FeatureCount = Column(Integer, nullable=False)
     SampleCount = Column(Integer, nullable=False)
     # Path to working copy of GCT file
-    ExprsWC = Column(String(DEFAULT_STR_SIZE), nullable=False)
+    ExprsWC = Column(String(STR_PATH_SIZE), nullable=False)
     # Path to external / save copy of GCT file
-    ExprsSrc = Column(String(DEFAULT_STR_SIZE), nullable=False)
+    ExprsSrc = Column(String(STR_PATH_SIZE), nullable=False)
     # Path to working copy of TDF file
-    PhenoWC = Column(String(DEFAULT_STR_SIZE), nullable=False)
+    PhenoWC = Column(String(STR_PATH_SIZE), nullable=False)
     # Path to external / save copy of TDF file
     PhenoSrc = Column(String(DEFAULT_STR_SIZE))
     TaxID = Column(Integer, nullable=False)
@@ -222,7 +224,7 @@ class FeatureMapping(db.Model):
     RogerGeneIndex = Column(Integer, ForeignKey(GeneAnnotation.RogerGeneIndex))
     OriRogerGeneIndex = Column(Integer, ForeignKey(GeneAnnotation.RogerGeneIndex))
     OriTaxID = Column(Integer)
-    Description = Column(String(DEFAULT_STR_SIZE))
+    Description = Column(String(STR_DESC_SIZE))
 
     DataSet = relationship("DataSet", foreign_keys=[DataSetID])
     Gene = relationship("GeneAnnotation", foreign_keys=[RogerGeneIndex])
@@ -247,7 +249,7 @@ class Design(db.Model):
     # Number of variables in feature matrix
     VariableCount = Column(Integer, nullable=False)
     Name = Column(String(DEFAULT_STR_SIZE), nullable=False)
-    Description = Column(String(DEFAULT_STR_SIZE))
+    Description = Column(String(STR_DESC_SIZE))
     # Matrix (array of array) + derived-flag
     DesignMatrix = Column(RogerJSON, nullable=False)
     # Grouping of the samples, array of strings whose number of elements must be equal with the number of samples
@@ -285,7 +287,7 @@ class SampleSubset(db.Model):
     SampleIndex = Column(Integer, nullable=False, primary_key=True)
     DesignID = Column(Integer, ForeignKey(Design.ID, ondelete="CASCADE"), primary_key=True)
     IsUsed = Column(Boolean, nullable=False)
-    Description = Column(String(DEFAULT_STR_SIZE))
+    Description = Column(String(STR_DESC_SIZE))
 
     Design = relationship("Design", foreign_keys=[DesignID])
 
@@ -319,7 +321,7 @@ class Contrast(db.Model):
     ID = Column(Integer, primary_key=True)
     DesignID = Column(Integer, ForeignKey(Design.ID), nullable=False)
     Name = Column(String(DEFAULT_STR_SIZE), nullable=False)
-    Description = Column(String(DEFAULT_STR_SIZE))
+    Description = Column(String(STR_DESC_SIZE))
     CreatedBy = Column(String(DEFAULT_STR_SIZE), nullable=False)
     CreationTime = Column(DateTime, nullable=False)
 
@@ -355,7 +357,7 @@ class ContrastColumn(db.Model):
     ID = Column(Integer, primary_key=True)
     ContrastID = Column(Integer, ForeignKey(Contrast.ID, ondelete="CASCADE"), nullable=False)
     Name = Column(String(DEFAULT_STR_SIZE), nullable=False)
-    Description = Column(String(DEFAULT_STR_SIZE))
+    Description = Column(String(STR_DESC_SIZE))
     #  Numeric array - numerical combination of variables in design matrix
     ColumnData = Column(RogerJSON, nullable=False)
 
@@ -376,7 +378,7 @@ class DGEmethod(db.Model):
 
     ID = Column(Integer, primary_key=True)
     Name = Column(String(DEFAULT_STR_SIZE), nullable=False, unique=True)
-    Description = Column(String(DEFAULT_STR_SIZE))
+    Description = Column(String(STR_DESC_SIZE))
 
     __table_args__ = {'mysql_engine': 'InnoDB'}
 
@@ -395,7 +397,7 @@ class DGEmodel(db.Model):
     InputObjFile = Column(String(DEFAULT_STR_SIZE), nullable=False)
     # Evaluated model
     FitObjFile = Column(String(DEFAULT_STR_SIZE), nullable=False)
-    MethodDescription = Column(String(DEFAULT_STR_SIZE), nullable=False)
+    MethodDescription = Column(String(STR_DESC_SIZE), nullable=False)
 
     Contrast = relationship("Contrast", foreign_keys=[ContrastID])
     Method = relationship("DGEmethod", foreign_keys=[DGEmethodID])
@@ -416,7 +418,7 @@ class FeatureSubset(db.Model):
     ContrastID = Column(Integer, nullable=False)
     DGEmethodID = Column(Integer, nullable=False)
     IsUsed = Column(Boolean, nullable=False)
-    Description = Column(String(DEFAULT_STR_SIZE))
+    Description = Column(String(STR_DESC_SIZE))
 
     __table_args__ = (
         ForeignKeyConstraint((FeatureIndex, DataSetID), [FeatureMapping.FeatureIndex, FeatureMapping.DataSetID]),
@@ -471,7 +473,7 @@ class GSEmethod(db.Model):
     ID = Column(Integer, primary_key=True)
     DGEmethodID = Column(Integer, ForeignKey(DGEmethod.ID))
     Name = Column(String(DEFAULT_STR_SIZE), nullable=False)
-    Description = Column(String(DEFAULT_STR_SIZE))
+    Description = Column(String(STR_DESC_SIZE))
 
     __table_args__ = (
         UniqueConstraint(DGEmethodID, Name, name='GSEmethodPerDGE'),
