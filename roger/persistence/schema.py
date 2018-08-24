@@ -10,8 +10,8 @@ from roger.persistence.json_backport import RogerJSON
 import roger.util
 
 DEFAULT_STR_SIZE = 64
-STR_PATH_SIZE = 256
-STR_DESC_SIZE = STR_PATH_SIZE
+STR_PATH_SIZE = 1024
+STR_DESC_SIZE = 256
 
 
 class ExprsType(enum.Enum):
@@ -394,9 +394,9 @@ class DGEmodel(db.Model):
     DGEmethodID = Column(Integer, ForeignKey(DGEmethod.ID), primary_key=True)
     # Link to external files in study-centric working directory
     # Untrained model
-    InputObjFile = Column(String(DEFAULT_STR_SIZE), nullable=False)
+    InputObjFile = Column(String(STR_PATH_SIZE), nullable=False)
     # Evaluated model
-    FitObjFile = Column(String(DEFAULT_STR_SIZE), nullable=False)
+    FitObjFile = Column(String(STR_PATH_SIZE), nullable=False)
     MethodDescription = Column(String(STR_DESC_SIZE), nullable=False)
 
     Contrast = relationship("Contrast", foreign_keys=[ContrastID])
