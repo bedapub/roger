@@ -2,7 +2,7 @@ from pandas.util.testing import assert_frame_equal
 
 from tests import mouse_tax_id, mouse_dataset
 
-from roger.util import parse_gct, read_df
+from roger.logic.util.data import parse_gct, read_df
 import roger.logic
 import roger.logic.mart
 import roger.logic.geneanno

@@ -2,8 +2,8 @@ import re
 from pandas import DataFrame
 
 from roger.persistence.schema import GeneAnnotation, Ortholog
-from roger.exception import ROGERUsageError
-from roger.util import as_data_frame, insert_data_frame, get_next_free_db_id
+from roger.logic.util.exception import ROGERUsageError
+from roger.logic.util.data import as_data_frame, insert_data_frame, get_next_free_db_id
 import roger.logic.mart.provider
 
 human_dataset = "hsapiens_gene_ensembl"

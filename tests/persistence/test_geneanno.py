@@ -1,7 +1,7 @@
 import pytest
 
 from tests import rat_dataset, rat_tax_id
-from roger.exception import ROGERUsageError
+from roger.logic.util.exception import ROGERUsageError
 import roger.logic.mart
 import roger.persistence.geneanno
 

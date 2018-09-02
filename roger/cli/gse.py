@@ -158,7 +158,7 @@ def show_gse_table(contrast, design, dataset, dge_method, gse_method):
 def export_gse_table(contrast, design, dataset, dge_method, gse_method, out_file):
     print("Exporting GSE table to '%s' ..." % out_file.name)
     from roger.persistence import db
-    from roger.util import write_df
+    from roger.logic.util.data import write_df
     from roger.persistence.gse import get_gse_table
 
     result_table = get_gse_table(db.session(), contrast, design, dataset, dge_method, gse_method)

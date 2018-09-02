@@ -1,20 +1,9 @@
-import getpass
-import datetime
-import os
-import errno
-import os.path
-
 import numpy as np
 import pandas as pd
 from sqlalchemy import Table, func
 from sqlalchemy.orm import Session
 
-from roger.exception import ROGERUsageError
-
-
-def all_subclasses(cls):
-    return set(cls.__subclasses__()).union(
-        [s for c in cls.__subclasses__() for s in all_subclasses(c)])
+from roger.logic.util.exception import ROGERUsageError
 
 
 def read_df(file_path):
@@ -67,15 +56,6 @@ def insert_data_frame(session: Session, frame: pd.DataFrame, table: Table, chunk
 
 def as_data_frame(query):
     return pd.read_sql(query.statement, query.session.connection())
-
-
-def get_current_datetime():
-    return datetime.datetime.now()
-
-
-# TODO not that reliable, consider real account management here
-def get_current_user_name():
-    return getpass.getuser()
 
 
 def parse_gct(file_path):
@@ -135,29 +115,3 @@ def parse_gct(file_path):
                               (file_path, df[gene_duplicates].index[0:2].tolist()))
 
     return df
-
-
-def silent_rmdir(dir_path):
-    if dir_path is None:
-        return
-    try:
-        os.rmdir(dir_path)
-    except OSError as e:
-        if e.errno != errno.ENOENT:  # errno.ENOENT = no such file or directory
-            raise e  # re-raise exception if a different error occurred
-
-
-def silent_remove(filename):
-    if filename is None:
-        return
-    try:
-        os.remove(filename)
-    except OSError as e:
-        if e.errno != errno.ENOENT:  # errno.ENOENT = no such file or directory
-            raise e  # re-raise exception if a different error occurred
-
-
-def abspath_or_none(file):
-    if file is None:
-        return None
-    return os.path.abspath(file)

@@ -5,7 +5,7 @@ import roger.cli.geneanno
 import roger.cli.dge
 import roger.cli.gse
 
-from roger.exception import ROGERUsageError
+from roger.logic.util.exception import ROGERUsageError
 
 
 def entry_point():

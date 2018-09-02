@@ -1,10 +1,10 @@
 import pandas as pd
 import pytest
 
-from roger.exception import ROGERUsageError
+from roger.logic.util.exception import ROGERUsageError
 from roger.persistence.schema import GeneAnnotation
 
-import roger.util
+import roger.logic.util.data
 from tests import has_equal_elements
 
 
@@ -20,13 +20,13 @@ def test_insert_data_frame(sqlite_in_memory):
                           'GeneSymbol': df["external_gene_name"],
                           'IsObsolete': False})
 
-    roger.util.insert_data_frame(session, genes, GeneAnnotation.__table__)
+    roger.logic.util.data.insert_data_frame(session, genes, GeneAnnotation.__table__)
     session.commit()
     assert len(session.query(GeneAnnotation).all()) > 1
 
 
 def test_parse_signal_file():
-    parsed = roger.util.parse_gct("test_data/ds/ma-example-signals.gct")
+    parsed = roger.logic.util.data.parse_gct("test_data/ds/ma-example-signals.gct")
 
     exp_cols = ['DS_10210_LNA_invivo_R13537_1', 'DS_10210_LNA_invivo_R13537_2',
                 'DS_10210_LNA_invivo_R13537_3', 'DS_10210_LNA_invivo_R13537_4',
@@ -51,7 +51,7 @@ def test_parse_signal_file():
     "test_data/ds/rnaseq-example-readCountsNA.gct",
 ])
 def test_parse_counts_file(test_file):
-    parsed = roger.util.parse_gct(test_file)
+    parsed = roger.logic.util.data.parse_gct(test_file)
 
     exp_cols = ['31_L24', '32_L68', '33_L13', '34_L2', '37_L46', '38_L8', '41_L43', '42_L55', '43_L58',
                 '44_L12', '47_L17', '48_L87', '51_L27', '52_L6', '53_L63', '54_L34', '57_L38', '58_L20']
@@ -71,4 +71,4 @@ def test_parse_counts_file(test_file):
 ])
 def test_parse_broken_gct_files(test_file):
     with pytest.raises(ROGERUsageError):
-        roger.util.parse_gct(test_file)
+        roger.logic.util.data.parse_gct(test_file)

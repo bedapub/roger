@@ -11,8 +11,8 @@ from sqlalchemy.orm import Session
 from roger.persistence.schema import GSEmethod, GeneSetCategory, GeneSet, GeneSetGene, DGEmethod, GSEtable, Contrast, \
     Design, DataSet, DGEmodel, ContrastColumn
 from roger.persistence.geneanno import GeneAnnotation
-from roger.util import as_data_frame, insert_data_frame
-from roger.exception import ROGERUsageError
+from roger.logic.util.data import as_data_frame, insert_data_frame
+from roger.logic.util.exception import ROGERUsageError
 
 GENE_SET_SUB_FOLDER = "gene_sets"
 

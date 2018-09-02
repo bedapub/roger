@@ -1,4 +1,4 @@
-from roger.exception import ROGERUsageError
+from roger.logic.util.exception import ROGERUsageError
 
 import re
 import os.path

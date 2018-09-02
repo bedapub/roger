@@ -7,7 +7,7 @@ from pandas import read_table, DataFrame
 from roger.logic.expression import ExprsType, MicroArrayType, RNASeqType
 from roger.persistence import db
 from roger.persistence.json_backport import RogerJSON
-import roger.util
+import roger.logic.util.data
 
 DEFAULT_STR_SIZE = 64
 STR_PATH_SIZE = 1024
@@ -157,7 +157,7 @@ class DataSet(db.Model):
 
     @hybrid_property
     def exprs_data(self):
-        return roger.util.parse_gct(self.ExprsWC)
+        return roger.logic.util.data.parse_gct(self.ExprsWC)
 
     @hybrid_property
     def pheno_data(self):
@@ -165,12 +165,12 @@ class DataSet(db.Model):
 
     @hybrid_property
     def feature_data(self):
-        return roger.util.as_data_frame(FeatureMapping.query
-                                        .add_columns(GeneAnnotation.GeneSymbol)
-                                        .outerjoin(GeneAnnotation,
+        return roger.logic.util.data.as_data_frame(FeatureMapping.query
+                                                   .add_columns(GeneAnnotation.GeneSymbol)
+                                                   .outerjoin(GeneAnnotation,
                                                    FeatureMapping.RogerGeneIndex == GeneAnnotation.RogerGeneIndex)
-                                        .filter(FeatureMapping.DataSetID == self.ID)
-                                        .order_by(FeatureMapping.FeatureIndex))
+                                                   .filter(FeatureMapping.DataSetID == self.ID)
+                                                   .order_by(FeatureMapping.FeatureIndex))
 
     @hybrid_property
     def dge_models(self):
@@ -324,9 +324,9 @@ class Contrast(db.Model):
 
     @hybrid_property
     def contrast_columns(self):
-        return roger.util.as_data_frame(ContrastColumn.query
-                                        .filter(ContrastColumn.ContrastID == self.ID)
-                                        .order_by(ContrastColumn.ID))
+        return roger.logic.util.data.as_data_frame(ContrastColumn.query
+                                                   .filter(ContrastColumn.ContrastID == self.ID)
+                                                   .order_by(ContrastColumn.ID))
 
     @hybrid_property
     def contrast_matrix(self):

@@ -3,9 +3,9 @@ from enum import Enum
 import pandas as pd
 
 from roger.logic.mart.provider import get_annotation_service
-from roger.exception import ROGERUsageError
+from roger.logic.util.exception import ROGERUsageError
 from roger.persistence.geneanno import GeneAnnotation, Ortholog, human_tax_id
-import roger.util
+import roger.logic.util.data
 
 
 class CommonGeneIdentifier(Enum):
@@ -67,7 +67,7 @@ def annotate(session, gct_data, tax_id, symbol_type):
                    GeneAnnotation.EnsemblGeneID) \
             .filter(GeneAnnotation.RogerGeneIndex == Ortholog.RogerGeneIndex) \
             .filter(GeneAnnotation.TaxID == tax_id)
-    roger_gene_indices = roger.util.as_data_frame(query)
+    roger_gene_indices = roger.logic.util.data.as_data_frame(query)
     # TODO Find a better heuristic to drop multiple Ensembl ID association
     # feature_anno.join(roger_gene_indices.set_index("EnsemblGeneID")).to_csv("test.txt", sep="\t")
     feature_anno = feature_anno.join(roger_gene_indices.set_index("EnsemblGeneID")). \

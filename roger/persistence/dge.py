@@ -5,14 +5,15 @@ from typing import Type, List
 from pandas import DataFrame, read_table
 import numpy as np
 
-import roger.util
+import roger.logic.util.common
+import roger.logic.util.data
 
 from roger.persistence.schema import DGEmethod, DataSet, Design, SampleSubset, Contrast, ContrastColumn, \
     FeatureMapping, DGEmodel
-from roger.exception import ROGERUsageError
-from roger.util import as_data_frame, silent_remove, silent_rmdir, get_current_user_name, \
-    get_current_datetime, insert_data_frame, abspath_or_none
-from roger.logic.util.common import get_or_guess_name
+from roger.logic.util.exception import ROGERUsageError
+from roger.logic.util.data import as_data_frame, insert_data_frame
+from roger.logic.util.common import get_or_guess_name, get_current_datetime, get_current_user_name, silent_rmdir, \
+    silent_remove, abspath_or_none
 
 DATASET_SUB_FOLDER = "dataset"
 
@@ -123,12 +124,12 @@ def add_ds(session,
                                     PhenoSrc=abspath_or_none(ds_prop.pheno_file),
                                     TaxID=ds_prop.tax_id,
                                     Xref=ds_prop.xref,
-                                    CreatedBy=roger.util.get_current_user_name(),
-                                    CreationTime=roger.util.get_current_datetime())
+                                    CreatedBy=roger.logic.util.common.get_current_user_name(),
+                                    CreationTime=roger.logic.util.common.get_current_datetime())
     session.add(dataset_entry)
     session.flush()
     ds_prop.annotation_data["DataSetID"] = dataset_entry.ID
-    roger.util.insert_data_frame(session, ds_prop.annotation_data, FeatureMapping.__table__)
+    roger.logic.util.data.insert_data_frame(session, ds_prop.annotation_data, FeatureMapping.__table__)
     session.commit()
     return dataset_entry
 

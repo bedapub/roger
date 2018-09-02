@@ -42,7 +42,7 @@ def show_symbol_types(tax_id):
 
     from roger.persistence import db
     import roger.logic.geneanno
-    import roger.util
+    import roger.logic.util.data
 
     dataset = roger.logic.geneanno.get_dataset_of(db.session(), tax_id)
 
@@ -524,7 +524,7 @@ def show_dge_table(contrast, design, dataset, method):
 def export_dge_table(contrast, design, dataset, method, out_file):
     print("Exporting DGE table to '%s' ..." % out_file.name)
     from roger.persistence import db
-    from roger.util import write_df
+    from roger.logic.util.data import write_df
     from roger.persistence.dge import get_dge_model
 
     model = get_dge_model(db.session(), contrast, design, dataset, method)

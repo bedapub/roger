@@ -5,7 +5,6 @@ import os
 from roger.persistence import db
 # from roger.web import web
 # import roger.rest.rest
-import roger.logic
 import roger.logic.mart.provider
 
 

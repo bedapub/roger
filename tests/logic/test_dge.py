@@ -4,7 +4,7 @@ from pandas import read_table
 
 from roger.logic.dge import DGEAlgorithm, LimmaDGE, EdgeRDGE, init_methods
 from roger.persistence.dge import get_contrast, list_methods
-from roger.util import read_df
+from roger.logic.util.data import read_df
 from tests import has_equal_elements
 
 

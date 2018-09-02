@@ -3,10 +3,10 @@ from flask_sqlalchemy import SQLAlchemy
 from pandas import DataFrame
 from pandas.util.testing import assert_frame_equal
 
-from roger.exception import ROGERUsageError
+from roger.logic.util.exception import ROGERUsageError
 from roger.logic.dge import annotate_ds_pheno_data
 from roger.persistence.dge import check_design_matrix, get_contrast
-from roger.util import parse_gct
+from roger.logic.util.data import parse_gct
 from tests import has_equal_elements
 
 

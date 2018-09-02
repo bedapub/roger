@@ -6,7 +6,7 @@ from pandas.compat import cStringIO
 from . import BioMartDataSet, AnnotationService
 
 from roger.logic import cache
-from roger.exception import ROGERUsageError
+from roger.logic.util.exception import ROGERUsageError
 
 
 class RemoteBioMartDataSet(BioMartDataSet):
