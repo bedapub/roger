@@ -9,8 +9,6 @@ import pandas as pd
 from sqlalchemy import Table, func
 from sqlalchemy.orm import Session
 
-from enum import EnumMeta
-
 from roger.exception import ROGERUsageError
 
 
@@ -25,16 +23,6 @@ def read_df(file_path):
 
 def write_df(df: pd.DataFrame, file_path):
     df.to_csv(file_path, sep="\t", index=False)
-
-
-def get_or_guess_name(name, source_file=None):
-    if name is None and source_file is not None:
-        return os.path.splitext(os.path.basename(source_file))[0]
-    return name
-
-
-def get_enum_names(enum: EnumMeta):
-    return [e.name for e in list(enum)]
 
 
 def get_next_free_db_id(session: Session, id_col):

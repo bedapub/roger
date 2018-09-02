@@ -10,8 +10,9 @@ import roger.util
 from roger.persistence.schema import DGEmethod, DataSet, Design, SampleSubset, Contrast, ContrastColumn, \
     FeatureMapping, DGEmodel
 from roger.exception import ROGERUsageError
-from roger.util import as_data_frame, silent_remove, silent_rmdir, get_or_guess_name, get_current_user_name, \
+from roger.util import as_data_frame, silent_remove, silent_rmdir, get_current_user_name, \
     get_current_datetime, insert_data_frame, abspath_or_none
+from roger.logic.util.common import get_or_guess_name
 
 DATASET_SUB_FOLDER = "dataset"
 

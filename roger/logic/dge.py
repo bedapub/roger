@@ -16,7 +16,8 @@ from roger.persistence.gse import add_method as add_gse_method
 from roger.persistence.geneanno import list_species
 from roger.persistence.schema import DGEmethod, DGEtable, DGEmodel, \
     DataSet, FeatureSubset, Design
-from roger.util import get_or_guess_name, parse_gct, insert_data_frame, read_df, all_subclasses
+from roger.util import parse_gct, insert_data_frame, read_df, all_subclasses
+from roger.logic.util.common import get_or_guess_name
 
 DGE_MODEL_SUB_FOLDER = "dge_model"
 

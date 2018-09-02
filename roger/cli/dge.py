@@ -2,8 +2,8 @@ import click
 import flask
 
 from roger.cli import cli
-from roger.persistence.schema import MicroArrayType, RNASeqDataSet, RNASeqType, MicroArrayDataSet
-from roger.util import get_enum_names, get_or_guess_name
+from roger.logic.expression import MicroArrayType, RNASeqType
+from roger.logic.util.common import get_enum_names, get_or_guess_name
 
 
 # ---------------
@@ -88,6 +88,7 @@ def add_ds_ma(norm_exprs_file,
     from roger.persistence import db
     import roger.logic.dge
     import roger.persistence.dge
+    from roger.persistence.schema import MicroArrayDataSet
 
     session = db.session()
 
@@ -138,6 +139,7 @@ def add_ds_rnaseq(exprs_file,
     from roger.persistence import db
     import roger.logic.dge
     import roger.persistence.dge
+    from roger.persistence.schema import RNASeqDataSet
 
     session = db.session()
 

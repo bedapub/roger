@@ -3,8 +3,8 @@ from sqlalchemy import ForeignKey, UniqueConstraint, ForeignKeyConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 from pandas import read_table, DataFrame
-import enum
 
+from roger.logic.expression import ExprsType, MicroArrayType, RNASeqType
 from roger.persistence import db
 from roger.persistence.json_backport import RogerJSON
 import roger.util
@@ -12,20 +12,6 @@ import roger.util
 DEFAULT_STR_SIZE = 64
 STR_PATH_SIZE = 1024
 STR_DESC_SIZE = 256
-
-
-class ExprsType(enum.Enum):
-    MICRO_ARRAY = 1
-    RNA_SEQ = 2
-
-
-class MicroArrayType(enum.Enum):
-    RMA = 1
-    MAS5 = 2
-
-
-class RNASeqType(enum.Enum):
-    RPKMS = 1
 
 
 class GeneAnnotation(db.Model):
