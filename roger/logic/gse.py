@@ -1,3 +1,4 @@
+import os
 from abc import ABC, abstractmethod
 from typing import List
 
@@ -12,11 +13,11 @@ from rpy2 import robjects
 from sqlalchemy.orm import Session
 
 from roger.persistence.schema import DGEmodel, GeneSetCategory, GeneSet, GSEmethod, DGEmethod
-from roger.logic.util.data import as_data_frame
+from roger.logic.util.data import as_data_frame, write_df
 
 pandas2ri.activate()
 
-DGE_MODEL_SUB_FOLDER = "dge_model"
+GSE_RESULT_SUB_FOLDER = "gse_result"
 
 limma = importr("limma")
 base = importr("base")
@@ -135,6 +136,7 @@ def get_gmt_locations(session: Session, gene_set_category_filter: List[str] = No
 
 
 def perform_gse(session: Session,
+                roger_wd_dir: str,
                 dge_model: DGEmodel,
                 algorithm: GSEAlgorithm,
                 gene_set_category_filter: List[str] = None):
@@ -158,6 +160,15 @@ def perform_gse(session: Session,
     merged_enrich_tbl = enrich_tbl.join(gene_sets.set_index(['Category', 'Name']), on=['Category', "GeneSet"]).join(
         contrast_columns.set_index("Name"), on="Contrast", lsuffix="_GENE_SET")
 
+    gse_method_sub_dir = "%d_%s" % (dge_model.Contrast.ID, algorithm.name)
+    gse_models_path = os.path.join(roger_wd_dir, GSE_RESULT_SUB_FOLDER)
+    gse_model_path = os.path.join(gse_models_path, gse_method_sub_dir)
+    if not os.path.exists(gse_model_path):
+        os.makedirs(gse_model_path)
+
+    gse_result_file = os.path.join(gse_model_path, "gse_table.txt")
+    write_df(enrich_tbl, gse_result_file)
+
     gse_tbl = DataFrame({
         "ContrastColumnID": merged_enrich_tbl.ID,
         "GSEmethodID": gse_method_id,
@@ -179,6 +190,6 @@ def perform_gse(session: Session,
 
     if mapped_duplications.shape[0] < mapped.shape[0]:
         print("Warning: %d of %d entries of mapped result entries are duplicated"
-              % (mapped.shape[0]-mapped_duplications.shape[0], mapped.shape[0]))
+              % (mapped.shape[0] - mapped_duplications.shape[0], mapped.shape[0]))
 
     return mapped_duplications

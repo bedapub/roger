@@ -104,6 +104,7 @@ def run_gse(contrast, design, dataset, dge_method, gene_set_category_filters):
     camera_algorithm = roger.logic.dge.get_algorithm(dge_model.Method.Name).gse_methods[0]()
 
     gse_table = roger.logic.gse.perform_gse(session,
+                                            flask.current_app.config['ROGER_DATA_FOLDER'],
                                             dge_model,
                                             camera_algorithm,
                                             gene_set_category_filters)

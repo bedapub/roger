@@ -19,7 +19,7 @@ from roger.persistence.schema import DGEmethod, DGEtable, DGEmodel, \
 from roger.logic.util.data import parse_gct, insert_data_frame, read_df
 from roger.logic.util.common import get_or_guess_name, all_subclasses
 
-DGE_MODEL_SUB_FOLDER = "dge_model"
+DGE_RESULT_SUB_FOLDER = "dge_result"
 
 pandas2ri.activate()
 
@@ -295,8 +295,7 @@ def run_dge(session,
     method = session.query(DGEmethod).filter(DGEmethod.Name == algorithm.name).one()
 
     dge_method_sub_dir = "%d_%d" % (contrast_data.ID, method.ID)
-
-    dge_models_path = os.path.join(roger_wd_dir, DGE_MODEL_SUB_FOLDER)
+    dge_models_path = os.path.join(roger_wd_dir, DGE_RESULT_SUB_FOLDER)
     dge_model_path = os.path.join(dge_models_path, dge_method_sub_dir)
     if not os.path.exists(dge_model_path):
         os.makedirs(dge_model_path)
