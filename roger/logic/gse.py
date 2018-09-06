@@ -186,7 +186,7 @@ def perform_gse(session: Session,
     if unmapped.shape[0] > 0:
         print("Warning: unable to map %d of %d entries to gene sets " % (unmapped.shape[0], merged_enrich_tbl.shape[0]))
 
-    mapped_duplications = gse_tbl.drop_duplicates(subset=['ContrastColumnID', 'GeneSetID'])
+    mapped_duplications = mapped.drop_duplicates(subset=['ContrastColumnID', 'GeneSetID'])
 
     if mapped_duplications.shape[0] < mapped.shape[0]:
         print("Warning: %d of %d entries of mapped result entries are duplicated"
