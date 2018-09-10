@@ -92,7 +92,6 @@ def run_gse(contrast, design, dataset, dge_method, gene_set_category_filters):
     print("Performing GSE algorithm ...")
     from roger.persistence import db
     import roger.persistence.dge
-    import roger.persistence.gse
     import roger.logic.dge
     import roger.logic.gse
 
@@ -103,14 +102,11 @@ def run_gse(contrast, design, dataset, dge_method, gene_set_category_filters):
     # TODO CAMERA support only for now ... (which is in [0] always)
     camera_algorithm = roger.logic.dge.get_algorithm(dge_model.Method.Name).gse_methods[0]()
 
-    gse_table = roger.logic.gse.perform_gse(session,
-                                            flask.current_app.config['ROGER_DATA_FOLDER'],
-                                            dge_model,
-                                            camera_algorithm,
-                                            gene_set_category_filters)
-
-    print("Persisting data into database ...")
-    roger.persistence.gse.create_gse_result(session, gse_table)
+    roger.logic.gse.perform_gse(session,
+                                flask.current_app.config['ROGER_DATA_FOLDER'],
+                                dge_model,
+                                camera_algorithm,
+                                gene_set_category_filters)
 
     print("Done")
 
@@ -123,11 +119,11 @@ def run_gse(contrast, design, dataset, dge_method, gene_set_category_filters):
 @click.option('--dge_method', help='Show only result overviews for the given DGE method')
 @click.option('--gse_method', help='Show only result overviews for the given GSE method')
 def list_gse_tables(contrast, design, dataset, dge_method, gse_method):
-    print('Querying available DGE models ...')
+    print('Querying available GSE models ...')
     from roger.persistence import db
-    import roger.persistence.gse
+    import roger.logic.gse
 
-    print(roger.persistence.gse.list_gse_tables(db.session(), contrast, design, dataset, dge_method, gse_method))
+    print(roger.logic.gse.list_gse_tables(db.session(), contrast, design, dataset, dge_method, gse_method))
 
 
 @cli.command(name="show-gse-table",
@@ -140,11 +136,11 @@ def list_gse_tables(contrast, design, dataset, dge_method, gse_method):
 def show_gse_table(contrast, design, dataset, dge_method, gse_method):
     print('Querying GSE table ...')
     from roger.persistence import db
-    import roger.persistence.gse
+    import roger.logic.gse
 
-    result_table = roger.persistence.gse.get_gse_table(db.session(),
-                                                       contrast, design, dataset,
-                                                       dge_method, gse_method)
+    result_table = roger.logic.gse.get_gse_table(db.session(),
+                                                 contrast, design, dataset,
+                                                 dge_method, gse_method)
     print(result_table)
 
 
@@ -160,7 +156,7 @@ def export_gse_table(contrast, design, dataset, dge_method, gse_method, out_file
     print("Exporting GSE table to '%s' ..." % out_file.name)
     from roger.persistence import db
     from roger.logic.util.data import write_df
-    from roger.persistence.gse import get_gse_table
+    from roger.logic.gse import get_gse_table
 
     result_table = get_gse_table(db.session(), contrast, design, dataset, dge_method, gse_method)
     write_df(result_table, out_file)
@@ -178,7 +174,7 @@ def remove_gse_table(contrast, design, dataset, dge_method, gse_method):
     print("Deleting GSE result from %s:%s:%s:%s:%s"
           % (dataset, design, contrast, dge_method, gse_method))
     from roger.persistence import db
-    from roger.persistence.gse import remove_gse_table
+    from roger.logic.gse import remove_gse_table
 
     remove_gse_table(db.session(), contrast, design, dataset, dge_method, gse_method)
     print("Done")

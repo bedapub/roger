@@ -49,7 +49,7 @@ def annotate_ds_pheno_data(gct_data, pheno_data=pd.DataFrame()):
     return pheno_data
 
 
-class DGEResult(ABC):
+class DGEAlgorithmResult(object):
     """Result class that hold all relevant information produced by a DGE algorithm"""
 
     def __init__(self, input_obj, fit_obj, dge_table, used_feature_list, method_description):
@@ -85,7 +85,7 @@ class DGEAlgorithm(ABC):
                  feature_anno: pd.DataFrame,
                  design: Design,
                  contrast_matrix: pd.DataFrame,
-                 **kwargs) -> DGEResult:
+                 **kwargs) -> DGEAlgorithmResult:
         """Executes the DGE algorithm on the given data"""
         pass
 
@@ -108,7 +108,7 @@ class LimmaDGE(DGEAlgorithm):
                  feature_anno: pd.DataFrame,
                  design: Design,
                  contrast_matrix: pd.DataFrame,
-                 use_weighted: bool = False) -> DGEResult:
+                 use_weighted: bool = False) -> DGEAlgorithmResult:
 
         fdf_file, fdf_file_path = tempfile.mkstemp()
         feature_anno.to_csv(fdf_file_path, sep="\t")
@@ -136,7 +136,7 @@ class LimmaDGE(DGEAlgorithm):
 
         method_desc = "R limma version: %s" % limma.__version__
 
-        return DGEResult(eset, eset_fit, dge_tbl, used_features, method_desc)
+        return DGEAlgorithmResult(eset, eset_fit, dge_tbl, used_features, method_desc)
 
 
 class EdgeRDGE(DGEAlgorithm):
@@ -157,7 +157,7 @@ class EdgeRDGE(DGEAlgorithm):
                  feature_anno: pd.DataFrame,
                  design: Design,
                  contrast_matrix: pd.DataFrame,
-                 **kwargs) -> DGEResult:
+                 **kwargs) -> DGEAlgorithmResult:
 
         design_file, design_file_path = tempfile.mkstemp()
         contrast_file, contrast_file_path = tempfile.mkstemp()
@@ -201,7 +201,7 @@ class EdgeRDGE(DGEAlgorithm):
 
         method_desc = "R ribiosNGS version: %s" % ribios_ngs.__version__
 
-        return DGEResult(edger_input, edger_result, dge_tbl, used_features, method_desc)
+        return DGEAlgorithmResult(edger_input, edger_result, dge_tbl, used_features, method_desc)
 
 
 def init_methods(session):

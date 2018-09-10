@@ -168,7 +168,8 @@ class DataSet(db.Model):
         return roger.logic.util.data.as_data_frame(FeatureMapping.query
                                                    .add_columns(GeneAnnotation.GeneSymbol)
                                                    .outerjoin(GeneAnnotation,
-                                                   FeatureMapping.RogerGeneIndex == GeneAnnotation.RogerGeneIndex)
+                                                              FeatureMapping.RogerGeneIndex
+                                                              == GeneAnnotation.RogerGeneIndex)
                                                    .filter(FeatureMapping.DataSetID == self.ID)
                                                    .order_by(FeatureMapping.FeatureIndex))
 
@@ -473,11 +474,41 @@ class GSEmethod(db.Model):
                % (self.ID, self.DGEmethodID, self.Name, self.Description)
 
 
+class GSEresult(db.Model):
+    __tablename__ = 'GSEresult'
+
+    ID = Column(Integer, primary_key=True)
+    ContrastID = Column(Integer, ForeignKey(Contrast.ID), nullable=False)
+    DGEmethodID = Column(Integer, ForeignKey(DGEmethod.ID), nullable=False)
+    GSEmethodID = Column(Integer, ForeignKey(GSEmethod.ID), nullable=False)
+    OutputFile = Column(String(STR_PATH_SIZE), nullable=False)
+    MethodDescription = Column(String(STR_DESC_SIZE), nullable=False)
+
+    Contrast = relationship("Contrast", foreign_keys=[ContrastID])
+    DGEMethod = relationship("DGEmethod", foreign_keys=[DGEmethodID])
+    GSEMethod = relationship("GSEmethod", foreign_keys=[GSEmethodID])
+
+    __table_args__ = (
+        ForeignKeyConstraint((ContrastID, DGEmethodID), [DGEmodel.ContrastID, DGEmodel.DGEmethodID]),
+        UniqueConstraint(ContrastID, DGEmethodID, GSEmethodID, name='GSEresult'),
+        {'mysql_engine': 'InnoDB'}
+    )
+
+    def __repr__(self):
+        return "<GSEresult(ContrastID='%s', DGEmethodID='%s', GSEmethodID='%s')>" \
+               % (self.ContrastID, self.DGEmethodID, self.GSEmethodID)
+
+    @hybrid_property
+    def result_table(self):
+        return roger.logic.util.data.as_data_frame(GSEtable.query
+                                                   .filter(GSEtable.GSEresultID == self.ID))
+
+
 class GSEtable(db.Model):
     __tablename__ = 'GSEtable'
 
     ContrastColumnID = Column(Integer, ForeignKey(ContrastColumn.ID), primary_key=True)
-    GSEmethodID = Column(Integer, ForeignKey(GSEmethod.ID), primary_key=True)
+    GSEresultID = Column(Integer, ForeignKey(GSEresult.ID, ondelete="cascade"), primary_key=True)
     GeneSetID = Column(Integer, ForeignKey(GeneSet.ID), primary_key=True)
     Correlation = Column(Float)
     Direction = Column(Integer, nullable=False)
@@ -487,13 +518,13 @@ class GSEtable(db.Model):
     EffGeneCount = Column(Integer, nullable=False)
 
     ContrastColumn = relationship("ContrastColumn", foreign_keys=[ContrastColumnID])
-    Method = relationship("GSEmethod", foreign_keys=[GSEmethodID])
+    ResultSet = relationship("GSEresult", foreign_keys=[GSEresultID])
     GeneSet = relationship("GeneSet", foreign_keys=[GeneSetID])
 
     __table_args__ = {'mysql_engine': 'InnoDB'}
 
     def __repr__(self):
-        return "<GSEtable(ContrastColumnID='%s', GSEmethodID='%s', GeneSetID='%s', Correlation='%s'," \
+        return "<GSEtable(ContrastColumnID='%s', GSEresultID='%s', GeneSetID='%s', Correlation='%s'," \
                "Direction='%s', PValue='%s', FDR='%s', EnrichmentScore='%s', EffGeneCount='%s')>" \
-               % (self.ContrastColumnID, self.GSEmethodID, self.GeneSetID, self.Correlation, self.Direction,
+               % (self.ContrastColumnID, self.GSEresultID, self.GeneSetID, self.Correlation, self.Direction,
                   self.PValue, self.FDR, self.EnrichmentScore, self.EffGeneCount)
