@@ -26,8 +26,8 @@ def create_app(script_info):
         roger.logic.mart.provider.init_annotation_service(app)
 
         if len(sys.argv) > 1 and sys.argv[1] in ["run", "shell"]:
-            from roger.web import web
-            from roger.rest import rest_api
+            from roger.web import web_blueprint
+            from roger.rest import rest_blueprint
             from roger.logic.util.exception import ROGERUsageError
             from flask import make_response, jsonify
 
@@ -45,12 +45,12 @@ def create_app(script_info):
                 return make_response(jsonify({'error': 'Not found'}), 404)
 
             @app.errorhandler(405)
-            def not_found(error):
+            def not_allowed(error):
                 # not used
                 del error
                 return make_response(jsonify({'error': 'Method Not Allowed'}), 405)
 
-            app.register_blueprint(rest_api, url_prefix='/api')
-            app.register_blueprint(web, url_prefix='/web')
+            app.register_blueprint(rest_blueprint, url_prefix='/api')
+            app.register_blueprint(web_blueprint, url_prefix='/web')
 
     return app

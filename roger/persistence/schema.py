@@ -250,6 +250,8 @@ class Design(db.Model):
     CreationTime = Column(DateTime, nullable=False)
 
     DataSet = relationship("DataSet", foreign_keys=[DataSetID])
+    SampleSubset = relationship("SampleSubset", back_populates="Design")
+    Contrast = relationship("Contrast", back_populates="Design")
 
     __table_args__ = (
         UniqueConstraint(DataSetID, Name, name='DesignName'),
@@ -276,7 +278,7 @@ class SampleSubset(db.Model):
     IsUsed = Column(Boolean, nullable=False)
     Description = Column(String(STR_DESC_SIZE))
 
-    Design = relationship("Design", foreign_keys=[DesignID])
+    Design = relationship("Design", foreign_keys=[DesignID], back_populates="SampleSubset")
 
     __table_args__ = {'mysql_engine': 'InnoDB'}
 
@@ -312,7 +314,10 @@ class Contrast(db.Model):
     CreatedBy = Column(String(DEFAULT_STR_SIZE), nullable=False)
     CreationTime = Column(DateTime, nullable=False)
 
-    Design = relationship("Design", foreign_keys=[DesignID])
+    Design = relationship("Design", foreign_keys=[DesignID], back_populates="Contrast")
+    ContrastColumn = relationship("ContrastColumn", back_populates="Contrast")
+    DGEmodel = relationship("DGEmodel", back_populates="Contrast")
+    GSEresult = relationship("GSEresult", back_populates="Contrast")
 
     __table_args__ = (
         UniqueConstraint(DesignID, Name, name='ContrastName'),
@@ -348,7 +353,7 @@ class ContrastColumn(db.Model):
     #  Numeric array - numerical combination of variables in design matrix
     ColumnData = Column(RogerJSON, nullable=False)
 
-    Contrast = relationship("Contrast", foreign_keys=[ContrastID])
+    Contrast = relationship("Contrast", foreign_keys=[ContrastID], back_populates="ContrastColumn")
 
     __table_args__ = (
         UniqueConstraint(ContrastID, Name, name='ContrastColumnName'),
@@ -386,7 +391,7 @@ class DGEmodel(db.Model):
     FitObjFile = Column(String(STR_PATH_SIZE), nullable=False)
     MethodDescription = Column(String(STR_DESC_SIZE), nullable=False)
 
-    Contrast = relationship("Contrast", foreign_keys=[ContrastID])
+    Contrast = relationship("Contrast", foreign_keys=[ContrastID], back_populates="DGEmodel")
     Method = relationship("DGEmethod", foreign_keys=[DGEmethodID])
 
     __table_args__ = {'mysql_engine': 'InnoDB'}
@@ -484,7 +489,7 @@ class GSEresult(db.Model):
     OutputFile = Column(String(STR_PATH_SIZE), nullable=False)
     MethodDescription = Column(String(STR_DESC_SIZE), nullable=False)
 
-    Contrast = relationship("Contrast", foreign_keys=[ContrastID])
+    Contrast = relationship("Contrast", foreign_keys=[ContrastID], back_populates="GSEresult")
     DGEMethod = relationship("DGEmethod", foreign_keys=[DGEmethodID])
     GSEMethod = relationship("GSEmethod", foreign_keys=[GSEmethodID])
 

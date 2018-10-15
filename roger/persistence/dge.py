@@ -155,6 +155,10 @@ def query_design(session, design_name, ds_name) -> Design:
         .filter(DataSet.Name == ds_name)
 
 
+def get_all_design(session, ds_name) -> Design:
+    return session.query(Design).filter(Design.DataSetID == DataSet.ID).filter(DataSet.Name == ds_name).all()
+
+
 def get_design(session, design_name, ds_name) -> Design:
     design = query_design(session, design_name, ds_name).one_or_none()
     if design is None:

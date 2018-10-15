@@ -15,17 +15,17 @@ stats = importr("stats")
 made4 = importr("made4")
 graphics = importr("graphics")
 
-web = Blueprint('web', __name__, template_folder='templates')
+web_blueprint = Blueprint('web', __name__, template_folder='templates')
 
 
-@web.route('/')
-@web.route('/index')
+@web_blueprint.route('/')
+@web_blueprint.route('/index')
 def index():
     studies = get_all_ds(db.session())
     return render_template('index.html', studies=studies)
 
 
-@web.route('/dge_result/<int:contrast_id>/<int:method_id>')
+@web_blueprint.route('/dge_result/<int:contrast_id>/<int:method_id>')
 def dge_result(contrast_id, method_id):
     model = get_model_by_id(contrast_id, method_id)
     obj = base.readRDS(model.InputObjFile)
