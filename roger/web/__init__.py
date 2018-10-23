@@ -1,10 +1,9 @@
 from flask import Blueprint, render_template
+from rpy2.robjects.packages import importr
 
 from roger.logic.plot import gen_base64_plot
 from roger.persistence.dge import get_all_ds, get_model_by_id
 from roger.persistence import db
-
-from rpy2.robjects.packages import importr
 
 ribios_plot = importr("ribiosPlot")
 ribios_ngs = importr("ribiosNGS")
@@ -14,6 +13,7 @@ limma = importr("limma")
 stats = importr("stats")
 made4 = importr("made4")
 graphics = importr("graphics")
+
 
 web_blueprint = Blueprint('web', __name__, template_folder='templates')
 

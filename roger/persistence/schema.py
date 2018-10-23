@@ -145,6 +145,8 @@ class DataSet(db.Model):
     CreatedBy = Column(String(DEFAULT_STR_SIZE), nullable=False)
     CreationTime = Column(DateTime, nullable=False)
 
+    Design = relationship("Design", back_populates="DataSet")
+
     __table_args__ = {'mysql_engine': 'InnoDB'}
 
     __mapper_args__ = {
@@ -249,7 +251,7 @@ class Design(db.Model):
     LastReviewedBy = Column(String(DEFAULT_STR_SIZE))
     CreationTime = Column(DateTime, nullable=False)
 
-    DataSet = relationship("DataSet", foreign_keys=[DataSetID])
+    DataSet = relationship("DataSet", foreign_keys=[DataSetID], back_populates="Design")
     SampleSubset = relationship("SampleSubset", back_populates="Design")
     Contrast = relationship("Contrast", back_populates="Design")
 
@@ -391,6 +393,7 @@ class DGEmodel(db.Model):
     FitObjFile = Column(String(STR_PATH_SIZE), nullable=False)
     MethodDescription = Column(String(STR_DESC_SIZE), nullable=False)
 
+    FeatureSubset = relationship("FeatureSubset", back_populates="DGEmodel")
     Contrast = relationship("Contrast", foreign_keys=[ContrastID], back_populates="DGEmodel")
     Method = relationship("DGEmethod", foreign_keys=[DGEmethodID])
 
@@ -399,6 +402,18 @@ class DGEmodel(db.Model):
     def __repr__(self):
         return "<DGEmodel(ContrastID='%s', DGEmethodID='%s')>" \
                % (self.ContrastID, self.DGEmethodID)
+
+    @hybrid_property
+    def feature_subset_table(self):
+        return roger.logic.util.data.as_data_frame(FeatureSubset.query
+                                                   .filter(FeatureSubset.DGEmethodID == self.DGEmethodID)
+                                                   .filter(FeatureSubset.ContrastID == self.ContrastID))
+
+    @hybrid_property
+    def result_table(self):
+        return roger.logic.util.data.as_data_frame(DGEtable.query
+                                                   .filter(DGEtable.DGEmethodID == self.DGEmethodID)
+                                                   .filter(DGEtable.ContrastID == self.ContrastID))
 
 
 class FeatureSubset(db.Model):
@@ -420,7 +435,7 @@ class FeatureSubset(db.Model):
     )
 
     FeatureMapping = relationship("FeatureMapping", foreign_keys=[FeatureIndex, DataSetID])
-    Model = relationship("DGEmodel", foreign_keys=[ContrastID, DGEmethodID])
+    DGEmodel = relationship("DGEmodel", foreign_keys=[ContrastID, DGEmethodID], back_populates="FeatureSubset")
 
     def __repr__(self):
         return "<FeatureSubset(FeatureIndex='%s', DGEmethodID='%s', IsUsed='%s', Description='%s')>" \
