@@ -1,8 +1,7 @@
 module.exports = {
-    entry: {
-        index: './roger/web/js/views/index.jsx',
-        study: './roger/web/js/views/study.jsx'
-    },
+    entry: [
+        './roger/web/js/views/index.js'
+    ],
     module: {
         rules: [
             {
@@ -14,7 +13,14 @@ module.exports = {
     },
     output: {
         path: __dirname + '/roger/web/static',
-        filename: '[name]-bundle.js',
+        filename: 'bundle.js',
         publicPath: '/static'
+    },
+    stats: {
+        errorDetails: true
+    },
+    devServer: {
+        historyApiFallback: true,
+        contentBase: './roger/web/templates'
     }
 };

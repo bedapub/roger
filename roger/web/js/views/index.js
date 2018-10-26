@@ -1,27 +1,30 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import {BrowserRouter as Router, Route, Link, Switch} from "react-router-dom";
+
 import {URL_PREFIX} from "../components/rest";
+
 
 class StudyList extends React.Component {
     constructor() {
         super();
-        this.state = { items: [] };
+        this.state = {items: []};
     }
 
     componentDidMount() {
         fetch(`${URL_PREFIX}/study`)
-            .then(result=>result.json())
-            .then(items=> {
+            .then(result => result.json())
+            .then(items => {
                 this.setState({items: items});
             });
     }
 
     render() {
-        return(
+        return (
             <div>
                 {this.state.items.map(item => (
                     <div key={item.Name} className="study_overview">
-                        <p><span>Name:</span> {item.Name} <Link to='/href' >ASD</Link> </p>
+                        <p><span>Name:</span> <Link to={`/study/${item.Name}`}>{item.Name}</Link> </p>
                         <ul>
                             <li>
                                 <span>Expression type:</span> {item.ExpressionType}
@@ -49,12 +52,21 @@ class StudyList extends React.Component {
     }
 }
 
-class IndexView extends React.Component {
-    render() {
-        return (
-            <div><StudyList /></div>
-        );
-    }
-}
+const App = () => (
+    <Router>
+        <div>
+            <Switch>
+                <Route exact path="/" component={Home}/>
+                <Route path="/study/:study_name" component={SingleStudyView}/>
+                <Route path="/study" component={Home}/>
+                <Route component={NotFound}/>
+            </Switch>
+        </div>
+    </Router>
+);
 
-ReactDOM.render(<IndexView />, document.getElementById('index_view'));
+const Home = () => <StudyList/>;
+const NotFound = () => <h2>404 - Not Found</h2>;
+const SingleStudyView = ({match}) => <h3>Requested Study: {match.params.study_name}</h3>;
+
+ReactDOM.render(<App/>, document.getElementById('app'));
