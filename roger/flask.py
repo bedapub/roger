@@ -16,8 +16,12 @@ def create_app(script_info):
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['DEBUG'] = True
     if 'ROGER_CONFIG' in os.environ:
+        from flask_cors import CORS
         import roger.logic
         import roger.logic.mart.provider
+
+        cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
+
         app.config.from_pyfile(os.environ['ROGER_CONFIG'], silent=True)
         db.init_app(app)
         roger.logic.cache.init_app(app, config={'CACHE_TYPE': 'filesystem',

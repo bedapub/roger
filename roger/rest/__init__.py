@@ -4,18 +4,30 @@ import os.path
 from flask import jsonify, make_response, request
 from flask_restful import Resource, fields, Api, marshal
 from werkzeug.utils import secure_filename
+from rpy2.robjects.packages import importr
 
 from roger.logic.gse import get_gse_result
 from roger.logic.util.common import merge_dicts
 from roger.logic.util.exception import ROGERUsageError
 from roger.persistence import db
-from roger.persistence.dge import get_all_ds, get_ds, get_all_design, get_design, get_dge_model
+from roger.persistence.dge import get_all_ds, get_ds, get_dge_model
 
 ALLOWED_EXTENSIONS = {'gct', 'txt'}
 IDENT_PATTERN = re.compile("^[a-zA-Z]\\w*$")
 
 rest_blueprint = Blueprint('api', __name__)
 api = Api(rest_blueprint)
+
+
+ribios_plot = importr("ribiosPlot")
+ribios_ngs = importr("ribiosNGS")
+ribios_expression = importr("ribiosExpression")
+base = importr("base")
+limma = importr("limma")
+stats = importr("stats")
+made4 = importr("made4")
+graphics = importr("graphics")
+
 
 
 def allowed_file(filename):
@@ -74,7 +86,12 @@ api.add_resource(GSETable,
 
 
 # -----------------
-# DGE model
+# DGE plots
+# -----------------
+
+
+# -----------------
+# DGE results
 # -----------------
 
 
@@ -194,7 +211,6 @@ class StudiesView(Resource):
 api.add_resource(StudiesView,
                  '/study')
 
-
 StudyViewFields = merge_dicts(StudiesViewFields, {
     'ExprsFile': fields.String(attribute='ExprsSrc'),
     'PhenoFile': fields.String(attribute='PhenoSrc'),
@@ -251,6 +267,55 @@ class FeatureAnnotationView(Resource):
 
 api.add_resource(FeatureAnnotationView,
                  '/study/<string:Name>/feature_annotation')
+
+
+@rest_blueprint.route('/dge_pca/'
+                      '<string:study_name>/'
+                      '<string:design_name>/'
+                      '<string:contrast_name>/'
+                      '<string:dge_method_name>',
+                      methods=['GET'])
+def dge_pca(study_name, design_name, contrast_name, dge_method_name):
+    session = db.session()
+    dge_model = get_dge_model(session,
+                              contrast_name,
+                              design_name,
+                              study_name,
+                              dge_method_name)
+    dge_table = dge_model.result_table
+
+    obj = base.readRDS(dge_model.InputObjFile)
+    dge_test = base.readRDS(dge_model.FitObjFile)
+    # Pre-computation
+    obj_mod_log_cmp = ribios_ngs.modLogCPM(dge_test)
+    obj_pca = stats.prcomp(base.t(obj_mod_log_cmp))
+    points = base.as_data_frame(ribios_plot.pcaScores(obj_pca))
+    xind = 0
+    yind = 1
+    sdev_norm = sum([sdev * sdev for sdev in obj_pca.rx2("sdev")])
+    expvar = [sdev * sdev / sdev_norm for sdev in obj_pca.rx2("sdev")]
+    data = [{
+        "x": [x for x in points[0]],
+        "y": [y for y in points[1]],
+        "mode": 'markers',
+        "type": 'scatter',
+        "name": 'Data Points',
+        "text": [name for name in base.rownames(points)]
+    }]
+    layout = {
+        "xaxis": {
+            "title": "Principal component %d (%2.1f%%)" % (xind + 1, expvar[xind] * 100),
+            "showline": True,
+        },
+        "yaxis": {
+            "title": "Principal component %d (%2.1f%%)" % (yind + 1, expvar[yind] * 100),
+            "showline": True,
+        },
+        "width": 500,
+        "height": 500,
+        "title": 'modLogCPM PCA'
+    }
+    return jsonify({'data': data, 'layout': layout})
 
 
 @rest_blueprint.route('/api/submitFull', methods=['POST'])
