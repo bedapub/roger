@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import {BrowserRouter as Router, Route, Link, Switch} from "react-router-dom";
+import Plot from 'react-plotly.js';
 
 import {URL_PREFIX} from "../components/rest";
 
@@ -85,6 +86,32 @@ class StudyList extends React.Component {
     }
 }
 
+
+class DGE_Details extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {renderedComp: []};
+    }
+
+    componentDidMount() {
+        fetch(`${URL_PREFIX}/dge_pca/${this.props.studyName}/${this.props.designName}/${this.props.contrastName}/${this.props.dgeMethodName}`)
+            .then(result => result.json())
+            .then(pca_data => {
+                let studyComp =
+                    <Plot
+                        data={pca_data.data}
+                        layout={pca_data.layout}
+                    />;
+                this.setState({renderedComp: studyComp});
+            });
+    }
+
+    render() {
+        return this.state.renderedComp;
+    }
+}
+
+
 class StudyOverview extends React.Component {
     constructor(props) {
         super(props);
@@ -136,7 +163,7 @@ class StudyOverview extends React.Component {
                                         <span>Created by: </span> {design.CreatedBy}
                                     </li>
                                     <li>
-                                        <span>Used Samples: </span> {this.countSampleSubset(design.SampleSubset)} of {study.SampleCount}
+                                        <span>Used Samples: </span> {StudyOverview.countSampleSubset(design.SampleSubset)} of {study.SampleCount}
                                     </li>
                                 </ul>
                                 <span>Contrasts:</span>
@@ -151,6 +178,23 @@ class StudyOverview extends React.Component {
                                                 <span>Created by: </span> {design.CreatedBy}
                                             </li>
                                         </ul>
+                                        <span>DGE Results:</span>
+                                        {contrast.DGEmodel.map(dgeResult => (
+                                            <div
+                                                key={`${study.Name}_${design.Name}__${contrast.Name}__${dgeResult.MethodName}`}
+                                                className="info_container">
+                                                <p><span>Name:</span> {dgeResult.MethodName}</p>
+                                                <ul>
+                                                    <li>
+                                                        <span>Method Description:</span> {dgeResult.MethodDescription}
+                                                    </li>
+                                                    <DGE_Details studyName={study.Name}
+                                                                 designName={design.Name}
+                                                                 contrastName={contrast.Name}
+                                                                 dgeMethodName={dgeResult.MethodName}/>
+                                                </ul>
+                                            </div>
+                                        ))}
                                     </div>
                                 ))}
                             </div>
@@ -165,7 +209,7 @@ class StudyOverview extends React.Component {
         return this.state.studyComp;
     }
 
-    countSampleSubset(sampleSubset) {
+    static countSampleSubset(sampleSubset) {
         return sampleSubset.filter(entry => entry.IsUsed).length
     }
 }

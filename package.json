@@ -16,8 +16,10 @@
     "webpack-dev-server": "^3.1.8"
   },
   "dependencies": {
+    "plotly.js": "^1.41.3",
     "react": "^16.5.2",
     "react-dom": "^16.5.2",
+    "react-plotly.js": "^2.2.0",
     "react-router-dom": "^4.3.1"
   }
 }
