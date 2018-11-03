@@ -17,3 +17,4 @@ setup_roche.sh
 .ipnb_checkpoints
 backend_dev.ipynb
 backend_dev-checkpoint.ipynb
+node_modules/

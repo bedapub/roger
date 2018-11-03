@@ -1,37 +1,23 @@
-{% extends "layout.html" %}
-
-{% block title %}Study Overview{% endblock %}
-
-{% block content %}
-    <h1>Studies available in ROGER and their DGE results:</h1>
-    <table width="100%">
-        <thead>
-        <tr>
-            <th>Name</th>
-            <th>Description</th>
-            <th>Experiments</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for study in studies %}
-            <tr>
-                <td>{{ study.Name }}</td>
-                <td>{{ study.Description }}</td>
-                <td>
-                    <ul>
-                        {% for model in study.dge_models %}
-                            <li>
-                                <a href="{{ url_for('web.dge_result', contrast_id=model.Contrast.ID, method_id=model.Method.ID) }}">
-                                    {{ model.Method.Name }}
-                                    - {{ model.Contrast.Design.Name }}
-                                    - {{ model.Contrast.Name }}
-                                </a>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                </td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-{% endblock %}
+<!DOCTYPE html>
+<html>
+  <head>
+      <title>Flask React</title>
+      <style>
+          div.info_container {
+              border-style: solid;
+              padding: 10px;
+              margin-bottom: 5px;
+          }
+          h2 {
+              padding-top: 3px;
+          }
+          div.info_container span {
+              font-weight: bold;
+          }
+      </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script src="/static/bundle.js"></script>
+  </body>
+</html>
