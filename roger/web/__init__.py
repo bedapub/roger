@@ -1,9 +1,8 @@
-from flask import Blueprint, render_template, jsonify
+from flask import Blueprint, render_template
 from rpy2.robjects.packages import importr
 
 from roger.logic.plot import gen_base64_plot
-from roger.persistence.dge import get_all_ds, get_model_by_id, get_dge_model
-from roger.persistence import db
+from roger.persistence.dge import get_model_by_id
 
 ribios_plot = importr("ribiosPlot")
 ribios_ngs = importr("ribiosNGS")
@@ -17,11 +16,10 @@ graphics = importr("graphics")
 web_blueprint = Blueprint('web', __name__, template_folder='templates')
 
 
-@web_blueprint.route('/')
-@web_blueprint.route('/index')
-def index():
-    studies = get_all_ds(db.session())
-    return render_template('index.html', studies=studies)
+@web_blueprint.route('/', defaults={'path': ''})
+@web_blueprint.route('/<path:path>')
+def react_provide(path):
+    return render_template('index.html')
 
 
 @web_blueprint.route('/dge_result/<int:contrast_id>/<int:method_id>')

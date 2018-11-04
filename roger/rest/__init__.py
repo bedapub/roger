@@ -29,7 +29,6 @@ made4 = importr("made4")
 graphics = importr("graphics")
 
 
-
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS

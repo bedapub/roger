@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, send_from_directory
 import tempfile
 import os
 import sys
@@ -54,7 +54,12 @@ def create_app(script_info):
                 del error
                 return make_response(jsonify({'error': 'Method Not Allowed'}), 405)
 
+            @app.route('/static/', defaults={'path': ''})
+            @app.route('/static/<path:path>')
+            def get_resource(path):  # pragma: no cover
+                return send_from_directory('static', path)
+
             app.register_blueprint(rest_blueprint, url_prefix='/api')
-            app.register_blueprint(web_blueprint, url_prefix='/web')
+            app.register_blueprint(web_blueprint, url_prefix='/')
 
     return app
