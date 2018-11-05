@@ -4,14 +4,17 @@ import Plot from "react-plotly.js";
 import './loading_spinner.css';
 import "isomorphic-fetch"
 
-class DGE_Details extends React.Component {
+class DGE_PCA_Plot extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {renderedComp: []};
+        this.state = {loaded: false, renderedComp: []};
     }
 
     componentDidMount() {
-        fetch(`${URL_PREFIX}/study/${this.props.studyName}/${this.props.designName}/${this.props.contrastName}/${this.props.dgeMethodName}/plot/mds`)
+        fetch(`${URL_PREFIX}/study/${this.props.studyName}`
+            + `/design/${this.props.designName}`
+            + `/contrast/${this.props.contrastName}`
+            + `/dge/${this.props.dgeMethodName}/plot/pca`)
             .then(result => result.json())
             .then(pca_data => {
                 let studyComp =
@@ -19,14 +22,22 @@ class DGE_Details extends React.Component {
                         data={pca_data.data}
                         layout={pca_data.layout}
                     />;
-                this.setState({renderedComp: studyComp});
+                this.setState({loaded: true, renderedComp: studyComp});
             });
     }
 
     render() {
-        return this.state.renderedComp;
+        return this.state.loaded ? this.state.renderedComp : SpinnerAnimation;
     }
 }
+
+const SpinnerAnimation =
+    <div className="lds-ring">
+        <div/>
+        <div/>
+        <div/>
+        <div/>
+    </div>;
 
 class StudyOverview extends React.Component {
     constructor(props) {
@@ -35,17 +46,15 @@ class StudyOverview extends React.Component {
     }
 
     componentDidMount() {
-        fetch(`${URL_PREFIX}/study/${this.props.studyName}`)
-            .then(result => result.json())
-            .then(study => {
+        Promise.all([
+            fetch(`${URL_PREFIX}/study/${this.props.studyName}`),
+            fetch(`${URL_PREFIX}/study/${this.props.studyName}/sample_annotation/json`)
+        ])
+            .then(([res1, res2]) => Promise.all([res1.json(), res2.json()]))
+            .then(([study, sample_annotation]) => {
+                console.log(sample_annotation.data.map(row => row['SAMPLE']));
                 let studyComp = <div key={study.Name} className="info_container">
                     <p><span>Name:</span> {study.Name}</p>
-                    <div className="lds-ring">
-                        <div />
-                        <div />
-                        <div />
-                        <div />
-                    </div>
                     <ul>
                         <li>
                             <span>Expression type:</span> {study.ExpressionType}
@@ -85,7 +94,8 @@ class StudyOverview extends React.Component {
                                         <span>Created by: </span> {design.CreatedBy}
                                     </li>
                                     <li>
-                                        <span>Used Samples: </span> {StudyOverview.countSampleSubset(design.SampleSubset)} of {study.SampleCount}
+                                        <span>Used Samples: </span>
+                                        {StudyOverview.countSampleSubset(design.SampleSubset)} of {study.SampleCount}
                                     </li>
                                 </ul>
                                 <span>Contrasts:</span>
@@ -110,10 +120,10 @@ class StudyOverview extends React.Component {
                                                     <li>
                                                         <span>Method Description:</span> {dgeResult.MethodDescription}
                                                     </li>
-                                                    <DGE_Details studyName={study.Name}
-                                                                 designName={design.Name}
-                                                                 contrastName={contrast.Name}
-                                                                 dgeMethodName={dgeResult.MethodName}/>
+                                                    <DGE_PCA_Plot studyName={study.Name}
+                                                                  designName={design.Name}
+                                                                  contrastName={contrast.Name}
+                                                                  dgeMethodName={dgeResult.MethodName}/>
                                                 </ul>
                                             </div>
                                         ))}
