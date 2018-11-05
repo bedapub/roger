@@ -6,6 +6,7 @@ from flask_restful import Resource, fields, Api, marshal
 from werkzeug.utils import secure_filename
 from rpy2.robjects.packages import importr
 
+from roger.logic import cache
 from roger.logic.gse import get_gse_result
 from roger.logic.util.common import merge_dicts
 from roger.logic.util.exception import ROGERUsageError
@@ -17,7 +18,6 @@ IDENT_PATTERN = re.compile("^[a-zA-Z]\\w*$")
 
 rest_blueprint = Blueprint('api', __name__)
 api = Api(rest_blueprint)
-
 
 ribios_plot = importr("ribiosPlot")
 ribios_ngs = importr("ribiosNGS")
@@ -88,6 +88,59 @@ api.add_resource(GSETable,
 # DGE plots
 # -----------------
 
+
+class DGE_Plot_PCA(Resource):
+    @cache.cached()
+    def get(self, study_name, design_name, contrast_name, dge_method_name):
+        session = db.session()
+        dge_model = get_dge_model(session,
+                                  contrast_name,
+                                  design_name,
+                                  study_name,
+                                  dge_method_name)
+
+        dge_table = dge_model.result_table
+
+        obj = base.readRDS(dge_model.InputObjFile)
+        dge_test = base.readRDS(dge_model.FitObjFile)
+        # Pre-computation
+        obj_mod_log_cmp = ribios_ngs.modLogCPM(dge_test)
+        obj_pca = stats.prcomp(base.t(obj_mod_log_cmp))
+        points = base.as_data_frame(ribios_plot.pcaScores(obj_pca))
+        xind = 0
+        yind = 1
+        sdev_norm = sum([sdev * sdev for sdev in obj_pca.rx2("sdev")])
+        expvar = [sdev * sdev / sdev_norm for sdev in obj_pca.rx2("sdev")]
+        data = [{
+            "x": [x for x in points[0]],
+            "y": [y for y in points[1]],
+            "mode": 'markers',
+            "type": 'scatter',
+            "name": 'Data Points',
+            "text": [name for name in base.rownames(points)]
+        }]
+        layout = {
+            "xaxis": {
+                "title": "Principal component %d (%2.1f%%)" % (xind + 1, expvar[xind] * 100),
+                "showline": True,
+            },
+            "yaxis": {
+                "title": "Principal component %d (%2.1f%%)" % (yind + 1, expvar[yind] * 100),
+                "showline": True,
+            },
+            "width": 500,
+            "height": 500,
+            "title": 'modLogCPM PCA'
+        }
+
+        return jsonify({'data': data, 'layout': layout})
+
+
+api.add_resource(DGE_Plot_PCA,
+                 '/study/<string:study_name>'
+                 '/design/<string:design_name>'
+                 '/contrast/<string:contrast_name>'
+                 '/dge/<string:dge_method_name>/plot/pca')
 
 # -----------------
 # DGE results
@@ -266,82 +319,3 @@ class FeatureAnnotationView(Resource):
 
 api.add_resource(FeatureAnnotationView,
                  '/study/<string:Name>/feature_annotation')
-
-
-@rest_blueprint.route('/dge_pca/'
-                      '<string:study_name>/'
-                      '<string:design_name>/'
-                      '<string:contrast_name>/'
-                      '<string:dge_method_name>',
-                      methods=['GET'])
-def dge_pca(study_name, design_name, contrast_name, dge_method_name):
-    session = db.session()
-    dge_model = get_dge_model(session,
-                              contrast_name,
-                              design_name,
-                              study_name,
-                              dge_method_name)
-    dge_table = dge_model.result_table
-
-    obj = base.readRDS(dge_model.InputObjFile)
-    dge_test = base.readRDS(dge_model.FitObjFile)
-    # Pre-computation
-    obj_mod_log_cmp = ribios_ngs.modLogCPM(dge_test)
-    obj_pca = stats.prcomp(base.t(obj_mod_log_cmp))
-    points = base.as_data_frame(ribios_plot.pcaScores(obj_pca))
-    xind = 0
-    yind = 1
-    sdev_norm = sum([sdev * sdev for sdev in obj_pca.rx2("sdev")])
-    expvar = [sdev * sdev / sdev_norm for sdev in obj_pca.rx2("sdev")]
-    data = [{
-        "x": [x for x in points[0]],
-        "y": [y for y in points[1]],
-        "mode": 'markers',
-        "type": 'scatter',
-        "name": 'Data Points',
-        "text": [name for name in base.rownames(points)]
-    }]
-    layout = {
-        "xaxis": {
-            "title": "Principal component %d (%2.1f%%)" % (xind + 1, expvar[xind] * 100),
-            "showline": True,
-        },
-        "yaxis": {
-            "title": "Principal component %d (%2.1f%%)" % (yind + 1, expvar[yind] * 100),
-            "showline": True,
-        },
-        "width": 500,
-        "height": 500,
-        "title": 'modLogCPM PCA'
-    }
-    return jsonify({'data': data, 'layout': layout})
-
-
-@rest_blueprint.route('/api/submitFull', methods=['POST'])
-def get_tasks():
-    userName = get_ident('username')
-    jobName = get_ident('jobname')
-
-    inputFile = get_file('infile')
-    designFile = get_file('design')
-    contrastFile = get_file('contrast')
-
-    # timeStemp <- gsub("\\s|:|-","_", Sys.time())
-
-    # dir.create(limmaWorkingDir, showWarnings = FALSE)
-
-    # logFile <- sprintf("%s/%s__%s__%s.log", limmaWorkingDir, username, jobname, timeStemp)
-    # outDir <- sprintf("%s/%s__%s__%s", limmaWorkingDir, username, jobname, timeStemp)
-
-    # args <- c("-infile", infile,
-    # "-design", design,
-    # "-contrast", contrast,
-    # "-log", logFile,
-    # "-outdir", outDir,
-    # "-debug")
-    # system2(command=limmaPipelineCommand, args=args)
-    # list(
-    #  log = readLines(logFile),
-    #  out_path = outDir
-    # )
-    return make_response(jsonify({'task': "asfs"}), 201)
