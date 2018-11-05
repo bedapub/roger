@@ -99,12 +99,9 @@ class DGE_Plot_PCA(Resource):
                                   study_name,
                                   dge_method_name)
 
-        dge_table = dge_model.result_table
-
         obj = base.readRDS(dge_model.InputObjFile)
-        dge_test = base.readRDS(dge_model.FitObjFile)
         # Pre-computation
-        obj_mod_log_cmp = ribios_ngs.modLogCPM(dge_test)
+        obj_mod_log_cmp = ribios_ngs.modLogCPM(obj)
         obj_pca = stats.prcomp(base.t(obj_mod_log_cmp))
         points = base.as_data_frame(ribios_plot.pcaScores(obj_pca))
         xind = 0
