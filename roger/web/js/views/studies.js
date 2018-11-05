@@ -1,5 +1,7 @@
 import React from 'react';
 import {URL_PREFIX} from "../logic/rest";
+import {Link} from "react-router-dom";
+import "isomorphic-fetch"
 
 class StudyList extends React.Component {
     constructor() {
