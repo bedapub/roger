@@ -264,7 +264,7 @@ def create_design_data(design_data, pheno_data, name=None, description=None,
                  "values": design_data[col_name].values.tolist()}
                 for col_name in design_data.columns]
 
-    design_entry = Design(VariableCount=sample_subset[sample_subset.IsUsed].shape[0],
+    design_entry = Design(VariableCount=design_data.shape[1],
                           Name=name,
                           Description=description,
                           DesignMatrix=json_obj,
