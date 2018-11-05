@@ -2,7 +2,6 @@ import React from 'react';
 import {URL_PREFIX} from "../logic/rest";
 import Plot from "react-plotly.js";
 import './loading_spinner.css';
-import "isomorphic-fetch"
 
 class DGE_PCA_Plot extends React.Component {
     constructor(props) {

@@ -5,7 +5,8 @@ import {BrowserRouter as Router, Route, Switch} from "react-router-dom";
 import {NotFound} from "./not_found";
 import {StudiesView} from "./studies";
 import {SingleStudyView} from "./study";
-
+import "isomorphic-fetch"
+import 'typeface-roboto';
 
 class ErrorBoundary extends React.Component {
     constructor(props) {
