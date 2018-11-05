@@ -71,7 +71,6 @@ class EdgeRCamera(GSEAlgorithm):
     def exec_gse(self, dge_model: DGEmodel, gscs) -> GSEAlgorithmResult:
         dge_model_path = dge_model.FitObjFile
         dge_fit_obj = base.readRDS(dge_model_path)
-
         gse_res = ribios_ngs.doGse(dge_fit_obj, gscs)
         enrich_tbl_file, enrich_tbl_file_path = tempfile.mkstemp()
         utils.write_table(ribios_ngs.fullEnrichTable(gse_res), enrich_tbl_file_path, sep="\t")
@@ -169,6 +168,10 @@ def perform_gse(session: Session,
 
     gene_sets = get_gmt_locations(session, gene_set_category_filter)
     gscs_list = {gene_set.Category: gene_set.FileWC for index, gene_set in gene_sets.iterrows()}
+
+    if len(gscs_list) == 0:
+        raise ROGERUsageError("Cannot perform GSE without preexisting gene sets (did you import GMT files?)")
+
     gscs = ribios_gsea.readGmt(ListVector(gscs_list))
 
     contrast_columns = dge_model.Contrast.contrast_columns
