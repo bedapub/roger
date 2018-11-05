@@ -1,6 +1,8 @@
 import React from 'react';
 import {URL_PREFIX} from "../logic/rest";
 import Plot from "react-plotly.js";
+import './loading_spinner.css';
+import "isomorphic-fetch"
 
 class DGE_Details extends React.Component {
     constructor(props) {
@@ -38,6 +40,12 @@ class StudyOverview extends React.Component {
             .then(study => {
                 let studyComp = <div key={study.Name} className="info_container">
                     <p><span>Name:</span> {study.Name}</p>
+                    <div className="lds-ring">
+                        <div />
+                        <div />
+                        <div />
+                        <div />
+                    </div>
                     <ul>
                         <li>
                             <span>Expression type:</span> {study.ExpressionType}
