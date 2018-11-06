@@ -3,6 +3,7 @@ import {URL_PREFIX} from "../logic/rest";
 import Plot from "react-plotly.js";
 import './loading_spinner.css';
 import DesignTable from "../components/design_table";
+import PersistentDrawerLeft from "../components/study_drawler";
 
 class DGE_PCA_Plot extends React.Component {
     constructor(props) {
@@ -53,6 +54,7 @@ class StudyOverview extends React.Component {
             .then(([res1, res2]) => Promise.all([res1.json(), res2.json()]))
             .then(([study, sampleAnnotation]) => {
                 let studyComp = <div>
+                    <PersistentDrawerLeft />
                     <p><span>Name:</span> {study.Name}</p>
                     <ul>
                         <li>

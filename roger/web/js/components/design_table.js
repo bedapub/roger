@@ -23,9 +23,6 @@ const styles = theme => ({
 function DesignTable(props) {
     const {classes, design, sampleAnnotation} = props;
 
-    console.log(design);
-    console.log(sampleAnnotation);
-
     return (
         <Paper className={classes.root}>
             <Table className={classes.table}>
