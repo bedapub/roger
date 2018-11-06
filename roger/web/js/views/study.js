@@ -2,6 +2,7 @@ import React from 'react';
 import {URL_PREFIX} from "../logic/rest";
 import Plot from "react-plotly.js";
 import './loading_spinner.css';
+import DesignTable from "../components/design_table";
 
 class DGE_PCA_Plot extends React.Component {
     constructor(props) {
@@ -50,9 +51,8 @@ class StudyOverview extends React.Component {
             fetch(`${URL_PREFIX}/study/${this.props.studyName}/sample_annotation/json`)
         ])
             .then(([res1, res2]) => Promise.all([res1.json(), res2.json()]))
-            .then(([study, sample_annotation]) => {
-                console.log(sample_annotation.data.map(row => row['SAMPLE']));
-                let studyComp = <div key={study.Name} className="info_container">
+            .then(([study, sampleAnnotation]) => {
+                let studyComp = <div>
                     <p><span>Name:</span> {study.Name}</p>
                     <ul>
                         <li>
@@ -97,6 +97,7 @@ class StudyOverview extends React.Component {
                                         {StudyOverview.countSampleSubset(design.SampleSubset)} of {study.SampleCount}
                                     </li>
                                 </ul>
+                                <DesignTable design={design} sampleAnnotation={sampleAnnotation} />
                                 <span>Contrasts:</span>
                                 {design.Contrast.map(contrast => (
                                     <div key={contrast.Name} className="info_container">
