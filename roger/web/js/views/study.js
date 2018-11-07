@@ -1,44 +1,8 @@
 import React from 'react';
 import {URL_PREFIX} from "../logic/rest";
-import Plot from "react-plotly.js";
-import './loading_spinner.css';
-import DesignTable from "../components/design_table";
+import DesignTable from "../components/design/design_table";
+import ExpressionPCAPlot from "../components/study/plots/expression_pca";
 import PersistentDrawerLeft from "../components/study_drawler";
-
-class DGE_PCA_Plot extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = {loaded: false, renderedComp: []};
-    }
-
-    componentDidMount() {
-        fetch(`${URL_PREFIX}/study/${this.props.studyName}`
-            + `/design/${this.props.designName}`
-            + `/contrast/${this.props.contrastName}`
-            + `/dge/${this.props.dgeMethodName}/plot/pca`)
-            .then(result => result.json())
-            .then(pca_data => {
-                let studyComp =
-                    <Plot
-                        data={pca_data.data}
-                        layout={pca_data.layout}
-                    />;
-                this.setState({loaded: true, renderedComp: studyComp});
-            });
-    }
-
-    render() {
-        return this.state.loaded ? this.state.renderedComp : SpinnerAnimation;
-    }
-}
-
-const SpinnerAnimation =
-    <div className="lds-ring">
-        <div/>
-        <div/>
-        <div/>
-        <div/>
-    </div>;
 
 class StudyOverview extends React.Component {
     constructor(props) {
@@ -122,7 +86,7 @@ class StudyOverview extends React.Component {
                                                     <li>
                                                         <span>Method Description:</span> {dgeResult.MethodDescription}
                                                     </li>
-                                                    <DGE_PCA_Plot studyName={study.Name}
+                                                    <ExpressionPCAPlot studyName={study.Name}
                                                                   designName={design.Name}
                                                                   contrastName={contrast.Name}
                                                                   dgeMethodName={dgeResult.MethodName}/>
