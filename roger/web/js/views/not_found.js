@@ -1,3 +1,4 @@
 import React from 'react';
+import Typography from '@material-ui/core/Typography';
 
-export const NotFound = () => <h2>404 - Not Found</h2>;
+export const NotFound = () => <Typography>404 - Not Found</Typography>;
