@@ -14,10 +14,7 @@ import MenuIcon from '@material-ui/icons/Menu';
 import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import ListItem from '@material-ui/core/ListItem';
-import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
-import InboxIcon from '@material-ui/icons/MoveToInbox';
-import MailIcon from '@material-ui/icons/Mail';
 import {Link} from "react-router-dom";
 
 const drawerWidth = 240;
@@ -77,13 +74,20 @@ const styles = theme => ({
         }),
         marginLeft: 0,
     },
+    nestedLevel1: {
+        paddingLeft: theme.spacing.unit * 6,
+    },
+    nestedLevel2: {
+        paddingLeft: theme.spacing.unit * 8,
+    },
+    navActive: []
 });
 
 function ListItemLink(props) {
-    const {primary, to} = props;
+    const {className, primary, to} = props;
     return (
         <li>
-            <ListItem button component={Link} to={to}>
+            <ListItem className={className} button component={Link} to={to}>
                 <ListItemText primary={primary}/>
             </ListItem>
         </li>
@@ -113,7 +117,7 @@ class StudyDrawer extends React.Component {
     };
 
     render() {
-        const {classes, theme, study} = this.props;
+        const {classes, theme, study, url} = this.props;
         const {open} = this.state;
 
         return (
@@ -152,8 +156,55 @@ class StudyDrawer extends React.Component {
                     </div>
                     <Divider/>
                     <List component="nav">
-                        <ListItemLink to="/trash" primary="Trash" secondary="July 20, 2014"/>
-                        <ListItemLink to="/spam" primary="Spam"/>
+                        <ListItemLink button to={`${url}`} primary="Overview"/>
+                        <ListItemLink button to={`${url}/gene_expression`} primary="Gene Expression"/>
+                    </List>
+                    <Divider/>
+                    <List component="nav">
+                        {study.Design.map(design => (
+                            <li key={design.Name}>
+                                <ListItem button component={Link} to={`${url}/design/${design.Name}`}>
+                                    <ListItemText primary={design.Name}/>
+                                </ListItem>
+                                <List>
+                                    {design.Contrast.map(contrast => (
+                                        <li key={contrast.Name}>
+                                            <ListItem className={classes.nestedLevel1} button component={Link}
+                                                      to={`${url}/design/${design.Name}/contrast/${contrast.Name}`}>
+                                                <ListItemText primary={contrast.Name}/>
+                                            </ListItem>
+                                            <List>
+                                                {contrast.DGEmodel.map(dgeResult => (
+                                                    <li key={dgeResult.MethodName}>
+                                                        <ListItem className={classes.nestedLevel2} button
+                                                                  component={Link}
+                                                                  to={`${url}/design/`
+                                                                  + `${design.Name}/contrast/`
+                                                                  + `${contrast.Name}/dge/${dgeResult.MethodName}`}>
+                                                            <ListItemText primary={`DGE with ${dgeResult.MethodName}`}/>
+                                                        </ListItem>
+                                                    </li>
+                                                ))}
+                                                {contrast.GSEresult.map(gseResult => (
+                                                    <li key={gseResult.GSEMethodName}>
+                                                        <ListItem className={classes.nestedLevel2} button
+                                                                  component={Link}
+                                                                  to={`${url}/design/`
+                                                                  + `${design.Name}/contrast/`
+                                                                  + `${contrast.Name}/dge/${gseResult.DGEMethodName}`
+                                                                  + `${contrast.Name}/gse/${gseResult.GSEMethodName}`}>
+                                                            <ListItemText
+                                                                primary={`GSE with ${gseResult.GSEMethodName} `
+                                                                + `and ${gseResult.DGEMethodName}`}/>
+                                                        </ListItem>
+                                                    </li>
+                                                ))}
+                                            </List>
+                                        </li>
+                                    ))}
+                                </List>
+                            </li>
+                        ))}
                     </List>
                 </Drawer>
                 <main
@@ -171,7 +222,8 @@ class StudyDrawer extends React.Component {
 StudyDrawer.propTypes = {
     classes: PropTypes.object.isRequired,
     theme: PropTypes.object.isRequired,
-    study: PropTypes.object.isRequired
+    study: PropTypes.object.isRequired,
+    url: PropTypes.string.isRequired
 };
 
 export default withStyles(styles, {withTheme: true})(StudyDrawer);

@@ -12,14 +12,15 @@ class SingleStudy extends React.Component {
     }
 
     componentDidMount() {
+        const {studyName, url} = this.props;
         Promise.all([
-            fetch(`${URL_PREFIX}/study/${this.props.studyName}`),
-            fetch(`${URL_PREFIX}/study/${this.props.studyName}/sample_annotation/json`)
+            fetch(`${URL_PREFIX}/study/${studyName}`),
+            fetch(`${URL_PREFIX}/study/${studyName}/sample_annotation/json`)
         ])
             .then(([res1, res2]) => Promise.all([res1.json(), res2.json()]))
             .then(([study, sampleAnnotation]) => {
                 let studyComp =
-                    <StudyDrawer study={study}>
+                    <StudyDrawer study={study} url={url}>
                         <StudyOverview study={study} sampleAnnotation={sampleAnnotation}/>
                     </StudyDrawer>;
                 this.setState({studyComp: studyComp});
@@ -32,4 +33,4 @@ class SingleStudy extends React.Component {
 }
 
 
-export const SingleStudyView = ({match}) => <SingleStudy studyName={match.params.studyName}/>;
+export const SingleStudyView = ({match}) => <SingleStudy studyName={match.params.studyName} url={match.url}/>;
