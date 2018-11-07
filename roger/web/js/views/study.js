@@ -2,7 +2,7 @@ import React from 'react';
 import {URL_PREFIX} from "../logic/rest";
 import DesignTable from "../components/design/design_table";
 import ExpressionPCAPlot from "../components/study/plots/expression_pca";
-import PersistentDrawerLeft from "../components/study_drawler";
+import StudyDrawer from "../components/study_drawer";
 
 class StudyOverview extends React.Component {
     constructor(props) {
@@ -18,7 +18,6 @@ class StudyOverview extends React.Component {
             .then(([res1, res2]) => Promise.all([res1.json(), res2.json()]))
             .then(([study, sampleAnnotation]) => {
                 let studyComp = <div>
-                    <PersistentDrawerLeft />
                     <p><span>Name:</span> {study.Name}</p>
                     <ul>
                         <li>
@@ -63,7 +62,7 @@ class StudyOverview extends React.Component {
                                         {StudyOverview.countSampleSubset(design.SampleSubset)} of {study.SampleCount}
                                     </li>
                                 </ul>
-                                <DesignTable design={design} sampleAnnotation={sampleAnnotation} />
+                                <DesignTable design={design} sampleAnnotation={sampleAnnotation}/>
                                 <span>Contrasts:</span>
                                 {design.Contrast.map(contrast => (
                                     <div key={contrast.Name} className="info_container">
@@ -87,9 +86,9 @@ class StudyOverview extends React.Component {
                                                         <span>Method Description:</span> {dgeResult.MethodDescription}
                                                     </li>
                                                     <ExpressionPCAPlot studyName={study.Name}
-                                                                  designName={design.Name}
-                                                                  contrastName={contrast.Name}
-                                                                  dgeMethodName={dgeResult.MethodName}/>
+                                                                       designName={design.Name}
+                                                                       contrastName={contrast.Name}
+                                                                       dgeMethodName={dgeResult.MethodName}/>
                                                 </ul>
                                             </div>
                                         ))}
@@ -112,4 +111,7 @@ class StudyOverview extends React.Component {
     }
 }
 
-export const SingleStudyView = ({match}) => <StudyOverview studyName={match.params.study_name}/>;
+export const SingleStudyView = ({match}) =>
+    <StudyDrawer>
+        <StudyOverview studyName={match.params.study_name}/>
+    </StudyDrawer>;
