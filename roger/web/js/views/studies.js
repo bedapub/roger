@@ -3,8 +3,8 @@ import {URL_PREFIX} from "../logic/rest";
 import {Link} from "react-router-dom";
 
 class StudyList extends React.Component {
-    constructor() {
-        super({});
+    constructor(props) {
+        super(props);
         this.state = {items: []};
     }
 

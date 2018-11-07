@@ -18,6 +18,7 @@ import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
 import InboxIcon from '@material-ui/icons/MoveToInbox';
 import MailIcon from '@material-ui/icons/Mail';
+import {Link} from "react-router-dom";
 
 const drawerWidth = 240;
 
@@ -78,6 +79,22 @@ const styles = theme => ({
     },
 });
 
+function ListItemLink(props) {
+    const {primary, to} = props;
+    return (
+        <li>
+            <ListItem button component={Link} to={to}>
+                <ListItemText primary={primary}/>
+            </ListItem>
+        </li>
+    );
+}
+
+ListItemLink.propTypes = {
+    primary: PropTypes.node.isRequired,
+    to: PropTypes.string.isRequired,
+};
+
 class PersistentDrawerLeft extends React.Component {
     constructor(props) {
         super(props);
@@ -134,22 +151,9 @@ class PersistentDrawerLeft extends React.Component {
                         </IconButton>
                     </div>
                     <Divider/>
-                    <List>
-                        {['Inbox', 'Starred', 'Send email', 'Drafts'].map((text, index) => (
-                            <ListItem button key={text}>
-                                <ListItemIcon>{index % 2 === 0 ? <InboxIcon/> : <MailIcon/>}</ListItemIcon>
-                                <ListItemText primary={text}/>
-                            </ListItem>
-                        ))}
-                    </List>
-                    <Divider/>
-                    <List>
-                        {['All mail', 'Trash', 'Spam'].map((text, index) => (
-                            <ListItem button key={text}>
-                                <ListItemIcon>{index % 2 === 0 ? <InboxIcon/> : <MailIcon/>}</ListItemIcon>
-                                <ListItemText primary={text}/>
-                            </ListItem>
-                        ))}
+                    <List component="nav">
+                        <ListItemLink to="/trash" primary="Trash"  secondary="July 20, 2014"/>
+                        <ListItemLink to="/spam" primary="Spam"/>
                     </List>
                 </Drawer>
                 <main
