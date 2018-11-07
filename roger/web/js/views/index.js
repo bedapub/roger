@@ -23,7 +23,7 @@ const App = () => (
                 <div>
                     <Switch>
                         <Route exact path="/" component={StudiesView}/>
-                        <Route path="/study/:study_name" component={SingleStudyView}/>
+                        <Route path="/study/:studyName" component={SingleStudyView}/>
                         <Route path="/study" component={StudiesView}/>
                         <Route component={NotFound}/>
                     </Switch>
