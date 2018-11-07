@@ -11,9 +11,9 @@ import 'typeface-roboto';
 import ErrorBoundary from "../components/error_boundary"
 
 const theme = createMuiTheme({
-  typography: {
-    useNextVariants: true,
-  },
+    typography: {
+        useNextVariants: true,
+    },
 });
 
 const App = () => (
@@ -23,8 +23,8 @@ const App = () => (
                 <div>
                     <Switch>
                         <Route exact path="/" component={StudiesView}/>
+                        <Route exact path="/study" component={StudiesView}/>
                         <Route path="/study/:studyName" component={SingleStudyView}/>
-                        <Route path="/study" component={StudiesView}/>
                         <Route component={NotFound}/>
                     </Switch>
                 </div>

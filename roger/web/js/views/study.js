@@ -1,8 +1,11 @@
 import React from 'react';
+import {Route, Switch} from "react-router-dom";
 
+import DesignTable from "../components/design/design_table";
 import StudyDrawer from "../components/study/study_drawer";
 import StudyOverview from "../components/study/general/overview";
 import {URL_PREFIX} from "../logic/rest";
+import {NotFound} from "./not_found";
 
 
 class SingleStudy extends React.Component {
@@ -21,7 +24,20 @@ class SingleStudy extends React.Component {
             .then(([study, sampleAnnotation]) => {
                 let studyComp =
                     <StudyDrawer study={study} url={url}>
-                        <StudyOverview study={study} sampleAnnotation={sampleAnnotation}/>
+                        <Switch>
+                            <Route exact path={`${url}/`}
+                                   render={(props) => <StudyOverview {...props}
+                                                                     study={study}
+                                                                     sampleAnnotation={sampleAnnotation}/>}/>
+                            <Route exact path={`${url}/design/:designName`}
+                                   render={(props) => {
+                                       console.log(props);
+                                       return <DesignTable
+                                           design={study.Design.find(e => e.Name === props.match.params.designName)}
+                                           sampleAnnotation={sampleAnnotation}/>
+                                   }}/>
+                            <Route component={NotFound}/>
+                        </Switch>
                     </StudyDrawer>;
                 this.setState({studyComp: studyComp});
             });

@@ -26,7 +26,7 @@ function StudyOverview(props) {
                     <Typography variant="h5" component="h2">
                         About the Study
                     </Typography>
-                    <Grid container xs={12} spacing={24}>
+                    <Grid container spacing={24}>
                         <Grid item xs={6}>
                             <List>
                                 <ListItem>
