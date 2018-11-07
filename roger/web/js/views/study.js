@@ -3,7 +3,7 @@ import {Route, Switch} from "react-router-dom";
 
 import DesignTable from "../components/design/design_table";
 import StudyDrawer from "../components/study/study_drawer";
-import StudyOverview from "../components/study/general/overview";
+import StudyOverview from "./study/overview";
 import {URL_PREFIX} from "../logic/rest";
 import {NotFound} from "./not_found";
 
