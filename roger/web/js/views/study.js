@@ -2,7 +2,7 @@ import React from 'react';
 import {URL_PREFIX} from "../logic/rest";
 import DesignTable from "../components/design/design_table";
 import ExpressionPCAPlot from "../components/study/plots/expression_pca";
-import StudyDrawer from "../components/study_drawer";
+import StudyDrawer from "../components/study/study_drawer";
 
 class StudyOverview extends React.Component {
     constructor(props) {
