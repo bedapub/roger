@@ -19,7 +19,7 @@ class SingleStudy extends React.Component {
             .then(([res1, res2]) => Promise.all([res1.json(), res2.json()]))
             .then(([study, sampleAnnotation]) => {
                 let studyComp =
-                    <StudyDrawer study={study} sampleAnnotation={sampleAnnotation}>
+                    <StudyDrawer study={study}>
                         <StudyOverview study={study} sampleAnnotation={sampleAnnotation}/>
                     </StudyDrawer>;
                 this.setState({studyComp: studyComp});

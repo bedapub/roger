@@ -95,7 +95,7 @@ ListItemLink.propTypes = {
     to: PropTypes.string.isRequired,
 };
 
-class PersistentDrawerLeft extends React.Component {
+class StudyDrawer extends React.Component {
     constructor(props) {
         super(props);
         this.state = {open: true};
@@ -113,7 +113,7 @@ class PersistentDrawerLeft extends React.Component {
     };
 
     render() {
-        const {classes, theme} = this.props;
+        const {classes, theme, study} = this.props;
         const {open} = this.state;
 
         return (
@@ -131,7 +131,7 @@ class PersistentDrawerLeft extends React.Component {
                             <MenuIcon/>
                         </IconButton>
                         <Typography variant="h6" color="inherit" noWrap>
-                            Study: TODO
+                            Study: {study.Name}
                         </Typography>
                     </Toolbar>
                 </AppBar>
@@ -152,7 +152,7 @@ class PersistentDrawerLeft extends React.Component {
                     </div>
                     <Divider/>
                     <List component="nav">
-                        <ListItemLink to="/trash" primary="Trash"  secondary="July 20, 2014"/>
+                        <ListItemLink to="/trash" primary="Trash" secondary="July 20, 2014"/>
                         <ListItemLink to="/spam" primary="Spam"/>
                     </List>
                 </Drawer>
@@ -168,9 +168,10 @@ class PersistentDrawerLeft extends React.Component {
     }
 }
 
-PersistentDrawerLeft.propTypes = {
+StudyDrawer.propTypes = {
     classes: PropTypes.object.isRequired,
     theme: PropTypes.object.isRequired,
+    study: PropTypes.object.isRequired
 };
 
-export default withStyles(styles, {withTheme: true})(PersistentDrawerLeft);
+export default withStyles(styles, {withTheme: true})(StudyDrawer);
