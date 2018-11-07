@@ -23,22 +23,25 @@ class SingleStudy extends React.Component {
             .then(([res1, res2]) => Promise.all([res1.json(), res2.json()]))
             .then(([study, sampleAnnotation]) => {
                 let studyComp =
-                    <StudyDrawer study={study} url={url}>
-                        <Switch>
-                            <Route exact path={`${url}/`}
-                                   render={(props) => <StudyOverview {...props}
-                                                                     study={study}
-                                                                     sampleAnnotation={sampleAnnotation}/>}/>
-                            <Route exact path={`${url}/design/:designName`}
-                                   render={(props) => {
-                                       console.log(props);
-                                       return <DesignTable
+                    <Switch>
+                        <Route exact path={`${url}/`}
+                               render={(props) =>
+                                   <StudyDrawer study={study} url={url}>
+                                       <StudyOverview {...props}
+                                                      study={study}
+                                                      sampleAnnotation={sampleAnnotation}/>
+                                   </StudyDrawer>
+                               }/>
+                        <Route exact path={`${url}/design/:designName`}
+                               render={(props) =>
+                                   <StudyDrawer study={study} url={url}>
+                                       <DesignTable
                                            design={study.Design.find(e => e.Name === props.match.params.designName)}
                                            sampleAnnotation={sampleAnnotation}/>
-                                   }}/>
-                            <Route component={NotFound}/>
-                        </Switch>
-                    </StudyDrawer>;
+                                   </StudyDrawer>
+                               }/>
+                        <Route component={NotFound}/>
+                    </Switch>;
                 this.setState({studyComp: studyComp});
             });
     }
