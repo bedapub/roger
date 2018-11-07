@@ -265,7 +265,7 @@ StudyViewFields = merge_dicts(StudiesViewFields, {
     'PhenoFile': fields.String(attribute='PhenoSrc'),
     'ExprsTable': fields.Url('api.exprsview', absolute=True),
     'FeatureAnnotationTable': fields.Url('api.featureannotationview', absolute=True),
-    'SampleAnnotationExprsTable': fields.Url('api.sampleannotationview', absolute=True),
+    'SampleAnnotationExprsTable': fields.Url('api.sampleannotationjsonview', absolute=True),
     'Design': fields.List(fields.Nested(DesignViewFields))
 })
 
@@ -294,7 +294,19 @@ api.add_resource(ExprsView,
                  '/study/<string:Name>/exprs')
 
 
-class SampleAnnotationView(Resource):
+class SampleAnnotationJsonView(Resource):
+    def get(self, Name):
+        session = db.session()
+        study = get_ds(session, Name)
+
+        return make_response(study.pheno_data.to_json(orient="table"), 201)
+
+
+api.add_resource(SampleAnnotationJsonView,
+                 '/study/<string:Name>/sample_annotation/json')
+
+
+class SampleAnnotationCSVView(Resource):
     def get(self, Name):
         session = db.session()
         study = get_ds(session, Name)
@@ -302,8 +314,8 @@ class SampleAnnotationView(Resource):
         return make_response(study.pheno_data.to_csv(index=False), 201)
 
 
-api.add_resource(SampleAnnotationView,
-                 '/study/<string:Name>/sample_annotation')
+api.add_resource(SampleAnnotationCSVView,
+                 '/study/<string:Name>/sample_annotation/csv')
 
 
 class FeatureAnnotationView(Resource):
