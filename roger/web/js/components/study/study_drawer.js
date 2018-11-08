@@ -161,7 +161,7 @@ class StudyDrawer extends React.Component {
                     </List>
                     <Divider/>
                     <List component="nav">
-                        {study.Design.map(design => (
+                        {study.Design.map(design =>
                             <li key={design.Name}>
                                 <ListItem button component={Link} to={`${basePath}/design/${design.Name}`}>
                                     <ListItemText primary={design.Name}/>
@@ -204,7 +204,7 @@ class StudyDrawer extends React.Component {
                                     ))}
                                 </List>
                             </li>
-                        ))}
+                        )}
                     </List>
                 </Drawer>
                 <main

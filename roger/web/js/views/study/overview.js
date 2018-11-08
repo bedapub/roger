@@ -18,10 +18,10 @@ const styles = {
 };
 
 function StudyOverview(props) {
-    const {classes, study, studyAnnotation, match} = props;
+    const {classes, study, studyAnnotation, basePath} = props;
 
     return (
-        <StudyDrawer study={study} basePath={match.url}>
+        <StudyDrawer study={study} basePath={basePath}>
             <Card className={classes.card}>
                 <CardContent>
                     <Typography variant="h5" component="h2">
@@ -65,7 +65,8 @@ function StudyOverview(props) {
 StudyOverview.propTypes = {
     classes: PropTypes.object.isRequired,
     study: PropTypes.object.isRequired,
-    sampleAnnotation: PropTypes.object.isRequired
+    sampleAnnotation: PropTypes.object.isRequired,
+    basePath: PropTypes.string.isRequired
 };
 
 export default withStyles(styles)(StudyOverview);

@@ -2,6 +2,8 @@ import React from 'react';
 import {Route, Switch} from "react-router-dom";
 
 import StudyOverview from "./study/overview";
+import GeneExpression from "./study/gene_expression";
+
 import DesignOverview from "./study/design/overview";
 
 import {URL_PREFIX} from "../logic/rest";
@@ -25,19 +27,27 @@ class SingleStudy extends React.Component {
                 let studyComp =
                     <Switch>
                         <Route exact path={`${url}/`}
-                               render={(props) =>
-                                   <StudyOverview {...props}
-                                                  study={study}
-                                                  sampleAnnotation={sampleAnnotation}/>
+                               render={() =>
+                                   <StudyOverview
+                                       study={study}
+                                       sampleAnnotation={sampleAnnotation}
+                                       basePath={url}/>
+                               }/>
+                        <Route exact path={`${url}/expression`}
+                               render={() =>
+                                   <GeneExpression
+                                       study={study}
+                                       sampleAnnotation={sampleAnnotation}
+                                       basePath={url}/>
                                }/>
                         {study.Design.map(design =>
-                            <Route key={design.Name} exact path={`${url}/design/${design.Name}`}
-                                   render={(props) =>
-                                       <DesignOverview {...props}
-                                                       study={study}
-                                                       sampleAnnotation={sampleAnnotation}
-                                                       design={design}
-                                                       basePath={url}/>
+                            <Route key={design.Name} path={`${url}/design/${design.Name}`}
+                                   render={() =>
+                                       <DesignOverview
+                                           study={study}
+                                           sampleAnnotation={sampleAnnotation}
+                                           design={design}
+                                           basePath={url}/>
                                    }/>
                         )}
                         <Route component={NotFound}/>
