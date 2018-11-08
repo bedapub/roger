@@ -18,7 +18,7 @@ const styles = {
     },
 };
 
-function StudyOverview(props) {
+function StudyOverviewView(props) {
     const {classes, study, studyAnnotation, basePath} = props;
 
     return (
@@ -63,11 +63,11 @@ function StudyOverview(props) {
     );
 }
 
-StudyOverview.propTypes = {
+StudyOverviewView.propTypes = {
     classes: PropTypes.object.isRequired,
     study: PropTypes.object.isRequired,
     sampleAnnotation: PropTypes.object.isRequired,
     basePath: PropTypes.string.isRequired
 };
 
-export default withStyles(styles)(StudyOverview);
+export default withStyles(styles)(StudyOverviewView);

@@ -24,7 +24,7 @@ function countSampleSubset(sampleSubset) {
     return sampleSubset.filter(entry => entry.IsUsed).length
 }
 
-function DesignOverview(props) {
+function DesignOverviewView(props) {
     const {classes, study, design, sampleAnnotation, basePath} = props;
 
     return (
@@ -71,11 +71,11 @@ function DesignOverview(props) {
     );
 }
 
-DesignOverview.propTypes = {
+DesignOverviewView.propTypes = {
     classes: PropTypes.object.isRequired,
     design: PropTypes.object.isRequired,
     sampleAnnotation: PropTypes.object.isRequired,
     basePath: PropTypes.string.isRequired
 };
 
-export default withStyles(styles)(DesignOverview);
+export default withStyles(styles)(DesignOverviewView);

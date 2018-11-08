@@ -1,16 +1,17 @@
 import React from 'react';
 import {Route, Switch} from "react-router-dom";
+import PropTypes from 'prop-types';
+
+import {URL_PREFIX} from "Roger/logic/rest";
 
 import StudyOverview from "Roger/views/study/overview";
 import GeneExpression from "Roger/views/study/gene_expression";
-
-import DesignOverview from "Roger/views/design/overview";
-
-import {URL_PREFIX} from "Roger/logic/rest";
 import {NotFound} from "Roger/views/not_found";
 
+import DesignRouter from "Roger/views/design/router";
 
-class SingleStudy extends React.Component {
+
+class StudyRouter extends React.Component {
     constructor(props) {
         super(props);
         this.state = {studyComp: []};
@@ -43,11 +44,12 @@ class SingleStudy extends React.Component {
                         {study.Design.map(design =>
                             <Route key={design.Name} path={`${url}/design/${design.Name}`}
                                    render={() =>
-                                       <DesignOverview
+                                       <DesignRouter
                                            study={study}
                                            sampleAnnotation={sampleAnnotation}
                                            design={design}
-                                           basePath={url}/>
+                                           studyBaseURL={url}
+                                           designBaseURL={`${url}/design/${design.Name}`}/>
                                    }/>
                         )}
                         <Route component={NotFound}/>
@@ -61,5 +63,9 @@ class SingleStudy extends React.Component {
     }
 }
 
+StudyRouter.propTypes = {
+    studyName: PropTypes.string.isRequired,
+    url: PropTypes.string.isRequired
+};
 
-export const SingleStudyView = ({match}) => <SingleStudy studyName={match.params.studyName} url={match.url}/>;
+export const ToStudyRouter = ({match}) => <StudyRouter studyName={match.params.studyName} url={match.url}/>;
