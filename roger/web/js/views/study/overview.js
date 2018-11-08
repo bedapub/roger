@@ -21,45 +21,43 @@ function StudyOverview(props) {
     const {classes, study, studyAnnotation, match} = props;
 
     return (
-        <StudyDrawer study={study} url={match.url}>
-            <div>
-                <Card className={classes.card}>
-                    <CardContent>
-                        <Typography variant="h5" component="h2">
-                            About the Study
-                        </Typography>
-                        <Grid container spacing={24}>
-                            <Grid item xs={6}>
-                                <List>
-                                    <ListItem>
-                                        <ListItemText primary="Description" secondary={study.Description}/>
-                                    </ListItem>
-                                    <ListItem>
-                                        <ListItemText primary="Sample count" secondary={study.SampleCount}/>
-                                    </ListItem>
-                                    <ListItem>
-                                        <ListItemText primary="Feature count" secondary={study.FeatureCount}/>
-                                    </ListItem>
-                                </List>
-                            </Grid>
-                            <Grid item xs={6}>
-                                <List>
-                                    <ListItem>
-                                        <ListItemText primary="Expression type" secondary={study.ExpressionType}/>
-                                    </ListItem>
-                                    <ListItem>
-                                        <ListItemText primary="Gene annotation version"
-                                                      secondary={study.GeneAnnotationVersion}/>
-                                    </ListItem>
-                                    <ListItem>
-                                        <ListItemText primary="Created by" secondary={study.CreatedBy}/>
-                                    </ListItem>
-                                </List>
-                            </Grid>
+        <StudyDrawer study={study} basePath={match.url}>
+            <Card className={classes.card}>
+                <CardContent>
+                    <Typography variant="h5" component="h2">
+                        About the Study
+                    </Typography>
+                    <Grid container spacing={24}>
+                        <Grid item xs={6}>
+                            <List>
+                                <ListItem>
+                                    <ListItemText primary="Description" secondary={study.Description}/>
+                                </ListItem>
+                                <ListItem>
+                                    <ListItemText primary="Sample count" secondary={study.SampleCount}/>
+                                </ListItem>
+                                <ListItem>
+                                    <ListItemText primary="Feature count" secondary={study.FeatureCount}/>
+                                </ListItem>
+                            </List>
                         </Grid>
-                    </CardContent>
-                </Card>
-            </div>
+                        <Grid item xs={6}>
+                            <List>
+                                <ListItem>
+                                    <ListItemText primary="Expression type" secondary={study.ExpressionType}/>
+                                </ListItem>
+                                <ListItem>
+                                    <ListItemText primary="Gene annotation version"
+                                                  secondary={study.GeneAnnotationVersion}/>
+                                </ListItem>
+                                <ListItem>
+                                    <ListItemText primary="Created by" secondary={study.CreatedBy}/>
+                                </ListItem>
+                            </List>
+                        </Grid>
+                    </Grid>
+                </CardContent>
+            </Card>
         </StudyDrawer>
     );
 }

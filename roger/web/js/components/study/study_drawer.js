@@ -117,7 +117,7 @@ class StudyDrawer extends React.Component {
     };
 
     render() {
-        const {classes, theme, study, url} = this.props;
+        const {classes, theme, study, basePath} = this.props;
         const {open} = this.state;
 
         return (
@@ -156,21 +156,21 @@ class StudyDrawer extends React.Component {
                     </div>
                     <Divider/>
                     <List component="nav">
-                        <ListItemLink button to={`${url}`} primary="Overview"/>
-                        <ListItemLink button to={`${url}/gene_expression`} primary="Gene Expression"/>
+                        <ListItemLink button to={`${basePath}`} primary="Overview"/>
+                        <ListItemLink button to={`${basePath}/expression`} primary="Gene Expression"/>
                     </List>
                     <Divider/>
                     <List component="nav">
                         {study.Design.map(design => (
                             <li key={design.Name}>
-                                <ListItem button component={Link} to={`${url}/design/${design.Name}`}>
+                                <ListItem button component={Link} to={`${basePath}/design/${design.Name}`}>
                                     <ListItemText primary={design.Name}/>
                                 </ListItem>
                                 <List>
                                     {design.Contrast.map(contrast => (
                                         <li key={contrast.Name}>
                                             <ListItem className={classes.nestedLevel1} button component={Link}
-                                                      to={`${url}/design/${design.Name}/contrast/${contrast.Name}`}>
+                                                      to={`${basePath}/design/${design.Name}/contrast/${contrast.Name}`}>
                                                 <ListItemText primary={contrast.Name}/>
                                             </ListItem>
                                             <List>
@@ -178,7 +178,7 @@ class StudyDrawer extends React.Component {
                                                     <li key={dgeResult.MethodName}>
                                                         <ListItem className={classes.nestedLevel2} button
                                                                   component={Link}
-                                                                  to={`${url}/design/`
+                                                                  to={`${basePath}/design/`
                                                                   + `${design.Name}/contrast/`
                                                                   + `${contrast.Name}/dge/${dgeResult.MethodName}`}>
                                                             <ListItemText primary={`DGE with ${dgeResult.MethodName}`}/>
@@ -189,7 +189,7 @@ class StudyDrawer extends React.Component {
                                                     <li key={gseResult.GSEMethodName}>
                                                         <ListItem className={classes.nestedLevel2} button
                                                                   component={Link}
-                                                                  to={`${url}/design/`
+                                                                  to={`${basePath}/design/`
                                                                   + `${design.Name}/contrast/`
                                                                   + `${contrast.Name}/dge/${gseResult.DGEMethodName}`
                                                                   + `${contrast.Name}/gse/${gseResult.GSEMethodName}`}>
@@ -223,7 +223,7 @@ StudyDrawer.propTypes = {
     classes: PropTypes.object.isRequired,
     theme: PropTypes.object.isRequired,
     study: PropTypes.object.isRequired,
-    url: PropTypes.string.isRequired
+    basePath: PropTypes.string.isRequired
 };
 
 export default withStyles(styles, {withTheme: true})(StudyDrawer);
