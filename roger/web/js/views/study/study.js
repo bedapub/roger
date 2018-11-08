@@ -1,13 +1,13 @@
 import React from 'react';
 import {Route, Switch} from "react-router-dom";
 
-import StudyOverview from "./study/overview";
-import GeneExpression from "./study/gene_expression";
+import StudyOverview from "Roger/views/study/overview";
+import GeneExpression from "Roger/views/study/gene_expression";
 
-import DesignOverview from "./study/design/overview";
+import DesignOverview from "Roger/views/design/overview";
 
-import {URL_PREFIX} from "../logic/rest";
-import {NotFound} from "./not_found";
+import {URL_PREFIX} from "Roger/logic/rest";
+import {NotFound} from "Roger/views/not_found";
 
 
 class SingleStudy extends React.Component {

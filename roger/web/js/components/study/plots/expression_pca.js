@@ -1,7 +1,7 @@
 import React from 'react';
 import Plot from 'react-plotly.js';
 
-import {URL_PREFIX} from "../../../logic/rest";
+import {URL_PREFIX} from "Roger/logic/rest";
 import './loading_spinner.css';
 
 const SpinnerAnimation =

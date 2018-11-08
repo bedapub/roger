@@ -9,7 +9,7 @@ import Grid from '@material-ui/core/Grid';
 import CardContent from '@material-ui/core/CardContent';
 import Typography from '@material-ui/core/Typography';
 
-import StudyDrawer from "../../components/study/study_drawer";
+import StudyDrawer from "Roger/components/study/study_drawer";
 
 const styles = {
     card: {

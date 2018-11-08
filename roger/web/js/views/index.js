@@ -4,11 +4,11 @@ import {BrowserRouter as Router, Route, Switch} from "react-router-dom";
 import {createMuiTheme, MuiThemeProvider} from '@material-ui/core/styles';
 import {NotFound} from "./not_found";
 import {StudiesView} from "./studies";
-import {SingleStudyView} from "./study";
+import {SingleStudyView} from "./study/study";
 import "isomorphic-fetch"
 import 'typeface-roboto';
 
-import ErrorBoundary from "../components/error_boundary"
+import ErrorBoundary from "Roger/components/error_boundary"
 
 const theme = createMuiTheme({
     typography: {

@@ -1,3 +1,5 @@
+var path = require('path');
+
 module.exports = {
     entry: [
         './roger/web/js/views/index.js'
@@ -23,6 +25,11 @@ module.exports = {
         path: __dirname + '/roger/web/static',
         filename: 'bundle.js',
         publicPath: '/static'
+    },
+    resolve: {
+        alias: {
+            Roger: path.resolve(__dirname, 'roger/web/js'),
+        }
     },
     stats: {
         errorDetails: true

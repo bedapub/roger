@@ -1,5 +1,5 @@
 import React from 'react';
-import {URL_PREFIX} from "../logic/rest";
+import {URL_PREFIX} from "Roger/logic/rest";
 import {Link} from "react-router-dom";
 
 class StudyList extends React.Component {

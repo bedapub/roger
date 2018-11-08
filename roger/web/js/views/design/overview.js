@@ -10,8 +10,8 @@ import CardContent from '@material-ui/core/CardContent';
 import Typography from '@material-ui/core/Typography';
 
 
-import StudyDrawer from "../../../components/study/study_drawer";
-import DesignTable from "../../../components/design/design_table";
+import StudyDrawer from "Roger/components/study/study_drawer";
+import DesignTable from "Roger/components/design/design_table";
 
 const styles = {
     card: {
