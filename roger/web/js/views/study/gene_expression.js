@@ -33,7 +33,7 @@ GeneExpression.propTypes = {
     classes: PropTypes.object.isRequired,
     study: PropTypes.object.isRequired,
     sampleAnnotation: PropTypes.object.isRequired,
-    match: PropTypes.object.isRequired
+    basePath: PropTypes.string.isRequired
 };
 
 export default withStyles(styles)(GeneExpression);
