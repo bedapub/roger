@@ -1,8 +1,9 @@
 import React from 'react';
-import {Route, Switch} from "react-router-dom";
+import {Link, Route, Switch} from "react-router-dom";
 import PropTypes from 'prop-types';
 
-import DesignOverview from "Roger/views/design/overview";
+import DesignOverviewView from "Roger/views/design/overview";
+import ContrastRouter from "Roger/views/contrast/router";
 import {NotFound} from "Roger/views/not_found";
 
 
@@ -17,12 +18,24 @@ class DesignRouter extends React.Component {
         return <Switch>
             <Route exact path={`${designBaseURL}/`}
                    render={() =>
-                       <DesignOverview
+                       <DesignOverviewView
                            study={study}
                            sampleAnnotation={sampleAnnotation}
                            design={design}
                            basePath={studyBaseURL}/>
                    }/>
+            {design.Contrast.map(contrast =>
+                <Route key={contrast.Name} exact path={`${designBaseURL}/contrast/${contrast.Name}`}
+                       render={() =>
+                           <ContrastRouter
+                               study={study}
+                               sampleAnnotation={sampleAnnotation}
+                               design={design}
+                               contrast={contrast}
+                               studyBaseURL={studyBaseURL}
+                               contrastBaseURL={`${designBaseURL}/contrast/${contrast.Name}`}/>
+                       }/>
+            )}
             <Route component={NotFound}/>
         </Switch>;
     }
