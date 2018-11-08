@@ -15,7 +15,7 @@ class ContrastRouter extends React.Component {
     }
 
     render() {
-        const {study, sampleAnnotation, contrast, studyBaseURL, contrastBaseURL} = this.props;
+        const {study, sampleAnnotation, design, contrast, studyBaseURL, contrastBaseURL} = this.props;
         return <Switch>
             <Route exact path={`${contrastBaseURL}/`}
                    render={() =>
@@ -32,7 +32,9 @@ class ContrastRouter extends React.Component {
                            <DGEView
                                study={study}
                                sampleAnnotation={sampleAnnotation}
+                               design={design}
                                contrast={contrast}
+                               dgeResult={dgeResult}
                                studyBaseURL={studyBaseURL}/>
                        }/>
             )}
