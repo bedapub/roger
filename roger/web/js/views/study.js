@@ -30,12 +30,16 @@ class SingleStudy extends React.Component {
                                                   study={study}
                                                   sampleAnnotation={sampleAnnotation}/>
                                }/>
-                        <Route exact path={`${url}/design/:designName`}
-                               render={(props) =>
-                                   <DesignOverview study={study} sampleAnnotation={sampleAnnotation}
-                                                   design={study.Design.find(e => e.Name === props.match.params.designName)}
-                                                   basePath={url}/>
-                               }/>
+                        {study.Design.map(design =>
+                            <Route key={design.Name} exact path={`${url}/design/${design.Name}`}
+                                   render={(props) =>
+                                       <DesignOverview {...props}
+                                                       study={study}
+                                                       sampleAnnotation={sampleAnnotation}
+                                                       design={design}
+                                                       basePath={url}/>
+                                   }/>
+                        )}
                         <Route component={NotFound}/>
                     </Switch>;
                 this.setState({studyComp: studyComp});
