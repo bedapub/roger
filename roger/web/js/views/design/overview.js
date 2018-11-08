@@ -32,7 +32,7 @@ function DesignOverviewView(props) {
             <Card className={classes.card}>
                 <CardContent>
                     <Typography variant="h5" component="h2">
-                        About the Study
+                        About the design: {design.Name}
                     </Typography>
                     <Grid container spacing={24}>
                         <Grid item xs={6}>

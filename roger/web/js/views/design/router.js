@@ -25,7 +25,7 @@ class DesignRouter extends React.Component {
                            basePath={studyBaseURL}/>
                    }/>
             {design.Contrast.map(contrast =>
-                <Route key={contrast.Name} exact path={`${designBaseURL}/contrast/${contrast.Name}`}
+                <Route key={contrast.Name} path={`${designBaseURL}/contrast/${contrast.Name}`}
                        render={() =>
                            <ContrastRouter
                                study={study}

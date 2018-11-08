@@ -9,9 +9,7 @@ import Card from '@material-ui/core/Card';
 import CardContent from '@material-ui/core/CardContent';
 import Typography from '@material-ui/core/Typography';
 
-
 import StudyDrawer from "Roger/components/study/study_drawer";
-import DesignTable from "Roger/components/design/design_table";
 
 const styles = {
     card: {
@@ -19,10 +17,6 @@ const styles = {
         marginBottom: 12,
     },
 };
-
-function countSampleSubset(sampleSubset) {
-    return sampleSubset.filter(entry => entry.IsUsed).length
-}
 
 function ContrastOverviewView(props) {
     const {classes, study, contrast, studyBaseURL} = props;
@@ -32,7 +26,7 @@ function ContrastOverviewView(props) {
             <Card className={classes.card}>
                 <CardContent>
                     <Typography variant="h5" component="h2">
-                        About the Study
+                        About the contract: {contrast.Name}
                     </Typography>
                     <Grid container spacing={24}>
                         <Grid item xs={6}>

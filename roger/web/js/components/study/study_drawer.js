@@ -191,8 +191,8 @@ class StudyDrawer extends React.Component {
                                                                   component={Link}
                                                                   to={`${basePath}/design/`
                                                                   + `${design.Name}/contrast/`
-                                                                  + `${contrast.Name}/dge/${gseResult.DGEMethodName}`
-                                                                  + `${contrast.Name}/gse/${gseResult.GSEMethodName}`}>
+                                                                  + `${contrast.Name}/dge/${gseResult.DGEMethodName}/`
+                                                                  + `gse/${gseResult.GSEMethodName}`}>
                                                             <ListItemText
                                                                 primary={`GSE with ${gseResult.GSEMethodName} `
                                                                 + `and ${gseResult.DGEMethodName}`}/>
