@@ -26,11 +26,9 @@ class SingleStudy extends React.Component {
                     <Switch>
                         <Route exact path={`${url}/`}
                                render={(props) =>
-                                   <StudyDrawer study={study} url={url}>
-                                       <StudyOverview {...props}
-                                                      study={study}
-                                                      sampleAnnotation={sampleAnnotation}/>
-                                   </StudyDrawer>
+                                   <StudyOverview {...props}
+                                                  study={study}
+                                                  sampleAnnotation={sampleAnnotation}/>
                                }/>
                         <Route exact path={`${url}/design/:designName`}
                                render={(props) =>
