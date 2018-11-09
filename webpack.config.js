@@ -22,7 +22,7 @@ module.exports = {
         ]
     },
     output: {
-        path: __dirname + '/roger/web/static',
+        path: __dirname + '/roger/static',
         filename: 'bundle.js',
         publicPath: '/static'
     },
