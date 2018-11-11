@@ -64,9 +64,16 @@ function DesignOverviewView(props) {
                     </Grid>
                 </CardContent>
             </Card>
-            <DesignTable
-                design={design}
-                sampleAnnotation={sampleAnnotation}/>
+            <Card className={classes.card}>
+                <CardContent>
+                    <Typography variant="h5" component="h2">
+                        Design Matrix & Sample Information
+                    </Typography>
+                    <DesignTable
+                        design={design}
+                        sampleAnnotation={sampleAnnotation}/>
+                </CardContent>
+            </Card>
         </StudyDrawer>
     );
 }
