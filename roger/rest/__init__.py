@@ -69,7 +69,7 @@ def get_file(form_field):
 # -----------------
 
 
-class GSETable(Resource):
+class GSETableCSVView(Resource):
     def get(self, study_name, design_name, contrast_name, dge_method_name, gse_method_name):
         session = db.session()
         gse_model = get_gse_result(session, contrast_name, design_name, study_name, dge_method_name, gse_method_name)
@@ -77,17 +77,33 @@ class GSETable(Resource):
         return make_response(gse_model.result_table.to_csv(index=False), 201)
 
 
-api.add_resource(GSETable,
+api.add_resource(GSETableCSVView,
                  '/study/<string:study_name>'
                  '/design/<string:design_name>'
                  '/contrast/<string:contrast_name>'
                  '/dge/<string:dge_method_name>'
-                 '/gse/<string:gse_method_name>/tbl')
+                 '/gse/<string:gse_method_name>/tbl/csv')
 
+
+class GSETableJSONView(Resource):
+    def get(self, study_name, design_name, contrast_name, dge_method_name, gse_method_name):
+        session = db.session()
+        gse_model = get_gse_result(session, contrast_name, design_name, study_name, dge_method_name, gse_method_name)
+
+        return make_response(gse_model.result_table.to_json(orient="table"), 201)
+
+
+api.add_resource(GSETableJSONView,
+                 '/study/<string:study_name>'
+                 '/design/<string:design_name>'
+                 '/contrast/<string:contrast_name>'
+                 '/dge/<string:dge_method_name>'
+                 '/gse/<string:gse_method_name>/tbl/json')
 
 # -----------------
 # DGE plots
 # -----------------
+
 
 def quantileRange(x, outlier=0.01, symmetric=True):
     quants = [outlier / 2, 1 - outlier / 2]
@@ -222,7 +238,7 @@ DGEModelViewFields = {
 }
 
 
-class DGETopTableView(Resource):
+class DGETopTableCSVView(Resource):
     def get(self, study_name, design_name, contrast_name, dge_method_name):
         session = db.session()
         dge_model = get_dge_model(session, contrast_name, design_name, study_name, dge_method_name)
@@ -230,14 +246,43 @@ class DGETopTableView(Resource):
         return make_response(dge_model.result_table.to_csv(index=False), 201)
 
 
-api.add_resource(DGETopTableView,
+api.add_resource(DGETopTableCSVView,
                  '/study/<string:study_name>'
                  '/design/<string:design_name>'
                  '/contrast/<string:contrast_name>'
-                 '/dge/<string:dge_method_name>/tbl')
+                 '/dge/<string:dge_method_name>/tbl/csv')
 
 
-class FeatureSubsetView(Resource):
+class DGETopTableJSONView(Resource):
+    def get(self, study_name, design_name, contrast_name, dge_method_name):
+        session = db.session()
+        dge_model = get_dge_model(session, contrast_name, design_name, study_name, dge_method_name)
+
+        return make_response(dge_model.result_table.to_json(orient="table"), 201)
+
+
+api.add_resource(DGETopTableJSONView,
+                 '/study/<string:study_name>'
+                 '/design/<string:design_name>'
+                 '/contrast/<string:contrast_name>'
+                 '/dge/<string:dge_method_name>/tbl/json')
+
+class FeatureSubsetJSONView(Resource):
+    def get(self, study_name, design_name, contrast_name, dge_method_name):
+        session = db.session()
+        dge_model = get_dge_model(session, contrast_name, design_name, study_name, dge_method_name)
+
+        return make_response(dge_model.feature_subset_table.to_json(orient="table"), 201)
+
+
+api.add_resource(FeatureSubsetJSONView,
+                 '/study/<string:study_name>'
+                 '/design/<string:design_name>'
+                 '/contrast/<string:contrast_name>'
+                 '/dge/<string:dge_method_name>/feature_subset/json')
+
+
+class FeatureSubsetCSVView(Resource):
     def get(self, study_name, design_name, contrast_name, dge_method_name):
         session = db.session()
         dge_model = get_dge_model(session, contrast_name, design_name, study_name, dge_method_name)
@@ -245,11 +290,11 @@ class FeatureSubsetView(Resource):
         return make_response(dge_model.feature_subset_table.to_csv(index=False), 201)
 
 
-api.add_resource(FeatureSubsetView,
+api.add_resource(FeatureSubsetCSVView,
                  '/study/<string:study_name>'
                  '/design/<string:design_name>'
                  '/contrast/<string:contrast_name>'
-                 '/dge/<string:dge_method_name>/feature_subset')
+                 '/dge/<string:dge_method_name>/feature_subset/csv')
 
 # -----------------
 # Design
@@ -390,7 +435,7 @@ api.add_resource(SampleAnnotationCSVView,
                  '/study/<string:Name>/sample_annotation/csv')
 
 
-class FeatureAnnotationView(Resource):
+class FeatureAnnotationCSVView(Resource):
     def get(self, Name):
         session = db.session()
         study = get_ds(session, Name)
@@ -398,5 +443,17 @@ class FeatureAnnotationView(Resource):
         return make_response(study.feature_data.to_csv(index=False), 201)
 
 
-api.add_resource(FeatureAnnotationView,
-                 '/study/<string:Name>/feature_annotation')
+api.add_resource(FeatureAnnotationCSVView,
+                 '/study/<string:Name>/feature_annotation/csv')
+
+
+class FeatureAnnotationJSONView(Resource):
+    def get(self, Name):
+        session = db.session()
+        study = get_ds(session, Name)
+
+        return make_response(study.feature_data.to_json(orient="table"), 201)
+
+
+api.add_resource(FeatureAnnotationJSONView,
+                 '/study/<string:Name>/feature_annotation/json')
