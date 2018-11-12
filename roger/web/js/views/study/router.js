@@ -6,10 +6,8 @@ import {URL_PREFIX} from "Roger/logic/rest";
 
 import StudyOverview from "Roger/views/study/overview";
 import GeneExpression from "Roger/views/study/gene_expression";
-import {NotFound} from "Roger/views/not_found";
-
 import DesignRouter from "Roger/views/design/router";
-
+import {NotFound} from "Roger/views/not_found";
 
 class StudyRouter extends React.Component {
     constructor(props) {
