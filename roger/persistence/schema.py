@@ -415,6 +415,13 @@ class DGEmodel(db.Model):
                                                    .filter(DGEtable.DGEmethodID == self.DGEmethodID)
                                                    .filter(DGEtable.ContrastID == self.ContrastID))
 
+    @hybrid_property
+    def annotated_result_table(self):
+        return roger.logic.util.data.as_data_frame(DGEtable.query
+                                                   .filter(DGEtable.DGEmethodID == self.DGEmethodID)
+                                                   .filter(DGEtable.ContrastID == self.ContrastID)
+                                                   .filter(ContrastColumn.ID == DGEtable.ContrastColumnID))
+
 
 class FeatureSubset(db.Model):
     __tablename__ = 'FeatureSubset'

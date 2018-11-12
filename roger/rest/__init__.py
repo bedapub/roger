@@ -239,11 +239,12 @@ DGEModelViewFields = {
 
 
 class DGETopTableCSVView(Resource):
+    @cache.cached()
     def get(self, study_name, design_name, contrast_name, dge_method_name):
         session = db.session()
         dge_model = get_dge_model(session, contrast_name, design_name, study_name, dge_method_name)
 
-        return make_response(dge_model.result_table.to_csv(index=False), 201)
+        return make_response(dge_model.annotated_result_table.to_csv(index=False), 201)
 
 
 api.add_resource(DGETopTableCSVView,
@@ -254,11 +255,12 @@ api.add_resource(DGETopTableCSVView,
 
 
 class DGETopTableJSONView(Resource):
+    @cache.cached()
     def get(self, study_name, design_name, contrast_name, dge_method_name):
         session = db.session()
         dge_model = get_dge_model(session, contrast_name, design_name, study_name, dge_method_name)
 
-        return make_response(dge_model.result_table.to_json(orient="table"), 201)
+        return make_response(dge_model.annotated_result_table.to_json(orient="table"), 201)
 
 
 api.add_resource(DGETopTableJSONView,
@@ -381,7 +383,7 @@ StudyViewFields = merge_dicts(StudiesViewFields, {
     'ExprsFile': fields.String(attribute='ExprsSrc'),
     'PhenoFile': fields.String(attribute='PhenoSrc'),
     'ExprsTable': fields.Url('api.exprsview', absolute=True),
-    'FeatureAnnotationTable': fields.Url('api.featureannotationview', absolute=True),
+    'FeatureAnnotationTable': fields.Url('api.featureannotationjsonview', absolute=True),
     'SampleAnnotationExprsTable': fields.Url('api.sampleannotationjsonview', absolute=True),
     'Design': fields.List(fields.Nested(DesignViewFields))
 })
