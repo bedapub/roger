@@ -168,39 +168,42 @@ class StudyDrawer extends React.Component {
                                 </ListItem>
                                 <List>
                                     {design.Contrast.map(contrast => (
-                                        <li key={contrast.Name}>
-                                            <ListItem className={classes.nestedLevel1} button component={Link}
-                                                      to={`${basePath}/design/${design.Name}/contrast/${contrast.Name}`}>
-                                                <ListItemText primary={contrast.Name}/>
-                                            </ListItem>
-                                            <List>
-                                                {contrast.DGEmodel.map(dgeResult => (
-                                                    <li key={dgeResult.MethodName}>
-                                                        <ListItem className={classes.nestedLevel2} button
-                                                                  component={Link}
-                                                                  to={`${basePath}/design/`
-                                                                  + `${design.Name}/contrast/`
-                                                                  + `${contrast.Name}/dge/${dgeResult.MethodName}`}>
-                                                            <ListItemText primary={`DGE with ${dgeResult.MethodName}`}/>
-                                                        </ListItem>
-                                                    </li>
-                                                ))}
-                                                {contrast.GSEresult.map(gseResult => (
-                                                    <li key={gseResult.GSEMethodName}>
-                                                        <ListItem className={classes.nestedLevel2} button
-                                                                  component={Link}
-                                                                  to={`${basePath}/design/`
-                                                                  + `${design.Name}/contrast/`
-                                                                  + `${contrast.Name}/dge/${gseResult.DGEMethodName}/`
-                                                                  + `gse/${gseResult.GSEMethodName}`}>
-                                                            <ListItemText
-                                                                primary={`GSE with ${gseResult.GSEMethodName} `
-                                                                + `and ${gseResult.DGEMethodName}`}/>
-                                                        </ListItem>
-                                                    </li>
-                                                ))}
-                                            </List>
-                                        </li>
+                                        contrast.ContrastColumn.map(contrastColumn => (
+                                            <li key={contrastColumn.Name}>
+                                                <ListItem className={classes.nestedLevel1} button component={Link}
+                                                          to={`${basePath}/design/${design.Name}/contrast/${contrastColumn.Name}`}>
+                                                    <ListItemText primary={contrastColumn.Name}/>
+                                                </ListItem>
+                                                <List>
+                                                    {contrast.DGEmodel.map(dgeResult => (
+                                                        <li key={dgeResult.MethodName}>
+                                                            <ListItem className={classes.nestedLevel2} button
+                                                                      component={Link}
+                                                                      to={`${basePath}/design/`
+                                                                      + `${design.Name}/contrast/`
+                                                                      + `${contrastColumn.Name}/dge/${dgeResult.MethodName}`}>
+                                                                <ListItemText
+                                                                    primary={`DGE (${dgeResult.MethodName})`}/>
+                                                            </ListItem>
+                                                        </li>
+                                                    ))}
+                                                    {contrast.GSEresult.map(gseResult => (
+                                                        <li key={gseResult.GSEMethodName}>
+                                                            <ListItem className={classes.nestedLevel2} button
+                                                                      component={Link}
+                                                                      to={`${basePath}/design/`
+                                                                      + `${design.Name}/contrast/`
+                                                                      + `${contrastColumn.Name}/dge/${gseResult.DGEMethodName}/`
+                                                                      + `gse/${gseResult.GSEMethodName}`}>
+                                                                <ListItemText
+                                                                    primary={`GSE (${gseResult.GSEMethodName} `
+                                                                    + `+${gseResult.DGEMethodName})`}/>
+                                                            </ListItem>
+                                                        </li>
+                                                    ))}
+                                                </List>
+                                            </li>
+                                        ))
                                     ))}
                                 </List>
                             </li>

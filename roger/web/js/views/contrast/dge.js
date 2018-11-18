@@ -16,7 +16,7 @@ const styles = {
 };
 
 function DGEView(props) {
-    const {classes, study, studyAnnotation, design, contrast, dgeResult, studyBaseURL} = props;
+    const {classes, study, studyAnnotation, design, contrast, contrastColumn, dgeResult, studyBaseURL} = props;
 
     return (
         <StudyDrawer study={study} basePath={studyBaseURL}>
@@ -38,7 +38,7 @@ function DGEView(props) {
                     </Typography>
                     <DGEVolcanoPlot studyName={study.Name}
                                        designName={design.Name}
-                                       contrastName={contrast.Name}
+                                       contrastName={contrastColumn.Name}
                                        dgeMethodName={dgeResult.MethodName}/>
                 </CardContent>
             </Card>
@@ -50,6 +50,8 @@ DGEView.propTypes = {
     classes: PropTypes.object.isRequired,
     study: PropTypes.object.isRequired,
     design: PropTypes.object.isRequired,
+    contrast: PropTypes.object.isRequired,
+    contrastColumn: PropTypes.object.isRequired,
     dgeResult: PropTypes.object.isRequired,
     sampleAnnotation: PropTypes.object.isRequired,
     studyBaseURL: PropTypes.string.isRequired

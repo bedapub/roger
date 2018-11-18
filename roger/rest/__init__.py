@@ -12,7 +12,7 @@ from roger.logic.gse import get_gse_result
 from roger.logic.util.common import merge_dicts
 from roger.logic.util.exception import ROGERUsageError
 from roger.persistence import db
-from roger.persistence.dge import get_all_ds, get_ds, get_dge_model
+from roger.persistence.dge import get_all_ds, get_ds, get_dge_model, get_dge_tbl
 
 ALLOWED_EXTENSIONS = {'gct', 'txt'}
 IDENT_PATTERN = re.compile("^[a-zA-Z]\\w*$")
@@ -114,49 +114,12 @@ def quantileRange(x, outlier=0.01, symmetric=True):
     return qts.tolist()
 
 
-def gen_voncano_plot(contrast_column_id, dge_table, contrast_columns, x_range, y_range):
-    single_table = dge_table[dge_table.ContrastColumnID == contrast_column_id]
-    neg_log10_pvalue = -numpy.log10(single_table.PValue)
-    log_fc = single_table.LogFC
-
-    data = {'x': log_fc.tolist(),
-            'y': neg_log10_pvalue.tolist(),
-            'text': dge_table.GeneSymbol.tolist(),
-            'type': 'scatter',
-            'mode': 'markers'}
-    layout = {
-        "xaxis": {
-            "title": "logFC",
-            "range": x_range,
-            "showline": True,
-        },
-        "yaxis": {
-            "title": "-log10(PValue)",
-            "range": y_range,
-            "showline": True,
-        },
-        "width": 500,
-        "height": 500,
-        "title": contrast_columns[contrast_columns.ID == contrast_column_id].Name.values[0]
-    }
-    return {'data': [data], 'layout': layout}
-
-
 class DGE_Plot_Volcano(Resource):
     @cache.cached()
     def get(self, study_name, design_name, contrast_name, dge_method_name):
         session = db.session()
-        dge_model = get_dge_model(session,
-                                  contrast_name,
-                                  design_name,
-                                  study_name,
-                                  dge_method_name)
-        dge_table = dge_model.result_table
-        feature_data = dge_model.Contrast.Design.DataSet.feature_data
-        contrast_columns = dge_model.Contrast.contrast_columns
 
-        dge_table = dge_table.join(contrast_columns.set_index('ID'), on='ContrastColumnID', rsuffix="Contrast", )
-        dge_table = dge_table.join(feature_data.set_index('FeatureIndex'), on='FeatureIndex', rsuffix="Feature", )
+        dge_table = get_dge_tbl(session, contrast_name, design_name, study_name, dge_method_name);
 
         neg_log10_pvalue = -numpy.log10(dge_table.PValue)
         log_fc = dge_table.LogFC
@@ -164,10 +127,30 @@ class DGE_Plot_Volcano(Resource):
         x_range = quantileRange(log_fc, symmetric=True)
         y_range = [0, max(quantileRange(neg_log10_pvalue, symmetric=False))]
 
-        plots = [gen_voncano_plot(contrastColumnId, dge_table, contrast_columns, x_range, y_range)
-                 for contrastColumnId in set(dge_table.ContrastColumnID)]
+        neg_log10_pvalue = -numpy.log10(dge_table.PValue)
+        log_fc = dge_table.LogFC
 
-        return jsonify(plots)
+        data = {'x': log_fc.tolist(),
+                'y': neg_log10_pvalue.tolist(),
+                'text': dge_table.GeneSymbol.tolist(),
+                'type': 'scatter',
+                'mode': 'markers'}
+        layout = {
+            "xaxis": {
+                "title": "logFC",
+                "range": x_range,
+                "showline": True,
+            },
+            "yaxis": {
+                "title": "-log10(PValue)",
+                "range": y_range,
+                "showline": True,
+            },
+            "width": 500,
+            "height": 500,
+            "title": contrast_name
+        }
+        return jsonify({'data': [data], 'layout': layout})
 
 
 api.add_resource(DGE_Plot_Volcano,

@@ -16,6 +16,10 @@ export default class DGEVolcanoPlot extends React.Component {
     constructor(props) {
         super(props);
         this.state = {loaded: false, renderedComp: []};
+        console.log(`${URL_PREFIX}/study/${this.props.studyName}`
+            + `/design/${this.props.designName}`
+            + `/contrast/${this.props.contrastName}`
+            + `/dge/${this.props.dgeMethodName}/plot/volcano`);
     }
 
     componentDidMount() {
@@ -25,12 +29,11 @@ export default class DGEVolcanoPlot extends React.Component {
             + `/dge/${this.props.dgeMethodName}/plot/volcano`)
             .then(result => result.json())
             .then(volcano_data => {
-                let renderedComp = volcano_data.map(plotData =>
-                    <Plot key={plotData.layout.title}
-                        data={plotData.data}
-                        layout={plotData.layout}
+                let renderedComp =
+                    <Plot
+                        data={volcano_data.data}
+                        layout={volcano_data.layout}
                     />
-                );
                 this.setState({loaded: true, renderedComp: renderedComp});
             });
     }

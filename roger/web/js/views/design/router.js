@@ -1,5 +1,5 @@
 import React from 'react';
-import {Link, Route, Switch} from "react-router-dom";
+import {Route, Switch} from "react-router-dom";
 import PropTypes from 'prop-types';
 
 import DesignOverviewView from "Roger/views/design/overview";
@@ -25,16 +25,19 @@ class DesignRouter extends React.Component {
                            basePath={studyBaseURL}/>
                    }/>
             {design.Contrast.map(contrast =>
-                <Route key={contrast.Name} path={`${designBaseURL}/contrast/${contrast.Name}`}
-                       render={() =>
-                           <ContrastRouter
-                               study={study}
-                               sampleAnnotation={sampleAnnotation}
-                               design={design}
-                               contrast={contrast}
-                               studyBaseURL={studyBaseURL}
-                               contrastBaseURL={`${designBaseURL}/contrast/${contrast.Name}`}/>
-                       }/>
+                contrast.ContrastColumn.map(contrastColumn =>
+                    <Route key={contrastColumn.Name} path={`${designBaseURL}/contrast/${contrastColumn.Name}`}
+                           render={() =>
+                               <ContrastRouter
+                                   study={study}
+                                   sampleAnnotation={sampleAnnotation}
+                                   design={design}
+                                   contrast={contrast}
+                                   contrastColumn={contrastColumn}
+                                   studyBaseURL={studyBaseURL}
+                                   contrastBaseURL={`${designBaseURL}/contrast/${contrastColumn.Name}`}/>
+                           }/>
+                )
             )}
             <Route component={NotFound}/>
         </Switch>;

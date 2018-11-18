@@ -9,7 +9,7 @@ import roger.logic.util.common
 import roger.logic.util.data
 
 from roger.persistence.schema import DGEmethod, DataSet, Design, SampleSubset, Contrast, ContrastColumn, \
-    FeatureMapping, DGEmodel
+    FeatureMapping, DGEmodel, DGEtable
 from roger.logic.util.exception import ROGERUsageError
 from roger.logic.util.data import as_data_frame, insert_data_frame
 from roger.logic.util.common import get_or_guess_name, get_current_datetime, get_current_user_name, silent_rmdir, \
@@ -256,7 +256,7 @@ def create_design_data(design_data, pheno_data, name=None, description=None,
     # TODO make this customizable by user
     sample_subset = DataFrame({"SampleIndex": range(0, pheno_data.shape[0]),
                                "IsUsed": True,
-                               "Description": "ROGER currently only support designs where all samples are used."})
+                               "Description": "No filtering"})
 
     # TODO make this customizable by user
     json_obj = [{"columnName": col_name,
@@ -428,9 +428,30 @@ def get_dge_model(session, contrast_name, design_name, dataset_name, method_name
     return model
 
 
+def get_dge_tbl(session, contrast_name, design_name, dataset_name, method_name) -> DGEmodel:
+    contrast = session.query(ContrastColumn) \
+        .filter(DGEmodel.DGEmethodID == DGEmethod.ID) \
+        .filter(DGEmodel.ContrastID == Contrast.ID) \
+        .filter(Contrast.DesignID == Design.ID) \
+        .filter(Design.DataSetID == DataSet.ID) \
+        .filter(ContrastColumn.ContrastID == Contrast.ID) \
+        .filter(Design.Name == design_name) \
+        .filter(DataSet.Name == dataset_name) \
+        .filter(DGEmethod.Name == method_name) \
+        .filter(ContrastColumn.Name == contrast_name).one_or_none()
+    if contrast is None:
+        raise ROGERUsageError("Model for %s:%s:%s does not exists" % (dataset_name, design_name, contrast_name))
+
+    dge_table = as_data_frame(session.query(DGEtable).filter(DGEtable.ContrastColumnID == contrast.ID))
+    feature_data = contrast.Design.DataSet.feature_data
+    dge_table['Contrast'] = contrast.Name
+    dge_table['Design'] = contrast.Design.Name
+    return dge_table.join(feature_data.set_index('FeatureIndex'), on='FeatureIndex', rsuffix="Feature")
+
+
 def get_model_by_id(contrast_id, method_id) -> DGEmodel:
-    return DGEmodel.query\
-        .filter(DGEmodel.ContrastID == contrast_id)\
+    return DGEmodel.query \
+        .filter(DGEmodel.ContrastID == contrast_id) \
         .filter(DGEmodel.DGEmethodID == method_id).one()
 
 

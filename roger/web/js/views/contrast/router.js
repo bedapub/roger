@@ -15,7 +15,7 @@ class ContrastRouter extends React.Component {
     }
 
     render() {
-        const {study, sampleAnnotation, design, contrast, studyBaseURL, contrastBaseURL} = this.props;
+        const {study, sampleAnnotation, design, contrast, contrastColumn, studyBaseURL, contrastBaseURL} = this.props;
         return <Switch>
             <Route exact path={`${contrastBaseURL}/`}
                    render={() =>
@@ -34,6 +34,7 @@ class ContrastRouter extends React.Component {
                                sampleAnnotation={sampleAnnotation}
                                design={design}
                                contrast={contrast}
+                               contrastColumn={contrastColumn}
                                dgeResult={dgeResult}
                                studyBaseURL={studyBaseURL}/>
                        }/>
@@ -59,6 +60,7 @@ ContrastRouter.propTypes = {
     sampleAnnotation: PropTypes.object.isRequired,
     design: PropTypes.object.isRequired,
     contrast: PropTypes.object.isRequired,
+    contrastColumn: PropTypes.object.isRequired,
     studyBaseURL: PropTypes.string.isRequired,
     contrastBaseURL: PropTypes.string.isRequired
 };
