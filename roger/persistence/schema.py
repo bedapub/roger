@@ -349,16 +349,18 @@ class ContrastColumn(db.Model):
     __tablename__ = 'ContrastColumn'
 
     ID = Column(Integer, primary_key=True)
+    DesignID = Column(Integer, ForeignKey(Design.ID, ondelete="CASCADE"), nullable=False)
     ContrastID = Column(Integer, ForeignKey(Contrast.ID, ondelete="CASCADE"), nullable=False)
     Name = Column(String(DEFAULT_STR_SIZE), nullable=False)
     Description = Column(String(STR_DESC_SIZE))
     #  Numeric array - numerical combination of variables in design matrix
     ColumnData = Column(RogerJSON, nullable=False)
 
+    Design = relationship("Design", foreign_keys=[DesignID])
     Contrast = relationship("Contrast", foreign_keys=[ContrastID], back_populates="ContrastColumn")
 
     __table_args__ = (
-        UniqueConstraint(ContrastID, Name, name='ContrastColumnName'),
+        UniqueConstraint(DesignID, Name, name='ContrastColumnName'),
         {'mysql_engine': 'InnoDB'}
     )
 

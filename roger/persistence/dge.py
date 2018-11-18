@@ -388,6 +388,7 @@ def add_contrast(session, contrast_file, design_name, dataset_name, name=None, d
 
     contrast_cols = contrast_data.columns
     contrast_table = DataFrame({"ContrastID": contrast.ID,
+                                "DesignID": design.ID,
                                 "Name": contrast_cols,
                                 "Description": contrast_cols,
                                 "ColumnData": [contrast_data[col_name].values.tolist() for col_name in contrast_cols]})
