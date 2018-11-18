@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+#set -e
 # Title     : Script used as example to initialize ROGER
 # Objective : Initializes a new ROGER instance with:
 #             * Create SQL schema
@@ -10,3 +10,4 @@ roger init
 # Add gene annotation data from other species
 roger add-species "rnorvegicus_gene_ensembl" 10116
 roger add-species "mmusculus_gene_ensembl" 10090
+roger add-gmt "Reactome" "test_data/gmt/ReactomePathways.gmt" 9606
