@@ -225,9 +225,9 @@ class DGETopTableCSVView(Resource):
     @cache.cached()
     def get(self, study_name, design_name, contrast_name, dge_method_name):
         session = db.session()
-        dge_model = get_dge_model(session, contrast_name, design_name, study_name, dge_method_name)
+        dge_table = get_dge_tbl(session, contrast_name, design_name, study_name, dge_method_name)
 
-        return make_response(dge_model.annotated_result_table.to_csv(index=False), 201)
+        return make_response(dge_table.to_csv(index=False), 201)
 
 
 api.add_resource(DGETopTableCSVView,
@@ -241,9 +241,9 @@ class DGETopTableJSONView(Resource):
     @cache.cached()
     def get(self, study_name, design_name, contrast_name, dge_method_name):
         session = db.session()
-        dge_model = get_dge_model(session, contrast_name, design_name, study_name, dge_method_name)
+        dge_table = get_dge_tbl(session, contrast_name, design_name, study_name, dge_method_name)
 
-        return make_response(dge_model.annotated_result_table.to_json(orient="table"), 201)
+        return make_response(dge_table.to_json(orient="table"), 201)
 
 
 api.add_resource(DGETopTableJSONView,

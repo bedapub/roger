@@ -446,6 +446,7 @@ def get_dge_tbl(session, contrast_name, design_name, dataset_name, method_name) 
     feature_data = contrast.Design.DataSet.feature_data
     dge_table['Contrast'] = contrast.Name
     dge_table['Design'] = contrast.Design.Name
+    dge_table['DGEMethod'] = method_name
     return dge_table.join(feature_data.set_index('FeatureIndex'), on='FeatureIndex', rsuffix="Feature")
 
 

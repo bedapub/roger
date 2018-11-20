@@ -8,10 +8,6 @@ export default class DGEVolcanoPlot extends React.Component {
     constructor(props) {
         super(props);
         this.state = {loaded: false, renderedComp: []};
-        console.log(`${URL_PREFIX}/study/${this.props.studyName}`
-            + `/design/${this.props.designName}`
-            + `/contrast/${this.props.contrastName}`
-            + `/dge/${this.props.dgeMethodName}/plot/volcano`);
     }
 
     componentDidMount() {

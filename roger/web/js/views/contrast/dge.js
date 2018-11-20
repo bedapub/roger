@@ -5,6 +5,7 @@ import Card from '@material-ui/core/Card';
 import CardContent from '@material-ui/core/CardContent';
 import Typography from '@material-ui/core/Typography';
 import StudyDrawer from "Roger/components/study/study_drawer";
+import TopTable from "Roger/components/contrast/dge/top_table";
 import ExpressionPCAPlot from "Roger/components/study/plots/expression_pca";
 import DGEVolcanoPlot from "Roger/components/study/plots/volcano";
 
@@ -23,6 +24,17 @@ function DGEView(props) {
             <Card className={classes.card}>
                 <CardContent>
                     <Typography variant="h5" component="h2">
+                        DGE Table
+                    </Typography>
+                    <TopTable studyName={study.Name}
+                              designName={design.Name}
+                              contrastName={contrastColumn.Name}
+                              dgeMethodName={dgeResult.MethodName}/>
+                </CardContent>
+            </Card>
+            <Card className={classes.card}>
+                <CardContent>
+                    <Typography variant="h5" component="h2">
                         Differential Gene Expression with {dgeResult.MethodName}
                     </Typography>
                     <ExpressionPCAPlot studyName={study.Name}
@@ -37,9 +49,9 @@ function DGEView(props) {
                         Volcano plots
                     </Typography>
                     <DGEVolcanoPlot studyName={study.Name}
-                                       designName={design.Name}
-                                       contrastName={contrastColumn.Name}
-                                       dgeMethodName={dgeResult.MethodName}/>
+                                    designName={design.Name}
+                                    contrastName={contrastColumn.Name}
+                                    dgeMethodName={dgeResult.MethodName}/>
                 </CardContent>
             </Card>
         </StudyDrawer>
