@@ -33,7 +33,7 @@ export default class DGEVolcanoPlot extends React.Component {
                     <Plot
                         data={volcano_data.data}
                         layout={volcano_data.layout}
-                    />
+                    />;
                 this.setState({loaded: true, renderedComp: renderedComp});
             });
     }
