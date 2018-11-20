@@ -2,15 +2,7 @@ import React from 'react';
 import Plot from 'react-plotly.js';
 
 import {URL_PREFIX} from "Roger/logic/rest";
-import './loading_spinner.css';
-
-const SpinnerAnimation =
-    <div className="lds-ring">
-        <div/>
-        <div/>
-        <div/>
-        <div/>
-    </div>;
+import CircularProgress from '@material-ui/core/CircularProgress';
 
 export default class ExpressionPCAPlot extends React.Component {
     constructor(props) {
@@ -35,6 +27,6 @@ export default class ExpressionPCAPlot extends React.Component {
     }
 
     render() {
-        return this.state.loaded ? this.state.renderedComp : SpinnerAnimation;
+        return this.state.loaded ? this.state.renderedComp : <CircularProgress />;
     }
 }
