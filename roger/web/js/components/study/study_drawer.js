@@ -17,7 +17,7 @@ import ListItem from '@material-ui/core/ListItem';
 import ListItemText from '@material-ui/core/ListItemText';
 import {Link} from "react-router-dom";
 
-const drawerWidth = 240;
+const drawerWidth = 260;
 
 const styles = theme => ({
     root: {
