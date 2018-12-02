@@ -1,4 +1,4 @@
-from flask import Blueprint, current_app
+from flask import Blueprint, current_app, Response
 import re
 import os.path
 import numpy
@@ -222,12 +222,14 @@ DGEModelViewFields = {
 
 
 class DGETopTableCSVView(Resource):
-    @cache.cached()
     def get(self, study_name, design_name, contrast_name, dge_method_name):
         session = db.session()
         dge_table = get_dge_tbl(session, contrast_name, design_name, study_name, dge_method_name)
 
-        return make_response(dge_table.to_csv(index=False), 201)
+        return Response(dge_table.to_csv(index=False),
+                        mimetype="text/csv",
+                        headers={"Content-disposition": "attachment; filename=%s_%s_%s_%s.csv" %
+                                                        (dge_method_name, study_name, design_name, contrast_name)})
 
 
 api.add_resource(DGETopTableCSVView,

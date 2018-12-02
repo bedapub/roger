@@ -17,7 +17,7 @@ import ListItem from '@material-ui/core/ListItem';
 import ListItemText from '@material-ui/core/ListItemText';
 import {Link} from "react-router-dom";
 
-const drawerWidth = 260;
+const drawerWidth = 280;
 
 const styles = theme => ({
     root: {
@@ -197,7 +197,7 @@ class StudyDrawer extends React.Component {
                                                                       + `gse/${gseResult.GSEMethodName}`}>
                                                                 <ListItemText
                                                                     primary={`GSE (${gseResult.GSEMethodName} `
-                                                                    + `+${gseResult.DGEMethodName})`}/>
+                                                                    + `+ ${gseResult.DGEMethodName})`}/>
                                                             </ListItem>
                                                         </li>
                                                     ))}

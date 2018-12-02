@@ -2,6 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import Input from '@material-ui/core/Input';
 import CircularProgress from '@material-ui/core/CircularProgress';
+import Button from '@material-ui/core/Button';
 import {withStyles} from '@material-ui/core/styles';
 import {IntegratedFiltering} from '@devexpress/dx-react-grid';
 import {IntegratedPaging} from '@devexpress/dx-react-grid';
@@ -36,19 +37,11 @@ const styles = theme => ({
     numericInput: {
         width: '100%',
     },
+    button: {
+        margin: theme.spacing.unit,
+    },
 });
 
-
-const getColor = (amount) => {
-    if (amount > 0.1) {
-        return '#F44336';
-    }
-    if (amount > 0.05) {
-        return '#FFC107';
-    }
-
-    return '#009688';
-};
 
 const NumericEditor = withStyles(styles)(({onValueChange, classes, value}) => {
         const handleChange = (event) => {
@@ -79,14 +72,17 @@ const NumericEditor = withStyles(styles)(({onValueChange, classes, value}) => {
 
 const NumericFormatter = withStyles(styles)(
     ({value, classes}) =>
-        <span className={classes.numericValue} style={{color: getColor(value)}}>{value}</span>
+        <span className={classes.numericValue}>{value}</span>
 );
 
 
 class TopTable extends React.Component {
-
     constructor(props) {
         super(props);
+        this.dgeTableURL = `${URL_PREFIX}/study/${this.props.studyName}`
+            + `/design/${this.props.designName}`
+            + `/contrast/${this.props.contrastName}`
+            + `/dge/${this.props.dgeMethodName}/tbl`;
         this.state = {
             columns: [
                 {name: 'FeatureIndex', title: 'Feature Index'},
@@ -106,10 +102,7 @@ class TopTable extends React.Component {
     }
 
     componentDidMount() {
-        fetch(`${URL_PREFIX}/study/${this.props.studyName}`
-            + `/design/${this.props.designName}`
-            + `/contrast/${this.props.contrastName}`
-            + `/dge/${this.props.dgeMethodName}/tbl/json`)
+        fetch(`${this.dgeTableURL}/json`)
             .then(result => result.json())
             .then(dge_tbl => {
                 console.log(dge_tbl);
@@ -118,6 +111,7 @@ class TopTable extends React.Component {
     }
 
     render() {
+        const classes = this.props;
         const {
             rows, columns, pageSizes,
             numericColumns, loading
@@ -155,6 +149,13 @@ class TopTable extends React.Component {
                     <TableFilterRow showFilterSelector={true}/>
                     <PagingPanel pageSizes={pageSizes}/>
                 </Grid>
+                <label htmlFor="contained-button-file">
+                    <Button variant="contained"
+                            className={classes.button}
+                            href={`${this.dgeTableURL}/csv`}>
+                        Download All
+                    </Button>
+                </label>
                 {loading && <CircularProgress/>}
             </div>
         );
