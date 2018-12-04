@@ -4,6 +4,7 @@ import Input from '@material-ui/core/Input';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import Button from '@material-ui/core/Button';
 import {withStyles} from '@material-ui/core/styles';
+import Grid from '@material-ui/core/Grid';
 import {IntegratedFiltering} from '@devexpress/dx-react-grid';
 import {IntegratedPaging} from '@devexpress/dx-react-grid';
 import {IntegratedSelection} from '@devexpress/dx-react-grid';
@@ -14,7 +15,7 @@ import {SortingState} from '@devexpress/dx-react-grid';
 import {DataTypeProvider} from '@devexpress/dx-react-grid';
 
 import {DragDropProvider} from '@devexpress/dx-react-grid-material-ui';
-import {Grid} from '@devexpress/dx-react-grid-material-ui';
+import {Grid as DataGrid} from '@devexpress/dx-react-grid-material-ui';
 import {PagingPanel} from '@devexpress/dx-react-grid-material-ui';
 import {Table} from '@devexpress/dx-react-grid-material-ui';
 import {TableFilterRow} from '@devexpress/dx-react-grid-material-ui';
@@ -97,15 +98,21 @@ class TopTable extends React.Component {
             numericColumns: ['PValue', 'FDR', 'LogFC', 'AveExprs', 'Statistic'],
             pageSizes: [50, 100, 200],
             rows: [],
+            selection: [],
             loading: true,
         };
+        this.changeSelection = selection => {
+            this.setState({
+                selection,
+            });
+            console.log(this.state);
+        }
     }
 
     componentDidMount() {
         fetch(`${this.dgeTableURL}/json`)
             .then(result => result.json())
             .then(dge_tbl => {
-                console.log(dge_tbl);
                 this.setState({loading: false, rows: dge_tbl.data});
             });
     }
@@ -113,13 +120,13 @@ class TopTable extends React.Component {
     render() {
         const classes = this.props;
         const {
-            rows, columns, pageSizes,
+            rows, selection, columns, pageSizes,
             numericColumns, loading
         } = this.state;
 
         return (
             <div>
-                <Grid rows={rows} columns={columns}>
+                <DataGrid rows={rows} columns={columns}>
                     <SortingState
                         defaultSorting={[
                             {columnName: 'LogFC', direction: 'asc'},
@@ -129,6 +136,9 @@ class TopTable extends React.Component {
                     <FilteringState/>
                     <SelectionState/>
                     <PagingState/>
+                    <SelectionState
+                        selection={selection}
+                        onSelectionChange={this.changeSelection}/>
 
                     <IntegratedFiltering/>
                     <IntegratedSorting/>
@@ -148,14 +158,23 @@ class TopTable extends React.Component {
                     <TableHeaderRow showSortingControls={true}/>
                     <TableFilterRow showFilterSelector={true}/>
                     <PagingPanel pageSizes={pageSizes}/>
+                </DataGrid>
+                <Grid container spacing={24}>
+                    <Grid item>
+                        <Button variant="contained"
+                                className={classes.button}
+                                href={`${this.dgeTableURL}/csv`}>
+                            Download All
+                        </Button>
+                    </Grid>
+                    <Grid item>
+                        <Button variant="contained"
+                                className={classes.button}
+                                disabled={this.state.selection.length === 0}>
+                            Download Selected
+                        </Button>
+                    </Grid>
                 </Grid>
-                <label htmlFor="contained-button-file">
-                    <Button variant="contained"
-                            className={classes.button}
-                            href={`${this.dgeTableURL}/csv`}>
-                        Download All
-                    </Button>
-                </label>
                 {loading && <CircularProgress/>}
             </div>
         );

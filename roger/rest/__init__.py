@@ -115,7 +115,6 @@ def quantileRange(x, outlier=0.01, symmetric=True):
 
 
 class DGE_Plot_Volcano(Resource):
-    @cache.cached()
     def get(self, study_name, design_name, contrast_name, dge_method_name):
         session = db.session()
 
@@ -148,7 +147,7 @@ class DGE_Plot_Volcano(Resource):
             },
             "width": 500,
             "height": 500,
-            "title": contrast_name
+            "title": "Volcano Plot"
         }
         return jsonify({'data': [data], 'layout': layout})
 
@@ -161,7 +160,6 @@ api.add_resource(DGE_Plot_Volcano,
 
 
 class DGE_Plot_PCA(Resource):
-    @cache.cached()
     def get(self, study_name, design_name, contrast_name, dge_method_name):
         session = db.session()
         dge_model = get_dge_model(session,
@@ -179,14 +177,11 @@ class DGE_Plot_PCA(Resource):
         yind = 1
         sdev_norm = sum([sdev * sdev for sdev in obj_pca.rx2("sdev")])
         expvar = [sdev * sdev / sdev_norm for sdev in obj_pca.rx2("sdev")]
-        data = [{
-            "x": [x for x in points[0]],
-            "y": [y for y in points[1]],
-            "mode": 'markers',
-            "type": 'scatter',
-            "name": 'Data Points',
-            "text": [name for name in base.rownames(points)]
-        }]
+
+        data = [{"x": points[0][i],
+                 "y": points[1][i],
+                 "name": base.rownames(points)[i]}
+                for i in range(0, len(points[0]))]
         layout = {
             "xaxis": {
                 "title": "Principal component %d (%2.1f%%)" % (xind + 1, expvar[xind] * 100),
@@ -198,7 +193,7 @@ class DGE_Plot_PCA(Resource):
             },
             "width": 500,
             "height": 500,
-            "title": 'modLogCPM PCA'
+            "title": 'modLogCPM PCA',
         }
 
         return jsonify({'data': data, 'layout': layout})
