@@ -7,7 +7,7 @@
   "author": "Rudolf Biczok",
   "license": "GPL-3.0-or-later",
   "devDependencies": {
-    "@babel/core": "^7.1.2",
+    "@babel/core": "^7.20.12",
     "@babel/preset-env": "^7.0.0",
     "@babel/preset-react": "^7.0.0",
     "@types/classnames": "^2.2.6",
